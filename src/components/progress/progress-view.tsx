@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendingUp, Code2, Mic2, MessageSquareText, FolderGit2, Activity } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -122,7 +123,7 @@ export function ProgressView({ overall, bandLabel, dailyTrend, categories, count
               <div key={i} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
                 <div>
                   <p className="font-medium">{e.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(e.createdAt)}</p>
                 </div>
                 <span className="font-bold">{e.score}</span>
               </div>

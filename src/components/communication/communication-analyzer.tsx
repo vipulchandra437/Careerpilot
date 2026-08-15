@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { Mic, Square, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -233,7 +234,7 @@ export function CommunicationAnalyzer({ analyses }: { analyses: PastAnalysis[] }
                   <div className="truncate text-muted-foreground">{a.preview}</div>
                 </div>
                 <Badge variant={a.score >= 70 ? "default" : "secondary"}>
-                  {new Date(a.createdAt).toLocaleDateString()}
+                  {formatDate(a.createdAt)}
                 </Badge>
               </div>
             ))}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { Mic2, Loader2, Send, Flag, CheckCircle2, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -401,7 +402,7 @@ export function InterviewWorkspace({
               <div key={i.id} className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
                 <div className="text-sm">
                   <div className="font-medium">{i.type.replaceAll("_", " ")} · {i.difficulty}</div>
-                  <div className="text-muted-foreground">{new Date(i.createdAt).toLocaleDateString()}</div>
+                  <div className="text-muted-foreground">{formatDate(i.createdAt)}</div>
                 </div>
                 <Badge variant={i.status === "COMPLETED" ? (i.score && i.score >= 70 ? "default" : "secondary") : "outline"}>
                   {i.status === "COMPLETED" ? `${i.score}/100` : i.status.toLowerCase().replaceAll("_", " ")}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { Shield, User, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +94,7 @@ export function UsersManager({ users: initial }: { users: AdminUser[] }) {
                   <TableCell>
                     <Badge variant={u.role === "ADMIN" ? "secondary" : "outline"}>{u.role.toLowerCase()}</Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(u.createdAt)}</TableCell>
                   <TableCell className="text-right">{u.submissions}</TableCell>
                   <TableCell className="text-right">{u.interviews}</TableCell>
                   <TableCell className="text-right">{u.scoreEvents}</TableCell>

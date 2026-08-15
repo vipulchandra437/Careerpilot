@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { UploadCloud, FileText, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -280,7 +281,7 @@ export function ResumeAnalyzer({ analyses }: { analyses: PastAnalysis[] }) {
                 <div className="text-sm">
                   <div className="font-medium">Overall {a.overallScore} · ATS {a.atsScore}</div>
                   <div className="text-muted-foreground">
-                    {new Date(a.createdAt).toLocaleDateString()} — {a.strengths[0] ?? "No top strength"}
+                    {formatDate(a.createdAt)} — {a.strengths[0] ?? "No top strength"}
                   </div>
                 </div>
                 <Badge variant={a.overallScore >= 70 ? "default" : "secondary"}>

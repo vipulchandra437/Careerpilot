@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -133,7 +134,7 @@ export function LinkedInAnalyzer({ analyses }: { analyses: Past[] }) {
           <CardContent className="space-y-2">
             {past.map((a) => (
               <div key={a.id} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{new Date(a.createdAt).toLocaleDateString()}</span>
+                <span className="text-muted-foreground">{formatDate(a.createdAt)}</span>
                 <Separator className="mx-3 flex-1" />
                 <span className="font-medium">{a.score}/100</span>
               </div>

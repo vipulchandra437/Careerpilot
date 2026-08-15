@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
+import { formatDate } from "@/lib/utils";
 import { Users, Building2, Briefcase, Database, Code2, FileText, TrendingUp, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <Badge variant={u.role === "ADMIN" ? "secondary" : "outline"}>{u.role.toLowerCase()}</Badge>
-                  <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(u.createdAt)}</span>
                 </div>
               </div>
             ))

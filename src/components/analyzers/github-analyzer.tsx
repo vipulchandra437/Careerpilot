@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { Loader2, Sparkles } from "lucide-react";
 import { GitHubIcon } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
@@ -226,7 +227,7 @@ export function GitHubAnalyzer({ analyses }: { analyses: Past[] }) {
               <div key={a.id} className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
                 <div className="text-sm">
                   <div className="font-medium">@{a.username} — {a.score}</div>
-                  <div className="text-muted-foreground">{new Date(a.createdAt).toLocaleDateString()}</div>
+                  <div className="text-muted-foreground">{formatDate(a.createdAt)}</div>
                 </div>
                 <Sparkles className="size-4 text-muted-foreground" />
               </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import { FolderGit2, Loader2, Plus, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,7 +174,7 @@ export function ProjectsManager({ projects: initial }: { projects: Project[] }) 
                     {p.latestScore != null && (
                       <CardDescription>
                         Latest score: {p.latestScore}/100
-                        {p.latestAnalyzedAt ? ` · ${new Date(p.latestAnalyzedAt).toLocaleDateString()}` : ""}
+                        {p.latestAnalyzedAt ? ` · ${formatDate(p.latestAnalyzedAt)}` : ""}
                       </CardDescription>
                     )}
                   </div>

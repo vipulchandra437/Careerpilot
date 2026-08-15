@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatDateTime } from "@/lib/utils";
 import { Printer, CheckCircle2, AlertTriangle, Target, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ export function ReportView({ report }: { report: ReportData }) {
   return (
     <div className="space-y-6 print:space-y-4">
       <div className="flex items-center justify-between print:hidden">
-        <p className="text-xs text-muted-foreground">Generated {new Date(report.generatedAt).toLocaleString()}</p>
+        <p className="text-xs text-muted-foreground">Generated {formatDateTime(report.generatedAt)}</p>
         <Button variant="outline" size="sm" onClick={() => window.print()}>
           <Printer className="mr-2 size-4" /> Print report
         </Button>
