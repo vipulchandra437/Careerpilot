@@ -1,0 +1,82 @@
+name: careerpilot
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: careerpilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careerpilot}
+      POSTGRES_DB: careerpilot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U careerpilot -d careerpilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  piston:
+    # Self-hosted Piston code-execution sandbox.
+    image: ghcr.io/engineer-man/piston
+    restart: unless-stopped
+    environment:
+      # Optional: require a bearer token. The app sends it via PISTON_API_KEY.
+      PISTON_API_KEY: ${PISTON_API_KEY:-careerpilot-piston}
+      PISTON_RUNTIME_TIMEOUT: ${PISTON_RUNTIME_TIMEOUT:-5000}
+    volumes:
+      - piston_packages:/piston/packages
+      - piston_compilers:/piston/compilers
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:2000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "127.0.0.1:2000:2000"
+
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      piston:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://careerpilot:${POSTGRES_PASSWORD:-careerpilot}@db:5432/careerpilot?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET (generate with: npx auth secret)}
+      AUTH_TRUST_HOST: "true"
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?Set OPENROUTER_API_KEY}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-2000}
+      EXECUTION_PROVIDER: piston
+      PISTON_API_URL: http://piston:2000
+      PISTON_API_KEY: ${PISTON_API_KEY:-careerpilot-piston}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_AUTH: ${RATE_LIMIT_AUTH:-20}
+      RATE_LIMIT_AI: ${RATE_LIMIT_AI:-10}
+      RATE_LIMIT_CODING: ${RATE_LIMIT_CODING:-30}
+      RATE_LIMIT_GENERAL: ${RATE_LIMIT_GENERAL:-300}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  pgdata:
+  piston_packages:
+  piston_compilers:

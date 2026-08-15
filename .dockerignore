@@ -1,0 +1,21 @@
+node_modules
+.next
+out
+.git
+.gitignore
+.env
+.env.*
+prisma/dev.db
+prisma/dev.db-journal
+# SQLite schema + migrations must NOT be copied: the Dockerfile swaps in the
+# PostgreSQL schema and migration set before `COPY . .`.
+prisma/schema.prisma
+prisma/migrations
+*.log
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
+next-env.d.ts
+tsconfig.tsbuildinfo
+.vercel
