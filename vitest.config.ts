@@ -8,7 +8,12 @@ export default defineConfig({
     exclude: ["node_modules", ".next", ".git"],
     coverage: {
       provider: "v8",
-      include: ["src/lib/api.ts", "src/server/coding/harness.ts", "src/server/scoring/score-engine.ts"],
+      include: [
+        "src/lib/api.ts",
+        "src/lib/rate-limit.ts",
+        "src/server/coding/harness.ts",
+        "src/server/scoring/score-engine.ts",
+      ],
     },
   },
   resolve: {

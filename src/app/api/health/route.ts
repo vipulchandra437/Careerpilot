@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { version as nextVersion } from "next/package.json";
 import { env, envIssues } from "@/lib/env";
+import { rateLimiterBackend } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ interface HealthState {
   };
   executionProvider: string;
   aiProvider: string;
+  rateLimiter: "redis" | "memory";
   node: string;
   next: string;
   configIssues: string[];
@@ -39,6 +41,7 @@ export async function GET() {
     services: { database: dbOk ? "ok" : "unavailable" },
     executionProvider: env.EXECUTION_PROVIDER,
     aiProvider: "openrouter",
+    rateLimiter: rateLimiterBackend(),
     node: process.version,
     next: nextVersion,
     configIssues: issues,

@@ -2,7 +2,9 @@
 
 FROM node:22-alpine AS base
 WORKDIR /app
-ENV NODE_ENV=production
+# NOTE: NODE_ENV must NOT be "production" yet — npm ci would skip devDependencies
+# (typescript, tailwind, eslint) and `next build` would fail. It is set below,
+# after the build, so the runtime runs in production mode.
 
 # Build-time defaults (overridden by compose build.args).
 ARG DATABASE_URL=postgresql://careerpilot:careerpilot@localhost:5432/careerpilot
@@ -23,6 +25,8 @@ RUN npm ci
 COPY . .
 
 RUN npx prisma generate && npm run build
+
+ENV NODE_ENV=production
 
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh

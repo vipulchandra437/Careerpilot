@@ -11,7 +11,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U careerpilot -d careerpilot"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U careerpilot -d careerpilot
       interval: 5s
       timeout: 5s
       retries: 12
@@ -20,22 +22,55 @@ services:
 
   piston:
     # Self-hosted Piston code-execution sandbox.
+    # isolate (Piston's sandbox) mounts its own namespaces, so the container
+    # must run privileged (this is the documented requirement for Piston).
+    # This image exposes its API under /api/v2 (piston-api v3), so the app
+    # must point PISTON_API_URL at http://piston:2000/api/v2.
     image: ghcr.io/engineer-man/piston
+    # Custom bootstrap: sets up cgroups like the stock entrypoint, starts the
+    # API, installs python/javascript runtimes on first boot, and keeps the
+    # API process alive if a package install crashes it.
+    entrypoint: ["bash", "/usr/local/bin/piston-bootstrap.sh"]
+    privileged: true
     restart: unless-stopped
     environment:
       # Optional: require a bearer token. The app sends it via PISTON_API_KEY.
       PISTON_API_KEY: ${PISTON_API_KEY:-careerpilot-piston}
-      PISTON_RUNTIME_TIMEOUT: ${PISTON_RUNTIME_TIMEOUT:-5000}
+      # Raise the run stage limits above the stock 3000ms cap so the app's
+      # per-problem time limits (up to 15s) are honored.
+      PISTON_RUN_TIMEOUT: ${PISTON_RUN_TIMEOUT:-15000}
+      PISTON_RUN_CPU_TIME: ${PISTON_RUN_CPU_TIME:-15000}
+      PISTON_COMPILE_TIMEOUT: ${PISTON_COMPILE_TIMEOUT:-10000}
+      PISTON_COMPILE_CPU_TIME: ${PISTON_COMPILE_CPU_TIME:-10000}
+      PISTON_RUN_MEMORY_LIMIT: ${PISTON_RUN_MEMORY_LIMIT:-536870912}
     volumes:
       - piston_packages:/piston/packages
       - piston_compilers:/piston/compilers
+      - ./scripts/docker/piston-bootstrap.sh:/usr/local/bin/piston-bootstrap.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:2000/health || exit 1"]
+      test:
+        - CMD-SHELL
+        - python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:2000/api/v2/runtimes', timeout=5)"
       interval: 10s
       timeout: 5s
       retries: 12
+      start_period: 20s
     ports:
       - "127.0.0.1:2000:2000"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "127.0.0.1:6379:6379"
 
   app:
     build:
@@ -48,17 +83,20 @@ services:
         condition: service_healthy
       piston:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://careerpilot:${POSTGRES_PASSWORD:-careerpilot}@db:5432/careerpilot?schema=public
-      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET (generate with: npx auth secret)}
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET first (generate with npx auth secret)}
       AUTH_TRUST_HOST: "true"
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?Set OPENROUTER_API_KEY}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
       AI_MAX_TOKENS: ${AI_MAX_TOKENS:-2000}
       EXECUTION_PROVIDER: piston
-      PISTON_API_URL: http://piston:2000
+      PISTON_API_URL: http://piston:2000/api/v2
       PISTON_API_KEY: ${PISTON_API_KEY:-careerpilot-piston}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      REDIS_URL: redis://redis:6379
       RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_AUTH: ${RATE_LIMIT_AUTH:-20}
       RATE_LIMIT_AI: ${RATE_LIMIT_AI:-10}
@@ -68,10 +106,8 @@ services:
       - "3000:3000"
     healthcheck:
       test:
-        [
-          "CMD-SHELL",
-          "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
-        ]
+        - CMD-SHELL
+        - wget -qO- http://localhost:3000/api/health >/dev/null || exit 1
       interval: 15s
       timeout: 5s
       retries: 12
@@ -80,3 +116,4 @@ volumes:
   pgdata:
   piston_packages:
   piston_compilers:
+  redisdata:

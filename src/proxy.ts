@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-/**
- * In-memory sliding-window rate limiter. State is per-process, which is
- * sufficient for a single instance (or per-isolate on serverless edge). For
- * multi-instance deployments behind a load balancer, move limits to Redis.
- */
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
-
-const buckets = new Map<string, Bucket>();
-const WINDOW_MS = 60_000;
+import { rateLimiter } from "@/lib/rate-limit";
 
 const enabled = (process.env.RATE_LIMIT_ENABLED ?? "true") !== "false";
 const limits = {
@@ -51,20 +39,11 @@ function clientIp(request: NextRequest): string {
   return "unknown";
 }
 
-function take(key: string, limit: number, now: number): { allowed: boolean; retryAfter: number } {
-  const bucket = buckets.get(key);
-  if (!bucket || now >= bucket.resetAt) {
-    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return { allowed: true, retryAfter: 0 };
-  }
-  bucket.count += 1;
-  if (bucket.count > limit) {
-    return { allowed: false, retryAfter: Math.ceil((bucket.resetAt - now) / 1000) };
-  }
-  return { allowed: true, retryAfter: 0 };
+function take(key: string, limit: number, now: number) {
+  return rateLimiter.take(key, limit, now);
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const start = Date.now();
   const { pathname } = request.nextUrl;
   const method = request.method;
@@ -75,7 +54,7 @@ export function proxy(request: NextRequest) {
 
   if (enabled && mutating && pathname.startsWith("/api")) {
     const group = groupFor(pathname);
-    const { allowed, retryAfter } = take(`${group}:${ip}`, limits[group], start);
+    const { allowed, retryAfter } = await take(`${group}:${ip}`, limits[group], start);
     if (!allowed) {
       console.warn(
         JSON.stringify({

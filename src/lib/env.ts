@@ -19,6 +19,7 @@ const envSchema = z.object({
   EXECUTION_PROVIDER: z.enum(["local", "piston"]).default("local"),
   PISTON_API_URL: z.string().optional(),
   PISTON_API_KEY: z.string().optional(),
+  REDIS_URL: z.string().optional(),
   RATE_LIMIT_ENABLED: z
     .string()
     .default("true")
