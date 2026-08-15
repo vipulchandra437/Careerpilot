@@ -21,7 +21,7 @@ An AI-assisted career development platform for computer science students. It per
 - **AI:** OpenRouter (OpenAI-compatible) — model configurable via `OPENROUTER_MODEL`
 - **Code execution:** local Python/Node subprocess harness (dev default) or a Piston sandbox (production)
 - **UI:** Tailwind CSS v4, Base UI, shadcn, recharts, Monaco editor
-- **Testing:** Vitest (configured), ESLint, `tsc --noEmit`
+- **Testing:** Vitest unit tests, Playwright E2E, ESLint, `tsc --noEmit`
 
 ## Prerequisites
 
@@ -84,7 +84,11 @@ Demo accounts (seeded):
 | `npm run start`       | Serve the production build |
 | `npm run lint`        | ESLint (zero warnings expected) |
 | `npm run typecheck`   | `tsc --noEmit` |
-| `npm test`            | Vitest |
+| `npm test`            | Vitest unit tests |
+| `npm run test:watch`  | Vitest in watch mode |
+| `npm run test:coverage` | Vitest with coverage report |
+| `npm run test:e2e`    | Playwright E2E suite (starts its own dev server on port 3100) |
+| `npm run test:e2e:install` | Install the Playwright Chromium browser |
 | `npm run seed`        | Seed demo data (SQLite) |
 | `npm run db:reset`    | Drop, migrate & reseed |
 | `npm run db:studio`   | Open Prisma Studio |
@@ -165,6 +169,53 @@ docker compose run --rm app npm run db:seed:prod   # seed demo data (optional)
   needs elevated privileges to install compilers.
 - Health check: `GET /api/health` returns `200` when the database is reachable,
   `503` otherwise.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push/PR to `master`:
+
+1. **quality** — `npm ci`, typecheck, lint, unit tests, production build.
+2. **e2e** — installs Playwright Chromium and runs the full E2E suite against a
+   fresh SQLite database (auto-migrated and seeded by the global setup). The
+   AI-dependent interview spec is skipped when `OPENROUTER_API_KEY` is unset.
+3. **docker** — validates `docker-compose.yml` and builds the production image
+   with the GitHub Actions layer cache.
+
+### Automated tests
+
+- **Unit** (`npm test`) — Vitest covers the shared API helpers, the code-execution
+  harness, and the readiness score engine in `tests/`.
+- **E2E** (`npm run test:e2e`) — Playwright verifies registration, login,
+  route protection, the coding workspace (runs code end to end through the
+  executor), and — when an AI key is present — a full mock-interview session.
+
+### Backups
+
+The production database is PostgreSQL. Point `pg_dump` at it via the provided
+scripts and schedule them with cron / Task Scheduler:
+
+- `scripts/backup-postgres.sh` (Linux/macOS)
+- `scripts/backup-postgres.ps1` (Windows)
+
+Both require `DATABASE_URL` and produce timestamped `.sql.gz` files in
+`./backups`. Typical cron line (retains 7 days):
+
+```cron
+0 2 * * * DATABASE_URL="postgresql://careerpilot:...@db:5432/careerpilot" BACKUP_DIR=/var/backups/careerpilot /path/to/careerpilot/scripts/backup-postgres.sh
+```
+
+### Data privacy & audit logging
+
+- **GDPR account export** — `GET /api/account/export` returns every data record
+  owned by the signed-in user as a downloadable JSON file.
+- **Account deletion** — `DELETE /api/account/delete` permanently removes the
+  user and all owned records (cascading deletes) and emits an audit entry.
+- **Audit log** — all admin write operations (user/company/job-role/problem/
+  skill changes) are recorded in the `AuditLog` table with actor, action,
+  target, and IP address. Audit rows are intentionally **not** related to the
+  user so they survive account deletion.
+- Public-facing **Privacy Policy** and **Terms of Service** pages are at
+  `/privacy` and `/terms`.
 
 ### Notes
 

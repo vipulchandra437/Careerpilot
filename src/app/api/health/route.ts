@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { version as nextVersion } from "next/package.json";
+import { env, envIssues } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ interface HealthState {
   aiProvider: string;
   node: string;
   next: string;
+  configIssues: string[];
 }
 
 export async function GET() {
@@ -27,15 +29,19 @@ export async function GET() {
     // Database is unavailable; the rest of the health payload is still returned.
   }
 
+  const issues = envIssues();
+  const status: HealthState["status"] = dbOk ? "ok" : "degraded";
+
   const state: HealthState = {
-    status: dbOk ? "ok" : "degraded",
+    status,
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.round(process.uptime()),
     services: { database: dbOk ? "ok" : "unavailable" },
-    executionProvider: (process.env.EXECUTION_PROVIDER ?? "local").toLowerCase(),
+    executionProvider: env.EXECUTION_PROVIDER,
     aiProvider: "openrouter",
     node: process.version,
     next: nextVersion,
+    configIssues: issues,
   };
 
   return NextResponse.json(state, { status: dbOk ? 200 : 503 });

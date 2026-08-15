@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getApiAdmin } from "@/lib/admin-helpers";
 import { prisma } from "@/lib/db";
+import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
+import { clientIp, recordAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -26,58 +28,50 @@ const schema = z.object({
 
 function parseJsonField(value: string | null | undefined, fallback: unknown): unknown {
   if (!value || !value.trim()) return fallback;
-  try {
-    return JSON.parse(value);
-  } catch {
-    throw new Error("testCases must be valid JSON.");
-  }
+  return JSON.parse(value);
 }
 
 export async function POST(request: Request) {
   const admin = await getApiAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid problem data" }, { status: 400 });
-  }
+    const data = await validateBody(request, schema);
 
-  let testCases: unknown;
-  try {
-    testCases = parseJsonField(parsed.data.testCases, []);
-  } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Invalid JSON" }, { status: 400 });
-  }
+    let testCases: unknown;
+    try {
+      testCases = parseJsonField(data.testCases, []);
+    } catch {
+      throw new ApiError(400, "testCases must be valid JSON.");
+    }
 
-  try {
-    const problem = await prisma.codingProblem.create({
-      data: {
-        title: parsed.data.title,
-        slug: parsed.data.slug,
-        description: parsed.data.description,
-        constraints: parseJsonField(parsed.data.constraints, []) as object,
-        examples: parseJsonField(parsed.data.examples, []) as object,
-        difficulty: parsed.data.difficulty,
-        topics: parsed.data.topics as unknown as object,
-        companies: [] as unknown as object,
-        starterCode: {
-          python: parsed.data.starterPython ?? "",
-          javascript: parsed.data.starterJavascript ?? "",
-        } as unknown as object,
-        testCases: testCases as object,
-        hiddenTestCases: [] as unknown as object,
-        timeLimitMs: parsed.data.timeLimitMs,
-        expectedComplexity: parsed.data.expectedComplexity || null,
-      },
-    });
+    let problem;
+    try {
+      problem = await prisma.codingProblem.create({
+        data: {
+          title: data.title,
+          slug: data.slug,
+          description: data.description,
+          constraints: parseJsonField(data.constraints, []) as object,
+          examples: parseJsonField(data.examples, []) as object,
+          difficulty: data.difficulty,
+          topics: data.topics as unknown as object,
+          companies: [] as unknown as object,
+          starterCode: {
+            python: data.starterPython ?? "",
+            javascript: data.starterJavascript ?? "",
+          } as unknown as object,
+          testCases: testCases as object,
+          hiddenTestCases: [] as unknown as object,
+          timeLimitMs: data.timeLimitMs,
+          expectedComplexity: data.expectedComplexity || null,
+        },
+      });
+    } catch {
+      throw new ApiError(409, "A problem with this title or slug already exists.");
+    }
+    await recordAudit(admin, "problem.create", "problem", problem.id, { title: problem.title }, clientIp(request));
     return NextResponse.json({ problem }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "A problem with this title or slug already exists." }, { status: 409 });
+  } catch (error) {
+    return toErrorResponse(error);
   }
 }

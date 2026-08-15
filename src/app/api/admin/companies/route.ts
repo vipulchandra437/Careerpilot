@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getApiAdmin } from "@/lib/admin-helpers";
 import { prisma } from "@/lib/db";
+import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
+import { clientIp, recordAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -19,29 +21,25 @@ const schema = z.object({
 export async function POST(request: Request) {
   const admin = await getApiAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid company data" }, { status: 400 });
-  }
+    const data = await validateBody(request, schema);
 
-  try {
-    const company = await prisma.company.create({
-      data: {
-        name: parsed.data.name,
-        slug: parsed.data.slug,
-        industry: parsed.data.industry || null,
-        description: parsed.data.description || null,
-      },
-    });
+    let company;
+    try {
+      company = await prisma.company.create({
+        data: {
+          name: data.name,
+          slug: data.slug,
+          industry: data.industry || null,
+          description: data.description || null,
+        },
+      });
+    } catch {
+      throw new ApiError(409, "Company name or slug already exists.");
+    }
+    await recordAudit(admin, "company.create", "company", company.id, { name: company.name }, clientIp(request));
     return NextResponse.json({ company }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Company name or slug already exists." }, { status: 409 });
+  } catch (error) {
+    return toErrorResponse(error);
   }
 }

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { computeReadiness } from "@/server/scoring/readiness.service";
 import { mentorReply } from "@/server/services/mentor.service";
+import { toErrorResponse, validateBody } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -17,19 +18,9 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const user = await requireUser();
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid message" }, { status: 400 });
-  }
+    const data = await validateBody(request, schema);
 
-  try {
     const [profile, readiness] = await Promise.all([
       prisma.studentProfile.findUnique({
         where: { userId: user.id },
@@ -42,22 +33,18 @@ export async function POST(request: Request) {
     ]);
 
     const reply = await mentorReply(
-      parsed.data.message,
+      data.message,
       {
         name: user.name,
         targetRole: profile?.targetJobRole?.title ?? null,
         targetCompany: profile?.targetCompany?.name ?? null,
         readinessScore: readiness.overall,
       },
-      parsed.data.history,
+      data.history,
     );
 
     return NextResponse.json({ reply });
-  } catch (err) {
-    console.error("Mentor chat error:", err);
-    return NextResponse.json(
-      { error: "Something went wrong generating a reply. Please try again." },
-      { status: 500 },
-    );
+  } catch (error) {
+    return toErrorResponse(error);
   }
 }

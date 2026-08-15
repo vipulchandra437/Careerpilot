@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getApiAdmin } from "@/lib/admin-helpers";
 import { prisma } from "@/lib/db";
+import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
+import { clientIp, recordAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -26,24 +28,20 @@ const schema = z.object({
 export async function POST(request: Request) {
   const admin = await getApiAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid skill data" }, { status: 400 });
-  }
+    const data = await validateBody(request, schema);
 
-  try {
-    const skill = await prisma.skill.create({
-      data: { name: parsed.data.name, category: parsed.data.category, description: parsed.data.description || null },
-    });
+    let skill;
+    try {
+      skill = await prisma.skill.create({
+        data: { name: data.name, category: data.category, description: data.description || null },
+      });
+    } catch {
+      throw new ApiError(409, "A skill with this name already exists.");
+    }
+    await recordAudit(admin, "skill.create", "skill", skill.id, { name: skill.name }, clientIp(request));
     return NextResponse.json({ skill }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "A skill with this name already exists." }, { status: 409 });
+  } catch (error) {
+    return toErrorResponse(error);
   }
 }

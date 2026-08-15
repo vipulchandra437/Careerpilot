@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { updateStudentSkills, getOrCreateProfile } from "@/server/services/profile.service";
+import { toErrorResponse, validateBody } from "@/lib/api";
 
 const profileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
@@ -31,53 +32,43 @@ const profileSchema = z.object({
 
 export async function GET() {
   const user = await requireUser();
-  const profile = await getOrCreateProfile(user.id);
+  try {
+    const profile = await getOrCreateProfile(user.id);
 
-  const [education, studentSkills] = await Promise.all([
-    prisma.education.findUnique({ where: { profileId: profile.id } }),
-    prisma.studentSkill.findMany({
-      where: { profileId: profile.id },
-      select: { skillId: true, rating: true, skill: { select: { name: true, category: true } } },
-    }),
-  ]);
+    const [education, studentSkills] = await Promise.all([
+      prisma.education.findUnique({ where: { profileId: profile.id } }),
+      prisma.studentSkill.findMany({
+        where: { profileId: profile.id },
+        select: { skillId: true, rating: true, skill: { select: { name: true, category: true } } },
+      }),
+    ]);
 
-  return NextResponse.json({
-    user: { name: user.name, email: user.email, image: user.image },
-    profile: {
-      location: profile.location,
-      bio: profile.bio,
-      experienceLevel: profile.experienceLevel,
-      studyHoursPerWeek: profile.studyHoursPerWeek,
-      githubUrl: profile.githubUrl,
-      linkedinUrl: profile.linkedinUrl,
-      portfolioUrl: profile.portfolioUrl,
-      targetCompanyId: profile.targetCompanyId,
-      targetJobRoleId: profile.targetJobRoleId,
-      onboardingCompletedAt: profile.onboardingCompletedAt,
-    },
-    education,
-    skills: studentSkills,
-  });
+    return NextResponse.json({
+      user: { name: user.name, email: user.email, image: user.image },
+      profile: {
+        location: profile.location,
+        bio: profile.bio,
+        experienceLevel: profile.experienceLevel,
+        studyHoursPerWeek: profile.studyHoursPerWeek,
+        githubUrl: profile.githubUrl,
+        linkedinUrl: profile.linkedinUrl,
+        portfolioUrl: profile.portfolioUrl,
+        targetCompanyId: profile.targetCompanyId,
+        targetJobRoleId: profile.targetJobRoleId,
+        onboardingCompletedAt: profile.onboardingCompletedAt,
+      },
+      education,
+      skills: studentSkills,
+    });
+  } catch (error) {
+    return toErrorResponse(error);
+  }
 }
 
 export async function PUT(request: Request) {
   const user = await requireUser();
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
-  const parsed = profileSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 },
-    );
-  }
-  const data = parsed.data;
+    const data = await validateBody(request, profileSchema);
 
   const profile = await getOrCreateProfile(user.id);
 
@@ -142,4 +133,7 @@ export async function PUT(request: Request) {
   }
 
   return NextResponse.json({ ok: true });
+  } catch (error) {
+    return toErrorResponse(error);
+  }
 }

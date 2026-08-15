@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
+import { ApiError, apiOk, toErrorResponse, validateBody } from "@/lib/api";
 
 const schema = z.object({
   name: z.string().min(2).max(100).optional(),
@@ -12,42 +12,35 @@ const schema = z.object({
 
 export async function PUT(request: Request) {
   const user = await requireUser();
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-  }
+    const body = await validateBody(request, schema);
 
-  const data: { name?: string; passwordHash?: string } = {};
+    const data: { name?: string; passwordHash?: string } = {};
 
-  if (parsed.data.name && parsed.data.name !== user.name) {
-    data.name = parsed.data.name;
-  }
-
-  if (parsed.data.newPassword) {
-    if (!parsed.data.currentPassword) {
-      return NextResponse.json({ error: "Current password is required to change your password." }, { status: 400 });
+    if (body.name && body.name !== user.name) {
+      data.name = body.name;
     }
-    const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
-    const valid = existing?.passwordHash
-      ? await bcrypt.compare(parsed.data.currentPassword, existing.passwordHash)
-      : false;
-    if (!valid) {
-      return NextResponse.json({ error: "Current password is incorrect." }, { status: 400 });
+
+    if (body.newPassword) {
+      if (!body.currentPassword) {
+        throw new ApiError(400, "Current password is required to change your password.");
+      }
+      const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
+      const valid = existing?.passwordHash
+        ? await bcrypt.compare(body.currentPassword, existing.passwordHash)
+        : false;
+      if (!valid) {
+        throw new ApiError(400, "Current password is incorrect.");
+      }
+      data.passwordHash = await bcrypt.hash(body.newPassword, 10);
     }
-    data.passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
-  }
 
-  if (Object.keys(data).length === 0) {
-    return NextResponse.json({ ok: true });
-  }
+    if (Object.keys(data).length > 0) {
+      await prisma.user.update({ where: { id: user.id }, data });
+    }
 
-  await prisma.user.update({ where: { id: user.id }, data });
-  return NextResponse.json({ ok: true });
+    return apiOk();
+  } catch (error) {
+    return toErrorResponse(error);
+  }
 }

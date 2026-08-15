@@ -6,6 +6,7 @@ import {
   transcribeAudio,
 } from "@/server/services/communication.service";
 import { recordScoreHistory } from "@/server/scoring/company-readiness.service";
+import { ApiError, isAIServiceError, toErrorResponse } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -27,30 +28,24 @@ export async function POST(request: Request) {
         const buffer = Buffer.from(await audio.arrayBuffer());
         transcript = (await transcribeAudio(buffer)).trim();
         if (!transcript) {
-          return NextResponse.json(
-            { error: "Could not transcribe the audio. Please paste the transcript instead." },
-            { status: 422 },
-          );
+          throw new ApiError(422, "Could not transcribe the audio. Please paste the transcript instead.");
         }
         audioUrl = audio.name || undefined;
       } else if (pasted.trim()) {
         transcript = pasted.trim();
       } else {
-        return NextResponse.json(
-          { error: "Provide an audio recording or paste a transcript." },
-          { status: 400 },
-        );
+        throw new ApiError(400, "Provide an audio recording or paste a transcript.");
       }
     } else {
       const body = (await request.json().catch(() => ({}))) as { transcript?: string };
       transcript = body.transcript?.trim() ?? "";
       if (!transcript) {
-        return NextResponse.json({ error: "Transcript is required" }, { status: 400 });
+        throw new ApiError(400, "Transcript is required");
       }
     }
 
     if (transcript.length > 20000) {
-      return NextResponse.json({ error: "Transcript is too long (max 20k chars)" }, { status: 400 });
+      throw new ApiError(400, "Transcript is too long (max 20k chars)");
     }
 
     const result = await analyzeCommunication(transcript);
@@ -71,8 +66,10 @@ export async function POST(request: Request) {
     await recordScoreHistory(user.id, "COMMUNICATION", result.score, { analysisId: saved.id });
 
     return NextResponse.json({ analysis: result, analysisId: saved.id });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Communication analysis failed.";
-    return NextResponse.json({ error: message }, { status: 502 });
+  } catch (error) {
+    if (isAIServiceError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
+    return toErrorResponse(error);
   }
 }

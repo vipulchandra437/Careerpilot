@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { analyzeGitHub } from "@/server/services/github.service";
 import { recordScoreHistory } from "@/server/scoring/company-readiness.service";
+import { ApiError, isAIServiceError, toErrorResponse, validateBody } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -13,20 +14,10 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const user = await requireUser();
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "A GitHub username is required" }, { status: 400 });
-  }
+    const data = await validateBody(request, schema);
 
-  try {
-    const result = await analyzeGitHub(parsed.data.username);
+    const result = await analyzeGitHub(data.username);
 
     const saved = await prisma.gitHubAnalysis.create({
       data: {
@@ -43,8 +34,13 @@ export async function POST(request: Request) {
     await recordScoreHistory(user.id, "GITHUB", result.score, { username: result.username, analysisId: saved.id });
 
     return NextResponse.json({ analysis: result, analysisId: saved.id });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "GitHub analysis failed.";
-    return NextResponse.json({ error: message }, { status: 422 });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return NextResponse.json({ error: "A GitHub username is required" }, { status: 400 });
+    }
+    if (isAIServiceError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
+    return toErrorResponse(error);
   }
 }

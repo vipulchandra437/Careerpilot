@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,11 +20,42 @@ export function SettingsForm({
   email: string;
   image: string | null;
 }) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(name);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<null | "export" | "delete">(null);
+
+  function exportData() {
+    setBusy("export");
+    // Trigger the download via a transient anchor so the browser saves the
+    // attachment; the auth cookie is attached automatically.
+    const a = document.createElement("a");
+    a.href = "/api/account/export";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  async function deleteAccount() {
+    if (!confirm("Delete your account permanently? All your data (analyses, coding history, reports) will be removed. This cannot be undone.")) {
+      return;
+    }
+    setBusy("delete");
+    try {
+      const res = await fetch("/api/account/delete", { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete account");
+      toast.success("Account deleted");
+      router.push("/login");
+      router.refresh();
+    } catch (e) {
+      setBusy(null);
+      toast.error(e instanceof Error ? e.message : "Failed to delete account");
+    }
+  }
 
   async function saveProfile() {
     if (displayName.trim().length < 2) {
@@ -128,6 +160,27 @@ export function SettingsForm({
             <Button onClick={savePassword} disabled={loading}>
               {loading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Change password
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Data &amp; Privacy</CardTitle>
+          <CardDescription>
+            Download everything we hold about you (GDPR export) or permanently delete your account and all associated data.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="outline" onClick={exportData} disabled={busy !== null}>
+              {busy === "export" ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+              Export my data
+            </Button>
+            <Button variant="destructive" onClick={deleteAccount} disabled={busy !== null}>
+              {busy === "delete" ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              Delete my account
             </Button>
           </div>
         </CardContent>

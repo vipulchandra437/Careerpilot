@@ -53,6 +53,8 @@ export default async function PublicLayout({ children }: LayoutProps<"/">) {
             <span>CareerPilot — AI-powered career readiness for CS students.</span>
           </div>
           <div className="flex gap-6">
+            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground">Terms</Link>
             <Link href="/about" className="hover:text-foreground">About</Link>
             <Link href="/contact" className="hover:text-foreground">Contact</Link>
           </div>

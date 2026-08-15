@@ -3,8 +3,8 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { analyzeProject } from "@/server/services/project.service";
-import { AIServiceError } from "@/server/ai/provider";
 import { recordScoreHistory } from "@/server/scoring/company-readiness.service";
+import { ApiError, isAIServiceError, toErrorResponse, validateParams } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -12,15 +12,15 @@ const paramsSchema = z.object({ id: z.string() });
 
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
-  const { id } = paramsSchema.parse(await context.params);
-
-  const project = await prisma.project.findFirst({
-    where: { id, userId: user.id },
-    select: { id: true, name: true, description: true, repoUrl: true, techStack: true },
-  });
-  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
-
   try {
+    const { id } = await validateParams(paramsSchema, await context.params);
+
+    const project = await prisma.project.findFirst({
+      where: { id, userId: user.id },
+      select: { id: true, name: true, description: true, repoUrl: true, techStack: true },
+    });
+    if (!project) throw new ApiError(404, "Project not found");
+
     const result = await analyzeProject({
       name: project.name,
       description: project.description,
@@ -42,14 +42,10 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     await recordScoreHistory(user.id, "PROJECTS", result.score, { projectId: project.id, analysisId: saved.id });
 
     return NextResponse.json({ analysis: result, analysisId: saved.id });
-  } catch (err) {
-    if (err instanceof AIServiceError) {
-      return NextResponse.json({ error: err.message }, { status: 502 });
+  } catch (error) {
+    if (isAIServiceError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
     }
-    console.error("Project analyze error:", err);
-    return NextResponse.json(
-      { error: "AI analysis is temporarily unavailable. Please try again." },
-      { status: 500 },
-    );
+    return toErrorResponse(error);
   }
 }
