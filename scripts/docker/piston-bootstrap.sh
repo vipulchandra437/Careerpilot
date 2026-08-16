@@ -2,9 +2,11 @@
 # CareerPilot Piston bootstrap.
 # 1) Mirrors the stock entrypoint's cgroup v2 setup (required by isolate).
 # 2) Starts the piston API as the `piston` user.
-# 3) Installs the runtimes we need (python, javascript) IDEMPOTENTLY, in the
+# 3) Installs the runtimes we need (python, node) IDEMPOTENTLY, in the
 #    background with HARD timeouts so a stalled download can never block the
 #    API supervisor. The API stays healthy even while packages download.
+#    NOTE: the install endpoint keys on the package directory name ("node"),
+#    while the app executes with language "javascript" (an alias of node).
 # 4) Keeps the API process alive if a package install crashes it (piston v3's
 #    node-fetch dies on a failed download), so the container never exits.
 #
@@ -105,7 +107,7 @@ install_pkg() {
 # Run installs in the background so the API supervisor below is never blocked.
 (
   install_pkg python 3.10.0
-  install_pkg javascript 18.15.0
+  install_pkg node 18.15.0
 ) >> "$LOG" 2>&1 &
 
 log "bootstrap ready; supervising API (pid $API_PID)"

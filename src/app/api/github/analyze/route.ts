@@ -41,6 +41,11 @@ export async function POST(request: Request) {
     if (isAIServiceError(error)) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
+    // Surface service errors (unknown user, API rate limit) to the user
+    // instead of masking them behind a generic 500.
+    if (error instanceof Error && error.message) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
     return toErrorResponse(error);
   }
 }

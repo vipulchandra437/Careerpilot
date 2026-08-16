@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { rateLimiter } from "@/lib/rate-limit";
+import { metrics } from "@/lib/metrics";
 
 const enabled = (process.env.RATE_LIMIT_ENABLED ?? "true") !== "false";
 const limits = {
@@ -56,6 +57,7 @@ export async function proxy(request: NextRequest) {
     const group = groupFor(pathname);
     const { allowed, retryAfter } = await take(`${group}:${ip}`, limits[group], start);
     if (!allowed) {
+      metrics.increment("careerpilot_rate_limited_total", `group="${group}"`);
       console.warn(
         JSON.stringify({
           event: "rate_limited",
@@ -76,15 +78,25 @@ export async function proxy(request: NextRequest) {
     response = NextResponse.next();
   }
 
-  response.headers.set("X-Request-Id", `${start.toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
+  const requestId = `${start.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  response.headers.set("X-Request-Id", requestId);
+
+  const durationMs = Date.now() - start;
+  const group = pathname.startsWith("/api") ? groupFor(pathname) : "page";
+  metrics.increment(
+    "careerpilot_requests_total",
+    `method="${method}",group="${group}",status="${response.status}"`,
+  );
+  metrics.observe("careerpilot_request_duration_ms", `method="${method}",group="${group}"`, durationMs);
 
   console.log(
     JSON.stringify({
       event: "request",
+      requestId,
       method,
       path: pathname,
       status: response.status,
-      durationMs: Date.now() - start,
+      durationMs,
       ip,
     }),
   );

@@ -13,6 +13,7 @@ interface HealthState {
   uptimeSeconds: number;
   services: {
     database: "ok" | "unavailable";
+    execution: "ok" | "unavailable" | "local";
   };
   executionProvider: string;
   aiProvider: string;
@@ -20,6 +21,18 @@ interface HealthState {
   node: string;
   next: string;
   configIssues: string[];
+}
+
+async function checkExecution(): Promise<HealthState["services"]["execution"]> {
+  if ((process.env.EXECUTION_PROVIDER ?? "local") === "local") return "local";
+  const base = (process.env.PISTON_API_URL ?? "").replace(/\/+$/, "");
+  if (!base) return "unavailable";
+  try {
+    const res = await fetch(`${base}/runtimes`, { signal: AbortSignal.timeout(5000) });
+    return res.ok ? "ok" : "unavailable";
+  } catch {
+    return "unavailable";
+  }
 }
 
 export async function GET() {
@@ -32,13 +45,15 @@ export async function GET() {
   }
 
   const issues = envIssues();
-  const status: HealthState["status"] = dbOk ? "ok" : "degraded";
+  const execution = await checkExecution();
+  const status: HealthState["status"] =
+    dbOk && execution !== "unavailable" ? "ok" : "degraded";
 
   const state: HealthState = {
     status,
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.round(process.uptime()),
-    services: { database: dbOk ? "ok" : "unavailable" },
+    services: { database: dbOk ? "ok" : "unavailable", execution },
     executionProvider: env.EXECUTION_PROVIDER,
     aiProvider: "openrouter",
     rateLimiter: rateLimiterBackend(),
@@ -47,5 +62,5 @@ export async function GET() {
     configIssues: issues,
   };
 
-  return NextResponse.json(state, { status: dbOk ? 200 : 503 });
+  return NextResponse.json(state, { status: state.status === "ok" ? 200 : 503 });
 }

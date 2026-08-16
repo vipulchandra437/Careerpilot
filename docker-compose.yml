@@ -26,7 +26,9 @@ services:
     # must run privileged (this is the documented requirement for Piston).
     # This image exposes its API under /api/v2 (piston-api v3), so the app
     # must point PISTON_API_URL at http://piston:2000/api/v2.
-    image: ghcr.io/engineer-man/piston
+    # Pinned by digest: ghcr only publishes a rolling `latest`, so an immutable
+    # digest prevents a future image change from silently breaking the sandbox.
+    image: ghcr.io/engineer-man/piston@sha256:2f66b7456189c4d713aa986d98eccd0b6ee16d26c7ec5f21b30e942756fd127a
     # Custom bootstrap: sets up cgroups like the stock entrypoint, starts the
     # API, installs python/javascript runtimes on first boot, and keeps the
     # API process alive if a package install crashes it.
