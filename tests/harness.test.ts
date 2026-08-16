@@ -68,8 +68,28 @@ describe("buildPythonWrapper", () => {
 describe("buildJsWrapper", () => {
   it("includes deep equality helper and user code", () => {
     const wrapper = buildJsWrapper("function solution(a, b) { return a + b; }", cases);
-    expect(wrapper).toContain("deepEqual");
+    expect(wrapper).toContain("__cpDeepEqual");
     expect(wrapper).toContain("function solution(a, b)");
     expect(wrapper).toContain("__RESULTS__");
+  });
+
+  it("awaits async solutions so promises are evaluated", () => {
+    const wrapper = buildJsWrapper("async function solution(a, b) { return a + b; }", cases);
+    expect(wrapper).toContain("(async () => {");
+    expect(wrapper).toContain("await solution(...__cp_c.args)");
+  });
+
+  it("writes the marker synchronously and hard-exits to defeat deferred output", () => {
+    const wrapper = buildJsWrapper("function solution(a, b) { return a + b; }", cases);
+    expect(wrapper).toContain('fs.writeSync(1, "__RESULTS__" + __cp_out)');
+    expect(wrapper).toContain("process.exit(0)");
+  });
+});
+
+describe("buildPythonWrapper", () => {
+  it("flushes output and hard-exits to defeat deferred output", () => {
+    const wrapper = buildPythonWrapper("def solution(a, b):\n    return a + b", cases);
+    expect(wrapper).toContain("sys.stdout.flush()");
+    expect(wrapper).toContain("os._exit(0)");
   });
 });

@@ -38,10 +38,14 @@ export async function POST(request: Request) {
     const data = await validateBody(request, schema);
 
     let testCases: unknown;
+    let constraints: unknown;
+    let examples: unknown;
     try {
       testCases = parseJsonField(data.testCases, []);
+      constraints = parseJsonField(data.constraints, []);
+      examples = parseJsonField(data.examples, []);
     } catch {
-      throw new ApiError(400, "testCases must be valid JSON.");
+      throw new ApiError(400, "testCases, constraints, and examples must be valid JSON.");
     }
 
     let problem;
@@ -51,8 +55,8 @@ export async function POST(request: Request) {
           title: data.title,
           slug: data.slug,
           description: data.description,
-          constraints: parseJsonField(data.constraints, []) as object,
-          examples: parseJsonField(data.examples, []) as object,
+          constraints: constraints as object,
+          examples: examples as object,
           difficulty: data.difficulty,
           topics: data.topics as unknown as object,
           companies: [] as unknown as object,

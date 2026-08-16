@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
 
 export async function getOrCreateProfile(userId: string) {
-  let profile = await prisma.studentProfile.findUnique({ where: { userId } });
-  if (!profile) {
-    profile = await prisma.studentProfile.create({ data: { userId } });
-  }
-  return profile;
+  return prisma.studentProfile.upsert({
+    where: { userId },
+    update: {},
+    create: { userId },
+  });
 }
 
 export function proficiencyFromRating(rating: number): "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT" {

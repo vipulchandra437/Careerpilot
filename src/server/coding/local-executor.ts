@@ -39,28 +39,63 @@ function runFile(
 ): Promise<{ stdout: string; stderr: string; code: number | null; timedOut: boolean }> {
   return new Promise((resolve, reject) => {
     const limit = Math.min(Math.max(500, timeLimitMs), HARD_RUN_CAP_MS);
+    // On POSIX, start the child as its own process group so a timeout can
+    // SIGKILL the whole tree (grandchildren included), not just the direct child.
     const child = spawn(cmd, [...args, filePath], {
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
+      detached: process.platform !== "win32",
     });
 
-    let stdout = "";
+    const stdoutChunks: Buffer[] = [];
+    let stdoutBytes = 0;
     let stderr = "";
     let settled = false;
+    const getStdout = () => Buffer.concat(stdoutChunks).toString("utf8");
     const onData = (kind: "stdout" | "stderr") => (chunk: Buffer) => {
-      const text = chunk.toString("utf8");
-      if (kind === "stdout" && stdout.length < MAX_OUTPUT_BYTES) stdout += text;
-      if (kind === "stderr" && stderr.length < MAX_OUTPUT_BYTES) stderr += text;
+      if (kind === "stdout") {
+        // Keep the LAST MAX_OUTPUT_BYTES: the harness prints its results
+        // marker at the end, so front-truncation would discard the results
+        // and every large-output solution would look like a timeout.
+        stdoutChunks.push(chunk);
+        stdoutBytes += chunk.length;
+        while (stdoutBytes > MAX_OUTPUT_BYTES && stdoutChunks.length > 0) {
+          const dropped = stdoutChunks.shift();
+          if (dropped) stdoutBytes -= dropped.length;
+        }
+      } else if (kind === "stderr" && stderr.length < MAX_OUTPUT_BYTES) {
+        stderr += chunk.toString("utf8");
+      }
     };
     child.stdout.on("data", onData("stdout"));
     child.stderr.on("data", onData("stderr"));
+
+    const killTree = () => {
+      if (!child.pid) {
+        child.kill("SIGKILL");
+        return;
+      }
+      try {
+        if (process.platform === "win32") {
+          const killer = spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+            stdio: "ignore",
+            windowsHide: true,
+          });
+          killer.unref();
+        } else {
+          process.kill(-child.pid, "SIGKILL");
+        }
+      } catch {
+        child.kill("SIGKILL");
+      }
+    };
 
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      child.kill("SIGKILL");
-      resolve({ stdout, stderr, code: null, timedOut: true });
+      killTree();
+      resolve({ stdout: getStdout(), stderr, code: null, timedOut: true });
     }, limit);
 
     child.on("error", (err) => {
@@ -74,7 +109,7 @@ function runFile(
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      resolve({ stdout, stderr, code, timedOut: false });
+      resolve({ stdout: getStdout(), stderr, code, timedOut: false });
     });
   });
 }

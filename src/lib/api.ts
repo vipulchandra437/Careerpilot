@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import type { z } from "zod";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 /**
  * Consistent error handling and validation helpers for API routes.
@@ -8,6 +9,14 @@ import type { z } from "zod";
  * (they may throw a Next.js redirect that must propagate), then wrap the rest
  * in try/catch and call `toErrorResponse(error)`.
  */
+
+/** Single password policy shared by register and settings. */
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(200, "Password must be at most 200 characters")
+  .regex(/[a-zA-Z]/, "Password must contain at least one letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
 
 export class ApiError extends Error {
   constructor(
@@ -62,6 +71,24 @@ export async function validateParams<T>(schema: z.ZodType<T>, params: unknown): 
 export function toErrorResponse(error: unknown): NextResponse {
   if (error instanceof ApiError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
+  }
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // Unique constraint violation (e.g. register race between two concurrent
+    // creates) -> the resource already exists.
+    if (error.code === "P2002") {
+      return NextResponse.json({ error: "That record already exists." }, { status: 409 });
+    }
+    // Foreign key violation (e.g. deleting a company that skills reference).
+    if (error.code === "P2003") {
+      return NextResponse.json(
+        { error: "This record is in use and cannot be deleted or updated." },
+        { status: 409 },
+      );
+    }
+    // Record to update/delete does not exist.
+    if (error.code === "P2025") {
+      return NextResponse.json({ error: "Record not found." }, { status: 404 });
+    }
   }
   const requestId = crypto.randomUUID();
   console.error(`[api][500][${requestId}]`, error);

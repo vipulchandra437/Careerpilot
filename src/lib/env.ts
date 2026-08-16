@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 /**
@@ -8,9 +9,18 @@ import { z } from "zod";
  * surfaces them so operators notice immediately.
  */
 
+// In production a missing AUTH_SECRET must never fall back to a known
+// constant (that would let anyone forge sessions). It falls back to a random
+// per-process secret instead, so sessions simply die on restart (forcing
+// re-login) until the operator sets a real secret.
+const defaultAuthSecret = () =>
+  process.env.NODE_ENV === "production"
+    ? randomBytes(32).toString("hex")
+    : "dev-only-insecure-secret";
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  AUTH_SECRET: z.string().min(1).default("dev-only-insecure-secret"),
+  AUTH_SECRET: z.string().min(1).default(defaultAuthSecret),
   AUTH_TRUST_HOST: z.string().optional(),
   DATABASE_URL: z.string().default("file:./dev.db"),
   OPENROUTER_API_KEY: z.string().optional(),
@@ -42,19 +52,29 @@ const REQUIRED_IN_PRODUCTION: Record<string, string> = {
   OPENROUTER_API_KEY: "AI provider key (https://openrouter.ai/keys)",
 };
 
+/** Placeholder-looking secrets that should never be used for signing. */
+const PLACEHOLDER_SECRET = /^(generate-|change-?me|changeme|your[_-]?secret|replace-?me|placeholder|secret)$/i;
+
 /** Returns human-readable config problems (empty when healthy). */
 export function envIssues(): string[] {
   const issues: string[] = [];
 
   if (process.env.NODE_ENV === "production") {
     for (const [key, hint] of Object.entries(REQUIRED_IN_PRODUCTION)) {
-      if (!process.env[key] || process.env[key]!.startsWith("generate-")) {
+      const value = process.env[key];
+      const missing = !value || value.startsWith("generate-");
+      const placeholder = key === "AUTH_SECRET" && value ? PLACEHOLDER_SECRET.test(value) : false;
+      if (missing || placeholder) {
         issues.push(`${key} is required in production — ${hint}`);
       }
     }
     if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("file:")) {
       issues.push("DATABASE_URL must point to PostgreSQL in production");
     }
+  }
+
+  if (process.env.AUTH_SECRET && PLACEHOLDER_SECRET.test(process.env.AUTH_SECRET) && process.env.NODE_ENV !== "test") {
+    issues.push("AUTH_SECRET looks like a placeholder — set a real random secret (generate with `npx auth secret`)");
   }
 
   if (env.EXECUTION_PROVIDER === "local" && process.env.NODE_ENV === "production") {

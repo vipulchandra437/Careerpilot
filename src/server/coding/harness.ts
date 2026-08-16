@@ -22,9 +22,14 @@ export interface ExecutionOutcome {
   runtimeMs: number;
 }
 
-/** JSON deep-equality used by the JS test harness. */
-const JS_HARNESS_FUNCTIONS = `function deepEqual(a, b) {
+/**
+ * JSON deep-equality used by the JS test harness. Function names and harness
+ * locals are prefixed with `__cp` so user solution code cannot shadow them.
+ * NaN compares equal to NaN.
+ */
+const JS_HARNESS_FUNCTIONS = `function __cpDeepEqual(a, b) {
   if (a === b) return true;
+  if (a !== a && b !== b) return true;
   if (typeof a !== typeof b) return false;
   if (a === null || b === null) return false;
   if (typeof a !== "object") return false;
@@ -33,7 +38,7 @@ const JS_HARNESS_FUNCTIONS = `function deepEqual(a, b) {
   if (ka.length !== kb.length) return false;
   for (const k of ka) {
     if (!kb.includes(k)) return false;
-    if (!deepEqual(a[k], b[k])) return false;
+    if (!__cpDeepEqual(a[k], b[k])) return false;
   }
   return true;
 }
@@ -43,18 +48,32 @@ export function buildPythonWrapper(code: string, cases: TestCase[]): string {
   const encoded = JSON.stringify(cases);
   return `${code}
 
-import json, time, traceback
+import json, sys, os, traceback
 
-_cases = json.loads(${JSON.stringify(encoded)})
-_start = time.time()
-_results = []
-for _c in _cases:
+def __cp_safe(v):
+    if isinstance(v, float) and v != v:
+        return "NaN"
+    if isinstance(v, float) and v in (float("inf"), float("-inf")):
+        return "Infinity" if v > 0 else "-Infinity"
+    if isinstance(v, dict):
+        return {k: __cp_safe(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [__cp_safe(x) for x in v]
+    return v
+
+__cp_cases = json.loads(${JSON.stringify(encoded)})
+__cp_results = []
+for __cp_c in __cp_cases:
     try:
-        _got = solution(*_c["args"])
-        _results.append({"ok": _got == _c["expected"], "got": _got, "expected": _c["expected"]})
+        __cp_got = solution(*__cp_c["args"])
+        __cp_results.append({"ok": __cp_got == __cp_c["expected"], "got": __cp_safe(__cp_got), "expected": __cp_safe(__cp_c["expected"])})
     except Exception:
-        _results.append({"ok": False, "error": traceback.format_exc(limit=1).strip().splitlines()[-1], "expected": _c["expected"]})
-print("__RESULTS__" + json.dumps(_results))
+        __cp_results.append({"ok": False, "error": traceback.format_exc(limit=1).strip().splitlines()[-1], "expected": __cp_safe(__cp_c["expected"])})
+print("__RESULTS__" + json.dumps(__cp_results, default=str, allow_nan=False))
+sys.stdout.flush()
+# Hard-exit so background threads spawned by user code cannot print a forged
+# marker after the real one; os._exit skips interpreter shutdown.
+os._exit(0)
 `;
 }
 
@@ -63,18 +82,37 @@ export function buildJsWrapper(code: string, cases: TestCase[]): string {
   return `${JS_HARNESS_FUNCTIONS}
 ${code}
 
-const _cases = ${encoded};
-const _start = Date.now();
-const _results = [];
-for (const _c of _cases) {
-  try {
-    const _got = solution(..._c.args);
-    _results.push({ ok: deepEqual(_got, _c.expected), got: _got, expected: _c.expected });
-  } catch (e) {
-    _results.push({ ok: false, error: String(e), expected: _c.expected });
+(async () => {
+  const __cp_cases = ${encoded};
+  const __cp_results = [];
+  for (const __cp_c of __cp_cases) {
+    try {
+      const __cp_got = await solution(...__cp_c.args);
+      __cp_results.push({ ok: __cpDeepEqual(__cp_got, __cp_c.expected), got: __cp_got, expected: __cp_c.expected });
+    } catch (e) {
+      __cp_results.push({ ok: false, error: String(e && e.message ? e.message : e), expected: __cp_c.expected });
+    }
   }
-}
-console.log("__RESULTS__" + JSON.stringify(_results));
+  let __cp_out;
+  try {
+    __cp_out = JSON.stringify(__cp_results);
+  } catch {
+    __cp_results.forEach((r) => {
+      try { r.got = JSON.stringify(r.got); } catch { r.got = String(r.got); }
+      try { r.expected = JSON.stringify(r.expected); } catch { r.expected = String(r.expected); }
+    });
+    __cp_out = JSON.stringify(__cp_results);
+  }
+  try {
+    // Synchronous write guarantees the marker reaches the pipe before we exit,
+    // and process.exit(0) kills any deferred timers that could forge output.
+    const fs = require("fs");
+    fs.writeSync(1, "__RESULTS__" + __cp_out);
+  } catch {
+    console.log("__RESULTS__" + __cp_out);
+  }
+  process.exit(0);
+})();
 `;
 }
 
@@ -87,7 +125,10 @@ export function parseHarnessOutput(stdout: string): {
   markerFound: boolean;
 } {
   const marker = "__RESULTS__";
-  const markerIdx = stdout.indexOf(marker);
+  // The harness always prints its marker LAST, so take the last occurrence:
+  // user code that prints "__RESULTS__" (accidentally or maliciously) before
+  // a forged JSON array must not be able to spoof pass/fail results.
+  const markerIdx = stdout.lastIndexOf(marker);
   if (markerIdx === -1) {
     return { parsed: null, markerFound: false };
   }

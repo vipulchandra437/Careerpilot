@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { SubmissionStatus } from "@prisma/client";
+import { Prisma, SubmissionStatus } from "@prisma/client";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { executeCode, type CodeLanguage } from "@/server/coding/executor";
@@ -41,8 +41,10 @@ export async function POST(request: Request) {
       throw new ApiError(404, "Problem not found");
     }
 
-    const hidden = (problem.hiddenTestCases as unknown as { args: unknown[]; expected: unknown }[]) ?? [];
-    const visible = (problem.testCases as unknown as { args: unknown[]; expected: unknown }[]) ?? [];
+    const hiddenRaw = problem.hiddenTestCases as unknown;
+    const visibleRaw = problem.testCases as unknown;
+    const hidden = Array.isArray(hiddenRaw) ? (hiddenRaw as { args: unknown[]; expected: unknown }[]) : [];
+    const visible = Array.isArray(visibleRaw) ? (visibleRaw as { args: unknown[]; expected: unknown }[]) : [];
     const cases = hidden.length > 0 ? hidden : visible;
     const outcome = await executeCode(
       data.language as CodeLanguage,
@@ -58,45 +60,56 @@ export async function POST(request: Request) {
     else if (outcome.total > 0 && outcome.passed === outcome.total) status = "ACCEPTED";
     else status = "WRONG_ANSWER";
 
-    const submission = await prisma.codingSubmission.create({
-      data: {
-        userId: user.id,
-        problemId: problem.id,
-        language: data.language,
-        code: data.code,
-        status,
-        passedTests: outcome.passed,
-        totalTests: outcome.total,
-        runtimeMs: outcome.runtimeMs,
-      },
-    });
-
-    const existing = await prisma.codingAssessment.findUnique({
-      where: { userId_problemId: { userId: user.id, problemId: problem.id } },
-      select: { bestScore: true },
-    });
     const score = status === "ACCEPTED" ? 100 : (outcome.passed / Math.max(1, outcome.total)) * 100;
-    const bestScore = Math.max(existing?.bestScore ?? 0, score);
-    await prisma.codingAssessment.upsert({
-      where: { userId_problemId: { userId: user.id, problemId: problem.id } },
-      update: {
-        attempts: { increment: 1 },
-        bestScore,
-        lastSubmittedAt: new Date(),
-      },
-      create: {
-        userId: user.id,
-        problemId: problem.id,
-        attempts: 1,
-        bestScore,
-      },
-    });
 
-    // Progress tracking: record a CODING score point.
-    const difficultyPoints = DIFFICULTY_POINTS[problem.difficulty] ?? 82;
-    const ratio = outcome.total > 0 ? outcome.passed / outcome.total : 0;
-    const codingScore = status === "ACCEPTED" ? difficultyPoints : Math.round(difficultyPoints * ratio);
-    await recordScoreHistory(user.id, "CODING", codingScore, { problemId: problem.id, status });
+    // Serializable isolation prevents a lost update where two concurrent
+    // submits both read bestScore=0 and the higher of the two gets overwritten
+    // (Prisma's default READ COMMITTED does not protect this on PostgreSQL).
+    const submission = await prisma.$transaction(
+      async (tx) => {
+        const created = await tx.codingSubmission.create({
+          data: {
+            userId: user.id,
+            problemId: problem.id,
+            language: data.language,
+            code: data.code,
+            status,
+            passedTests: outcome.passed,
+            totalTests: outcome.total,
+            runtimeMs: outcome.runtimeMs,
+          },
+        });
+
+        const existing = await tx.codingAssessment.findUnique({
+          where: { userId_problemId: { userId: user.id, problemId: problem.id } },
+          select: { bestScore: true },
+        });
+        const bestScore = Math.max(existing?.bestScore ?? 0, score);
+        await tx.codingAssessment.upsert({
+          where: { userId_problemId: { userId: user.id, problemId: problem.id } },
+          update: {
+            attempts: { increment: 1 },
+            bestScore,
+            lastSubmittedAt: new Date(),
+          },
+          create: {
+            userId: user.id,
+            problemId: problem.id,
+            attempts: 1,
+            bestScore,
+          },
+        });
+
+        // Progress tracking: record a CODING score point.
+        const difficultyPoints = DIFFICULTY_POINTS[problem.difficulty] ?? 82;
+        const ratio = outcome.total > 0 ? outcome.passed / outcome.total : 0;
+        const codingScore = status === "ACCEPTED" ? difficultyPoints : Math.round(difficultyPoints * ratio);
+        await recordScoreHistory(user.id, "CODING", codingScore, { problemId: problem.id, status }, tx);
+
+        return created;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     // Optional AI feedback (best-effort).
     let aiFeedback: unknown = null;

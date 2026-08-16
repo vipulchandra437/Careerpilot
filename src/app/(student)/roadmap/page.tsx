@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
+import { notFound } from "next/navigation";
 import { computeReadiness } from "@/server/scoring/readiness.service";
 import { generateRoadmap, flattenRoadmap } from "@/server/services/roadmap.service";
 import { RoadmapView } from "@/components/roadmap/roadmap-view";
@@ -23,21 +24,27 @@ export default async function RoadmapPage() {
   }
 
   const profile = await prisma.studentProfile.findUnique({ where: { userId: user.id } });
-  if (!profile) throw new Error("Student profile not found");
+  if (!profile) notFound();
+
+  const targetRole = readiness.targetRole;
+  if (!targetRole) notFound();
 
   const input = generateRoadmap(readiness.skillCoverageItems);
 
-  const existing = await prisma.learningRoadmap.findFirst({
-    where: { profileId: profile.id, jobRoleId: readiness.targetRole.id, status: "ACTIVE" },
-    include: { tasks: { orderBy: { week: "asc" } } },
-  });
+  // Transaction guards against two concurrent page loads racing to create
+  // duplicate ACTIVE roadmaps for the same profile + job role.
+  const roadmap = await prisma.$transaction(async (tx) => {
+    const existing = await tx.learningRoadmap.findFirst({
+      where: { profileId: profile.id, jobRoleId: targetRole.id, status: "ACTIVE" },
+      include: { tasks: { orderBy: { week: "asc" } } },
+    });
 
-  const roadmap =
-    existing ??
-    (await prisma.learningRoadmap.create({
+    if (existing) return existing;
+
+    return tx.learningRoadmap.create({
       data: {
         profileId: profile.id,
-        jobRoleId: readiness.targetRole.id,
+        jobRoleId: targetRole.id,
         durationWeeks: input.durationWeeks,
         overview: input.overview,
         content: input.phases as unknown as object,
@@ -47,7 +54,8 @@ export default async function RoadmapPage() {
         },
       },
       include: { tasks: { orderBy: { week: "asc" } } },
-    }));
+    });
+  });
 
   const content = (roadmap.content as unknown as { week: number; title: string; description: string }[]) ?? [];
   const phases = content.map((phase) => {

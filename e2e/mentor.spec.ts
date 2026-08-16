@@ -21,9 +21,11 @@ test("user can chat with the AI career mentor", async ({ page }) => {
   await textarea.fill("What should I improve first?");
   await textarea.press("Enter");
 
-  await expect(page.getByText(/thinking/i)).toBeVisible();
-  // Wait for the AI reply (the "Thinking…" indicator disappears).
-  await expect(page.getByText(/thinking/i)).toBeHidden({ timeout: 90_000 });
+  await expect(page.getByText("Thinking…", { exact: true })).toBeVisible();
+  // Wait for the AI reply (the "Thinking…" indicator disappears). Exact-match
+  // the indicator so an AI reply that happens to contain the word "thinking"
+  // can't keep the assertion pinned open.
+  await expect(page.getByText("Thinking…", { exact: true })).toBeHidden({ timeout: 90_000 });
 
   // Greeting + user message + AI reply = 3 bubbles, and the reply must be a
   // real answer, not the offline fallback message.

@@ -105,7 +105,7 @@ services:
       RATE_LIMIT_CODING: ${RATE_LIMIT_CODING:-30}
       RATE_LIMIT_GENERAL: ${RATE_LIMIT_GENERAL:-300}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test:
         - CMD-SHELL

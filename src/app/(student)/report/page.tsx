@@ -16,15 +16,17 @@ export default async function CareerReportPage() {
   const report = buildReportData(readiness, gaps, actions);
 
   // Persist a snapshot for history and admin analytics (at most one per day).
+  // The transaction keeps concurrent page loads from writing duplicates.
   const profile = await prisma.studentProfile.findUnique({ where: { userId: user.id } });
-  const latestReport = await prisma.careerReport.findFirst({
-    where: { userId: user.id },
-    orderBy: { generatedAt: "desc" },
-    select: { generatedAt: true },
-  });
-  const isNewDay = !latestReport || latestReport.generatedAt.toDateString() !== new Date().toDateString();
-  if (isNewDay) {
-    await prisma.careerReport.create({
+  await prisma.$transaction(async (tx) => {
+    const latestReport = await tx.careerReport.findFirst({
+      where: { userId: user.id },
+      orderBy: { generatedAt: "desc" },
+      select: { generatedAt: true },
+    });
+    const isNewDay = !latestReport || latestReport.generatedAt.toDateString() !== new Date().toDateString();
+    if (!isNewDay) return;
+    await tx.careerReport.create({
       data: {
         userId: user.id,
         profileId: profile?.id ?? user.id,
@@ -34,7 +36,7 @@ export default async function CareerReportPage() {
         reportData: report as unknown as object,
       },
     });
-  }
+  });
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">

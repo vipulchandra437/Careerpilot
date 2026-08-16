@@ -158,7 +158,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${value}%`, backgroundColor: scoreColor(value) }}
+                  style={{ width: `${Math.min(100, Math.max(0, value))}%`, backgroundColor: scoreColor(value) }}
                 />
               </div>
             </div>

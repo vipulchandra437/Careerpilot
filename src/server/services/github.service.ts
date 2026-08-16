@@ -1,6 +1,9 @@
 const GITHUB_API = "https://api.github.com";
 const TOKEN = process.env.GITHUB_TOKEN ?? "";
 
+/** User-facing GitHub service errors (unknown user, rate limit, network). */
+export class GitHubServiceError extends Error {}
+
 interface GithubUser {
   login: string;
   name: string | null;
@@ -68,24 +71,33 @@ export interface GitHubAnalysisResult {
 }
 
 async function githubFetch(path: string): Promise<unknown> {
-  const res = await fetch(`${GITHUB_API}${path}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(15000),
-  });
-  if (res.status === 404) throw new Error("GitHub user not found.");
-  if (res.status === 403) throw new Error("GitHub API rate limit reached. Add a GITHUB_TOKEN or try later.");
-  if (!res.ok) throw new Error(`GitHub API error (${res.status}).`);
+  let res: Response;
+  try {
+    res = await fetch(`${GITHUB_API}${path}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (err) {
+    // fetch only rejects on network errors / timeouts (HTTP errors resolve).
+    if (err instanceof Error && err.name === "TimeoutError") {
+      throw new GitHubServiceError("GitHub request timed out. Please try again.");
+    }
+    throw new GitHubServiceError("Unable to reach the GitHub API. Please try again.");
+  }
+  if (res.status === 404) throw new GitHubServiceError("GitHub user not found.");
+  if (res.status === 403) throw new GitHubServiceError("GitHub API rate limit reached. Add a GITHUB_TOKEN or try later.");
+  if (!res.ok) throw new GitHubServiceError(`GitHub API error (${res.status}).`);
   return res.json();
 }
 
 export async function analyzeGitHub(username: string): Promise<GitHubAnalysisResult> {
   const clean = username.replace(/^@/, "").trim();
-  if (!clean) throw new Error("A GitHub username is required.");
+  if (!clean) throw new GitHubServiceError("A GitHub username is required.");
 
   const [userRaw, reposRaw, eventsRaw] = await Promise.all([
     githubFetch(`/users/${clean}`) as Promise<GithubUser>,
@@ -148,7 +160,7 @@ export async function analyzeGitHub(username: string): Promise<GitHubAnalysisRes
   else if (activeDays >= 2) activity = 40;
   else if (activeDays >= 1) activity = 25;
 
-  const score = Math.round(profile * 0.3 + repoScore * 0.4 + activity * 0.3);
+  const score = Math.min(100, Math.max(0, Math.round(profile * 0.3 + repoScore * 0.4 + activity * 0.3)));
 
   const strengths: string[] = [];
   const recommendations: string[] = [];

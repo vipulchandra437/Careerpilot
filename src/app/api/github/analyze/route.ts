@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
-import { analyzeGitHub } from "@/server/services/github.service";
+import { analyzeGitHub, GitHubServiceError } from "@/server/services/github.service";
 import { recordScoreHistory } from "@/server/scoring/company-readiness.service";
-import { ApiError, isAIServiceError, toErrorResponse, validateBody } from "@/lib/api";
+import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -38,12 +38,10 @@ export async function POST(request: Request) {
     if (error instanceof ApiError) {
       return NextResponse.json({ error: "A GitHub username is required" }, { status: 400 });
     }
-    if (isAIServiceError(error)) {
-      return NextResponse.json({ error: error.message }, { status: 502 });
-    }
-    // Surface service errors (unknown user, API rate limit) to the user
-    // instead of masking them behind a generic 500.
-    if (error instanceof Error && error.message) {
+    // Only surface errors produced by the GitHub service (unknown user, API
+    // rate limit, network) — anything else (DB failures, etc.) falls through to
+    // the generic handler so internal details are never leaked.
+    if (error instanceof GitHubServiceError) {
       return NextResponse.json({ error: error.message }, { status: 502 });
     }
     return toErrorResponse(error);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { updateStudentSkills, getOrCreateProfile } from "@/server/services/profile.service";
 import { toErrorResponse, validateBody } from "@/lib/api";
 
@@ -74,17 +75,20 @@ export async function PUT(request: Request) {
 
   const emptyToNull = (v: string | null | undefined) => (v ? v : null);
 
+  // Only write fields the client actually sent; absent keys must not wipe
+  // existing values (a partial PUT should behave like a PATCH).
+  const updateData: Prisma.StudentProfileUncheckedUpdateInput = {};
+  if ("location" in data) updateData.location = emptyToNull(data.location);
+  if ("bio" in data) updateData.bio = emptyToNull(data.bio);
+  if ("experienceLevel" in data) updateData.experienceLevel = data.experienceLevel ?? null;
+  if ("studyHoursPerWeek" in data) updateData.studyHoursPerWeek = data.studyHoursPerWeek ?? null;
+  if ("githubUrl" in data) updateData.githubUrl = emptyToNull(data.githubUrl);
+  if ("linkedinUrl" in data) updateData.linkedinUrl = emptyToNull(data.linkedinUrl);
+  if ("portfolioUrl" in data) updateData.portfolioUrl = emptyToNull(data.portfolioUrl);
+
   await prisma.studentProfile.update({
     where: { id: profile.id },
-    data: {
-      location: emptyToNull(data.location),
-      bio: emptyToNull(data.bio),
-      experienceLevel: data.experienceLevel,
-      studyHoursPerWeek: data.studyHoursPerWeek,
-      githubUrl: emptyToNull(data.githubUrl),
-      linkedinUrl: emptyToNull(data.linkedinUrl),
-      portfolioUrl: emptyToNull(data.portfolioUrl),
-    },
+    data: updateData,
   });
 
   if (data.name && data.name !== user.name) {

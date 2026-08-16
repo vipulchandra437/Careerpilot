@@ -28,15 +28,32 @@ export function SettingsForm({
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<null | "export" | "delete">(null);
 
-  function exportData() {
+  async function exportData() {
     setBusy("export");
-    // Trigger the download via a transient anchor so the browser saves the
-    // attachment; the auth cookie is attached automatically.
-    const a = document.createElement("a");
-    a.href = "/api/account/export";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    try {
+      const res = await fetch("/api/account/export");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to export data");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const disposition = res.headers.get("content-disposition") ?? "";
+      const name = /filename="?([^";]+)/i.exec(disposition)?.[1] ?? "careerpilot-export.json";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Export downloaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to export data");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function deleteAccount() {
@@ -52,8 +69,9 @@ export function SettingsForm({
       router.push("/login");
       router.refresh();
     } catch (e) {
-      setBusy(null);
       toast.error(e instanceof Error ? e.message : "Failed to delete account");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -63,18 +81,23 @@ export function SettingsForm({
       return;
     }
     setLoading(true);
-    const res = await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: displayName.trim() }),
-    });
-    setLoading(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      toast.error(data.error ?? "Failed to update profile");
-      return;
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: displayName.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to update profile");
+        return;
+      }
+      toast.success("Profile updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update profile");
+    } finally {
+      setLoading(false);
     }
-    toast.success("Profile updated");
   }
 
   async function savePassword() {
@@ -87,21 +110,26 @@ export function SettingsForm({
       return;
     }
     setLoading(true);
-    const res = await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword, newPassword }),
-    });
-    setLoading(false);
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      toast.error(data.error ?? "Failed to change password");
-      return;
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to change password");
+        return;
+      }
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Password changed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to change password");
+    } finally {
+      setLoading(false);
     }
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    toast.success("Password changed");
   }
 
   return (

@@ -51,23 +51,28 @@ export function CareerGoalForm({
       return;
     }
     setLoading(true);
-    const res = await fetch("/api/profile/career-goal", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyId, jobRoleId: roleId }),
-    });
-    setLoading(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      toast.error(data.error ?? "Failed to save career goal");
-      return;
-    }
-    setSaved(true);
-    toast.success("Career goal saved");
-    if (!onboardingCompleted) {
-      router.push("/profile");
-    } else {
-      router.refresh();
+    try {
+      const res = await fetch("/api/profile/career-goal", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId, jobRoleId: roleId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to save career goal");
+        return;
+      }
+      setSaved(true);
+      toast.success("Career goal saved");
+      if (!onboardingCompleted) {
+        router.push("/profile");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      toast.error("Unable to reach the server. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 

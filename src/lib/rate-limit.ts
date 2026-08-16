@@ -1,7 +1,7 @@
 import { Redis } from "ioredis";
 
 /**
- * Sliding-window rate limiter.
+ * Fixed-window rate limiter (per minute).
  *
  * Backends:
  * - Redis (`REDIS_URL` set): shared across instances behind a load balancer.
@@ -21,8 +21,26 @@ const WINDOW_MS = 60_000;
 
 class MemoryRateLimiter implements RateLimiter {
   private buckets = new Map<string, { count: number; resetAt: number }>();
+  private ops = 0;
+
+  /** Delete expired buckets and cap the map so it cannot grow unboundedly. */
+  private sweep(now: number): void {
+    this.ops += 1;
+    if (this.ops % 32 !== 0 && this.buckets.size < 4096) return;
+    for (const [key, bucket] of this.buckets) {
+      if (now >= bucket.resetAt) this.buckets.delete(key);
+    }
+    let over = this.buckets.size - 4096;
+    if (over > 0) {
+      for (const key of this.buckets.keys()) {
+        if (over-- <= 0) break;
+        this.buckets.delete(key);
+      }
+    }
+  }
 
   async take(key: string, limit: number, now: number): Promise<TakeResult> {
+    this.sweep(now);
     const bucket = this.buckets.get(key);
     if (!bucket || now >= bucket.resetAt) {
       this.buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });

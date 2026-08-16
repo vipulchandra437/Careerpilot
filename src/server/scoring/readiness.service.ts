@@ -67,7 +67,9 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
     select: { overallScore: true },
   });
   const resumeCount = await prisma.resume.count({ where: { profileId: profile.id } });
-  scores.RESUME = latestResumeAnalysis?.overallScore ?? (resumeCount > 0 ? 50 : 0);
+  scores.RESUME = latestResumeAnalysis?.overallScore != null
+    ? clamp(Math.round(latestResumeAnalysis.overallScore))
+    : (resumeCount > 0 ? 50 : 0);
 
   // Coding: performance + volume
   const submissions = await prisma.codingSubmission.findMany({
@@ -91,7 +93,7 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
   const attempted = bestPerProblem.size;
   if (attempted > 0) performance /= attempted;
   const volume = Math.min(1, accepted / CODING_TARGET_PROBLEMS);
-  scores.CODING = attempted > 0 ? Math.round(0.7 * performance + 0.3 * volume * 100) : 0;
+  scores.CODING = attempted > 0 ? clamp(Math.round(0.7 * performance + 0.3 * volume * 100)) : 0;
 
   // Interview: latest completed score
   const latestInterview = await prisma.interview.findFirst({
@@ -99,7 +101,7 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
     orderBy: { endedAt: "desc" },
     select: { score: true },
   });
-  scores.INTERVIEW = latestInterview?.score ? Math.round(latestInterview.score) : 0;
+  scores.INTERVIEW = latestInterview?.score != null ? clamp(Math.round(latestInterview.score)) : 0;
 
   // Communication
   const latestComm = await prisma.communicationAnalysis.findFirst({
@@ -107,7 +109,7 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
     orderBy: { createdAt: "desc" },
     select: { score: true },
   });
-  scores.COMMUNICATION = latestComm?.score ?? 0;
+  scores.COMMUNICATION = latestComm?.score != null ? clamp(Math.round(latestComm.score)) : 0;
 
   // Projects: mean of each project's latest analysis score
   const projects = await prisma.project.findMany({
@@ -117,8 +119,8 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
   if (projects.length > 0) {
     const withScores = projects.filter((p) => p.analyses.length > 0);
     if (withScores.length > 0) {
-      scores.PROJECTS = Math.round(
-        withScores.reduce((sum, p) => sum + p.analyses[0].score, 0) / withScores.length,
+      scores.PROJECTS = clamp(
+        Math.round(withScores.reduce((sum, p) => sum + p.analyses[0].score, 0) / withScores.length),
       );
     } else {
       scores.PROJECTS = 0;
@@ -131,7 +133,7 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
     orderBy: { createdAt: "desc" },
     select: { score: true },
   });
-  scores.GITHUB = latestGitHub?.score ?? 0;
+  scores.GITHUB = latestGitHub?.score != null ? clamp(Math.round(latestGitHub.score)) : 0;
 
   // LinkedIn
   const latestLinkedIn = await prisma.linkedInAnalysis.findFirst({
@@ -139,7 +141,7 @@ export async function computeReadiness(userId: string): Promise<ReadinessResult>
     orderBy: { createdAt: "desc" },
     select: { score: true },
   });
-  scores.LINKEDIN = latestLinkedIn?.score ?? 0;
+  scores.LINKEDIN = latestLinkedIn?.score != null ? clamp(Math.round(latestLinkedIn.score)) : 0;
 
   // Skill coverage vs target role
   const requirements: RequirementWithSkill[] = (profile.targetJobRole?.skillRequirements ?? []).map(

@@ -242,10 +242,10 @@ export function InterviewWorkspace({
   }
 
   if (interview) {
-    const question = interview.questions[current];
-    const answered = Object.keys(evaluations).length;
-    const progress = ((answered + (current < interview.questions.length ? 1 : 0)) / interview.questions.length) * 100;
-    const done = evaluations[question.id] !== undefined;
+  const question = interview.questions[current];
+  const answered = Object.keys(evaluations).length;
+  const progress = (answered / interview.questions.length) * 100;
+  const done = evaluations[question.id] !== undefined;
 
     return (
       <div className="space-y-6">

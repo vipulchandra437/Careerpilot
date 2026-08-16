@@ -7,6 +7,7 @@ import { aiService } from "@/server/ai";
 import {
   resumeContentSchema,
   resumeToText,
+  deterministicAnalyzeResume,
 } from "@/server/services/resume-content";
 import { getOrCreateProfile } from "@/server/services/profile.service";
 import mammoth from "mammoth";
@@ -28,6 +29,26 @@ const contentSchema = z.object({
   targetCompany: z.string().optional(),
   targetRole: z.string().optional(),
 });
+
+/** AI-first resume analysis with a deterministic fallback on failure. */
+async function analyzeWithFallback(
+  resumeText: string,
+  targetCompany?: string,
+  targetRole?: string,
+): Promise<Awaited<ReturnType<typeof aiService.analyzeResume>>> {
+  if (aiService.isConfigured()) {
+    try {
+      return await aiService.analyzeResume(resumeText, targetCompany, targetRole);
+    } catch (err) {
+      if (err instanceof AIServiceError) {
+        console.error("Resume AI analysis failed, using deterministic fallback:", err.message);
+      } else {
+        throw err;
+      }
+    }
+  }
+  return deterministicAnalyzeResume(resumeText, targetCompany, targetRole);
+}
 
 async function extractTextFromFile(file: File): Promise<string> {
   const type = file.type.toLowerCase();
@@ -54,13 +75,6 @@ async function extractTextFromFile(file: File): Promise<string> {
 
 export async function POST(request: Request) {
   const user = await requireUser();
-
-  if (!aiService.isConfigured()) {
-    return NextResponse.json(
-      { error: "AI analysis is temporarily unavailable. Please try again." },
-      { status: 503 },
-    );
-  }
 
   const contentType = request.headers.get("content-type") ?? "";
 
@@ -114,7 +128,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const analysis = await aiService.analyzeResume(resumeText, targetCompany, targetRole);
+    const analysis = await analyzeWithFallback(resumeText, targetCompany, targetRole);
 
     // Persist the analysis against a resume record.
     const profile = await getOrCreateProfile(user.id);

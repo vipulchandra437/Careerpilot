@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { Play, CheckCircle2, XCircle, Loader2, ChevronRight } from "lucide-react";
@@ -94,7 +94,10 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
 
+  const requestedRef = useRef<string | null>(null);
+
   const loadProblem = useCallback(async (id: string) => {
+    requestedRef.current = id;
     setLoadingDetail(true);
     setProblemId(id);
     setRunResult(null);
@@ -103,12 +106,16 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
       const res = await fetch(`/api/coding/problems/${id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load problem");
+      // Bail out if a newer problem was requested while this one was in
+      // flight; otherwise a slow response could overwrite the current editor.
+      if (requestedRef.current !== id) return;
       setProblem(data.problem);
       setCode(starterFor(data.problem, language));
     } catch (e) {
+      if (requestedRef.current !== id) return;
       toast.error(e instanceof Error ? e.message : "Failed to load problem");
     } finally {
-      setLoadingDetail(false);
+      if (requestedRef.current === id) setLoadingDetail(false);
     }
   }, [language]);
 

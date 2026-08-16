@@ -78,9 +78,14 @@ export class OpenRouterProvider {
       );
     }
 
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: unknown } }[];
-    };
+    let data: { choices?: { message?: { content?: unknown } }[] };
+    try {
+      data = (await response.json()) as { choices?: { message?: { content?: unknown } }[] };
+    } catch {
+      throw new AIServiceError(
+        "AI provider returned an unparseable response body.",
+      );
+    }
     const content = data?.choices?.[0]?.message?.content;
     if (typeof content !== "string" || !content.trim()) {
       throw new AIServiceError("AI provider returned an empty response.");

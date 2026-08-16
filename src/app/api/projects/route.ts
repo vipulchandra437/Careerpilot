@@ -10,7 +10,7 @@ const createSchema = z.object({
   name: z.string().min(1).max(200),
   repoUrl: z.string().url().or(z.literal("")).optional().nullable(),
   description: z.string().max(4000).optional().nullable(),
-  techStack: z.array(z.string()).max(50).default([]),
+  techStack: z.array(z.string().trim().min(1).max(100)).max(50).default([]),
 });
 
 export async function GET() {

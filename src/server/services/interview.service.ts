@@ -135,9 +135,18 @@ export async function evaluateAnswer(question: string, answer: string, type: str
 
 export function generateQuestions(type: string, difficulty: string, count = 5): string[] {
   const bank = QUESTION_BANK[type] ?? QUESTION_BANK.HR;
-  // Deterministic seeded selection so order varies slightly by difficulty.
+  // Deterministic seeded Fisher-Yates shuffle so order varies slightly by
+  // difficulty without violating the sort comparator contract (a naive
+  // comparator here can return negative for both (a,b) and (b,a), which V8
+  // rejects with "Comparison function violates comparator contract").
   const seed = difficulty.length + type.length;
-  const shuffled = [...bank].sort((a, b) => (a.charCodeAt(0) * seed) % 7 - (b.charCodeAt(0) * seed) % 5);
+  const shuffled = [...bank];
+  let state = seed;
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    state = (state + i * 2654435761) % (i + 1);
+    const j = state;
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   return shuffled.slice(0, Math.min(count, bank.length));
 }
 

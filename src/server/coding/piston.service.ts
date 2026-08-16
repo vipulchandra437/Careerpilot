@@ -21,13 +21,18 @@ interface PistonRuntime {
 }
 
 let cachedRuntimes: PistonRuntime[] | null = null;
+let cachedRuntimesAt = 0;
+const RUNTIMES_TTL_MS = 10 * 60 * 1000;
 
 async function getRuntimes(): Promise<PistonRuntime[]> {
-  if (cachedRuntimes) return cachedRuntimes;
+  // Refresh periodically so newly installed runtimes (e.g. after a Piston
+  // upgrade) are picked up instead of being cached forever.
+  if (cachedRuntimes && Date.now() - cachedRuntimesAt < RUNTIMES_TTL_MS) return cachedRuntimes;
   try {
     const res = await fetch(RUNTIMES_URL, { cache: "no-store", signal: AbortSignal.timeout(10000) });
     if (res.ok) {
       cachedRuntimes = (await res.json()) as PistonRuntime[];
+      cachedRuntimesAt = Date.now();
     }
   } catch {
     // fall through to known versions
@@ -107,10 +112,25 @@ export async function executeCode(
     };
   }
 
-  const data = (await res.json()) as {
+  let data: {
     run?: { stdout?: string; stderr?: string; code?: number; signal?: string | null };
     compile?: { stderr?: string; code?: number };
   };
+  try {
+    data = (await res.json()) as {
+      run?: { stdout?: string; stderr?: string; code?: number; signal?: string | null };
+      compile?: { stderr?: string; code?: number };
+    };
+  } catch {
+    return {
+      passed: 0,
+      total: cases.length,
+      results: [],
+      runtimeError: "Sandbox returned an unparseable response.",
+      timedOut: false,
+      runtimeMs: Date.now() - started,
+    };
+  }
 
   const runtimeMs = Date.now() - started;
   const stdout = data.run?.stdout ?? "";

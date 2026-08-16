@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { ScoreType } from "@prisma/client";
+import { Prisma, ScoreType } from "@prisma/client";
 import {
   CATEGORY_KEYS,
   CategoryKey,
@@ -34,8 +34,9 @@ export async function recordScoreHistory(
   type: ScoreType,
   score: number,
   meta?: Record<string, unknown>,
+  tx: Prisma.TransactionClient = prisma,
 ) {
-  await prisma.scoreHistory.create({
+  await tx.scoreHistory.create({
     data: { userId, type, score, meta: (meta as object) ?? undefined },
   });
 }
@@ -43,11 +44,16 @@ export async function recordScoreHistory(
 /**
  * Compute readiness for a specific company + job role (may differ from the
  * student's selected target). Deterministic: real data + role weights only.
+ *
+ * Reads are side-effect free; pass `persist: true` (e.g. from an explicit
+ * action) to store the result and a score-history point. Read-only views such
+ * as the readiness page must not persist on every render.
  */
 export async function computeCompanyReadiness(
   userId: string,
   companyId: string,
   jobRoleId: string,
+  options?: { persist?: boolean },
 ): Promise<CompanyReadinessResult> {
   const profile = await prisma.studentProfile.findUnique({
     where: { userId },
@@ -94,29 +100,31 @@ export async function computeCompanyReadiness(
     weight: Math.round(weights[key]),
   }));
 
-  // Persist results.
-  await prisma.companyReadiness.upsert({
-    where: { profileId_jobRoleId: { profileId: profile.id, jobRoleId } },
-    update: {
-      companyId,
-      overallScore: overall,
-      breakdown: breakdown as unknown as object,
-      computedAt: new Date(),
-    },
-    create: {
-      profileId: profile.id,
+  if (options?.persist) {
+    // Persist results.
+    await prisma.companyReadiness.upsert({
+      where: { profileId_jobRoleId: { profileId: profile.id, jobRoleId } },
+      update: {
+        companyId,
+        overallScore: overall,
+        breakdown: breakdown as unknown as object,
+        computedAt: new Date(),
+      },
+      create: {
+        profileId: profile.id,
+        companyId,
+        jobRoleId,
+        overallScore: overall,
+        breakdown: breakdown as unknown as object,
+      },
+    });
+
+    await recordScoreHistory(userId, "COMPANY_READINESS", overall, {
       companyId,
       jobRoleId,
-      overallScore: overall,
-      breakdown: breakdown as unknown as object,
-    },
-  });
-
-  await recordScoreHistory(userId, "COMPANY_READINESS", overall, {
-    companyId,
-    jobRoleId,
-    company: role.companyId,
-  });
+      company: role.companyId,
+    });
+  }
 
   return { overall, breakdown, scores, weights, companyId, jobRoleId };
 }

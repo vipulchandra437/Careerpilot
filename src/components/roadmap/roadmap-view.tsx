@@ -93,29 +93,31 @@ export function RoadmapView({
             <p className="text-sm text-muted-foreground">{phase.description}</p>
           </CardHeader>
           <CardContent className="space-y-2">
-            {phase.tasks.map((task) => (
-              <button
-                key={task.id}
-                onClick={() => toggle(task)}
-                disabled={toggling === task.id}
-                className="flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent disabled:opacity-60"
-              >
-                {task.completed ? (
-                  <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-500" />
-                ) : (
-                  <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className={task.completed ? "font-medium text-muted-foreground line-through" : "font-medium"}>
-                    {task.title}
-                  </p>
-                  {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
-                </div>
-                <Badge variant={task.type === "DAILY" ? "secondary" : "outline"} className="shrink-0">
-                  {task.type.toLowerCase()}
-                </Badge>
-              </button>
-            ))}
+            {tasks
+              .filter((t) => t.week === phase.week)
+              .map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => toggle(task)}
+                  disabled={toggling === task.id}
+                  className="flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent disabled:opacity-60"
+                >
+                  {task.completed ? (
+                    <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-500" />
+                  ) : (
+                    <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className={task.completed ? "font-medium text-muted-foreground line-through" : "font-medium"}>
+                      {task.title}
+                    </p>
+                    {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
+                  </div>
+                  <Badge variant={task.type === "DAILY" ? "secondary" : "outline"} className="shrink-0">
+                    {task.type.toLowerCase()}
+                  </Badge>
+                </button>
+              ))}
           </CardContent>
         </Card>
       ))}

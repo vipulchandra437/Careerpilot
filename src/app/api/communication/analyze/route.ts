@@ -25,6 +25,13 @@ export async function POST(request: Request) {
       const pasted = (formData.get("transcript") as string | null) ?? "";
 
       if (audio instanceof File && audio.size > 0) {
+        if (audio.size > 10 * 1024 * 1024) {
+          throw new ApiError(413, "Audio is too large (max 10 MB).");
+        }
+        const allowedTypes = new Set(["audio/webm", "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg", "audio/x-wav", ""]);
+        if (audio.type && !allowedTypes.has(audio.type)) {
+          throw new ApiError(415, "Unsupported audio type. Use webm, mp3, mp4, wav, or ogg.");
+        }
         const buffer = Buffer.from(await audio.arrayBuffer());
         transcript = (await transcribeAudio(buffer)).trim();
         if (!transcript) {

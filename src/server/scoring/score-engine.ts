@@ -71,11 +71,18 @@ export function normalizeWeights(weights: Weights | null | undefined): Record<Ca
   };
   if (weights) {
     for (const key of CATEGORY_KEYS) {
-      if (typeof weights[key] === "number") merged[key] = weights[key] as number;
+      // Ignore non-finite and negative values so a corrupted weights JSON can
+      // never produce NaN or negative contributions in the final score.
+      const value = weights[key];
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        merged[key] = value;
+      }
     }
   }
   const total = CATEGORY_KEYS.reduce((sum, k) => sum + merged[k], 0);
-  if (total <= 0) return merged;
+  // All-zero/negative weights would make every score NaN or zero — fall back
+  // to the sane defaults instead of propagating broken config.
+  if (total <= 0) return { ...DEFAULT_WEIGHTS } as Record<CategoryKey, number>;
   const normalized = { ...merged };
   for (const k of CATEGORY_KEYS) normalized[k] = (normalized[k] / total) * 100;
   return normalized;

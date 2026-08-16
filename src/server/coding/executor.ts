@@ -20,10 +20,18 @@ export async function executeCode(
     return executePiston(language, code, cases, timeLimitMs);
   }
 
+  // Fail closed: running untrusted user code as the server OS user is RCE.
+  // The local executor is for development only.
   if (process.env.NODE_ENV === "production") {
-    console.warn(
-      "[executor] EXECUTION_PROVIDER=local in production. Prefer a self-hosted Piston/Judge0 sandbox.",
-    );
+    return {
+      passed: 0,
+      total: cases.length,
+      results: [],
+      runtimeError:
+        "Code execution is disabled: EXECUTION_PROVIDER=piston is required in production.",
+      timedOut: false,
+      runtimeMs: 0,
+    };
   }
   return executeLocal(language, code, cases, timeLimitMs);
 }

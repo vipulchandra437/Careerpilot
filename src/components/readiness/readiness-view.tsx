@@ -78,7 +78,7 @@ export function ReadinessView({
                 <Progress value={item.score} className="flex-1" />
                 <div className="w-24">
                   <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full" style={{ width: `${item.weight}%`, backgroundColor: "var(--chart-4)" }} />
+                    <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, item.weight))}%`, backgroundColor: "var(--chart-4)" }} />
                   </div>
                 </div>
               </div>

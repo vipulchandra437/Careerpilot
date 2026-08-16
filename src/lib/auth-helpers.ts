@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 
 export type SessionUser = {
@@ -9,18 +10,32 @@ export type SessionUser = {
   role: string;
 };
 
+/**
+ * Verifies the session's user still exists. A signed session token outlives
+ * the account it was issued to, so without this check a deleted user could
+ * keep calling authenticated routes.
+ */
+async function liveUser(): Promise<SessionUser | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, email: true, image: true, role: true },
+  });
+  if (!user) return null;
+  return user;
+}
+
 /** Returns the authenticated user or redirects to /login. */
 export async function requireUser(): Promise<SessionUser> {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-  return session.user as SessionUser;
+  const user = await liveUser();
+  if (!user) redirect("/login");
+  return user;
 }
 
 /** Returns the authenticated user or null (for public-ish pages). */
 export async function getOptionalUser(): Promise<SessionUser | null> {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return session.user as SessionUser;
+  return liveUser();
 }
 
 /** Requires an admin role or redirects to /dashboard. */

@@ -841,6 +841,13 @@ const EXTRA_SKILLS: { name: string; category: SkillCategory }[] = [
 ];
 
 async function main() {
+  // Never upsert admin/demo accounts with known credentials into a real
+  // production database by accident. Opt in explicitly if truly required.
+  if (process.env.NODE_ENV === "production" && process.env.SEED_ALLOW_PRODUCTION !== "true") {
+    console.error("Refusing to seed in production. Set SEED_ALLOW_PRODUCTION=true to override.");
+    process.exit(1);
+  }
+
   console.log("Seeding database...");
 
   // --- Skills ---
@@ -971,7 +978,11 @@ async function main() {
 
   // --- Demo student profile (populated so every screen has real data) ---
   const demoCompany = await prisma.company.findUnique({ where: { slug: "microsoft" } });
-  const demoRole = await prisma.jobRole.findFirst({ where: { slug: "software-engineer" } });
+  // Scope the role lookup to the demo company so the target is deterministic
+  // even if other companies share the "software-engineer" slug.
+  const demoRole = demoCompany
+    ? await prisma.jobRole.findFirst({ where: { companyId: demoCompany.id, slug: "software-engineer" } })
+    : null;
   if (demoCompany && demoRole) {
     const demoProfile = await prisma.studentProfile.upsert({
       where: { userId: demo.id },

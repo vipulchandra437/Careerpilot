@@ -33,10 +33,28 @@ function groupFor(pathname: string): keyof typeof limits {
 }
 
 function clientIp(request: NextRequest): string {
+  const trustProxy = (process.env.TRUST_PROXY ?? "false") === "true";
+  if (trustProxy) {
+    // Behind a trusted reverse proxy, x-real-ip is set from the socket peer and
+    // cannot be forged by the client. Otherwise prefer the rightmost
+    // x-forwarded-for entry: a well-configured proxy appends to the chain, so
+    // the leftmost value is client-controlled while the last is proxy-added.
+    const realIp = request.headers.get("x-real-ip");
+    if (realIp) return realIp;
+    const forwarded = request.headers.get("x-forwarded-for");
+    if (forwarded) {
+      const parts = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
+      if (parts.length > 0) return parts[parts.length - 1] ?? "unknown";
+    }
+    return "unknown";
+  }
+  // No trusted proxy: Next fills x-forwarded-for from the socket peer only when
+  // the client did not send the header, so in the common case this is the real
+  // address. (A client can still spoof the header directly; without socket
+  // access in middleware this is the best available signal — production runs
+  // behind a reverse proxy with TRUST_PROXY=true.)
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) return realIp;
   return "unknown";
 }
 
@@ -52,10 +70,15 @@ export async function proxy(request: NextRequest) {
 
   let response: NextResponse;
   const mutating = method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH";
+  const group: keyof typeof limits = pathname.startsWith("/api") ? groupFor(pathname) : "general";
+
+  // Always rate-limit mutating API requests. When no client IP can be derived
+  // (no proxy and no forwarding header) all such requests share a single bucket
+  // per group, which still caps abuse instead of disabling limiting entirely.
+  const rateLimitKey = `${group}:${ip}`;
 
   if (enabled && mutating && pathname.startsWith("/api")) {
-    const group = groupFor(pathname);
-    const { allowed, retryAfter } = await take(`${group}:${ip}`, limits[group], start);
+    const { allowed, retryAfter } = await take(rateLimitKey, limits[group], start);
     if (!allowed) {
       metrics.increment("careerpilot_rate_limited_total", `group="${group}"`);
       console.warn(
@@ -82,7 +105,6 @@ export async function proxy(request: NextRequest) {
   response.headers.set("X-Request-Id", requestId);
 
   const durationMs = Date.now() - start;
-  const group = pathname.startsWith("/api") ? groupFor(pathname) : "page";
   metrics.increment(
     "careerpilot_requests_total",
     `method="${method}",group="${group}",status="${response.status}"`,

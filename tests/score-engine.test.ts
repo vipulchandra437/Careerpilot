@@ -29,6 +29,13 @@ describe("normalizeWeights", () => {
     const total = Object.values(w).reduce((a, b) => a + b, 0);
     expect(total).toBeGreaterThan(0);
   });
+
+  it("ignores NaN and negative values so scores can never go NaN", () => {
+    const w = normalizeWeights({ CODING: NaN, RESUME: -50, INTERVIEW: 25 } as never);
+    const values = Object.values(w);
+    expect(values.every((v) => Number.isFinite(v) && v >= 0)).toBe(true);
+    expect(values.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 5);
+  });
 });
 
 describe("computeOverall", () => {

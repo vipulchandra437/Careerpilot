@@ -6,8 +6,6 @@ import { toErrorResponse } from "@/lib/api";
 
 export const runtime = "nodejs";
 
-const DIFFICULTY_RANK: Record<string, number> = { EASY: 0, MEDIUM: 1, HARD: 2 };
-
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(100),
@@ -25,7 +23,9 @@ export async function GET(request: Request) {
 
     const [problems, total] = await Promise.all([
       prisma.codingProblem.findMany({
-        orderBy: { createdAt: "asc" },
+        // Sort by difficulty in the DB (Postgres enum order: EASY, MEDIUM,
+        // HARD) so pagination stays correct across pages.
+        orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
         skip: (page - 1) * perPage,
         take: perPage,
         select: {
@@ -62,8 +62,7 @@ export async function GET(request: Request) {
           solved,
           bestRatio,
         };
-      })
-      .sort((a, b) => DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty]);
+      });
 
     return NextResponse.json({
       problems: items,
