@@ -32,3 +32,10 @@ export function formatDateTime(input: string | number | Date): string {
   if (Number.isNaN(date.getTime())) return "—"
   return dateTimeFormatter.format(date)
 }
+
+export function scoreColor(score: number) {
+  if (score >= 85) return "var(--chart-1)";
+  if (score >= 70) return "var(--chart-2)";
+  if (score >= 50) return "var(--chart-3)";
+  return "var(--chart-5)";
+}

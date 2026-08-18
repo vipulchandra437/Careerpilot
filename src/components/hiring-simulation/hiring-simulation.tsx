@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Briefcase, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Clock } from "lucide-react";
+import { scoreColor } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,13 +17,6 @@ type Stage = {
   score: number;
   evidence: Record<string, { score: number; present: boolean }>;
   passThreshold: number;
-};
-
-const scoreColor = (score: number) => {
-  if (score >= 85) return "var(--chart-1)";
-  if (score >= 70) return "var(--chart-2)";
-  if (score >= 50) return "var(--chart-3)";
-  return "var(--chart-5)";
 };
 
 function stageVerdict(stage: Stage): "PASS" | "FAIL" {

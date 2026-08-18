@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 /**
  * Typed, validated environment configuration.
@@ -41,9 +42,9 @@ const parsed = envSchema.safeParse(process.env);
 export const env = parsed.success ? parsed.data : (envSchema.parse({}) as z.infer<typeof envSchema>);
 
 if (!parsed.success) {
-  console.warn(
-    "[env] invalid configuration:",
-    parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+  logger.warn(
+    "Invalid environment configuration",
+    { issues: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") },
   );
 }
 

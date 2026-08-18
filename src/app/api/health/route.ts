@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { version as nextVersion } from "next/package.json";
 import { env, envIssues } from "@/lib/env";
 import { rateLimiterBackend } from "@/lib/rate-limit";
+import { getLastSecurityEventTimestamp, getSecurityEventsInWindow } from "@/lib/security-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,13 @@ interface HealthState {
   node: string;
   next: string;
   configIssues: string[];
+  security: {
+    csrfConfigured: boolean;
+    rateLimitingActive: boolean;
+    securityMiddleware: boolean;
+    lastSecurityEvent: string | null;
+    suspiciousEventsInWindow: number;
+  };
 }
 
 async function checkExecution(): Promise<HealthState["services"]["execution"]> {
@@ -49,6 +57,8 @@ export async function GET() {
   const status: HealthState["status"] =
     dbOk && execution !== "unavailable" ? "ok" : "degraded";
 
+  const rateLimitActive = (process.env.RATE_LIMIT_ENABLED ?? "true") !== "false";
+
   const state: HealthState = {
     status,
     timestamp: new Date().toISOString(),
@@ -60,6 +70,13 @@ export async function GET() {
     node: process.version,
     next: nextVersion,
     configIssues: issues,
+    security: {
+      csrfConfigured: true,
+      rateLimitingActive: rateLimitActive,
+      securityMiddleware: true,
+      lastSecurityEvent: getLastSecurityEventTimestamp(),
+      suspiciousEventsInWindow: getSecurityEventsInWindow(),
+    },
   };
 
   return NextResponse.json(state, { status: state.status === "ok" ? 200 : 503 });

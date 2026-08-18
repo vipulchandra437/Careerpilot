@@ -10,6 +10,7 @@ import {
   deterministicAnalyzeResume,
 } from "@/server/services/resume-content";
 import { getOrCreateProfile } from "@/server/services/profile.service";
+import { logger } from "@/lib/logger";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 
@@ -41,7 +42,7 @@ async function analyzeWithFallback(
       return await aiService.analyzeResume(resumeText, targetCompany, targetRole);
     } catch (err) {
       if (err instanceof AIServiceError) {
-        console.error("Resume AI analysis failed, using deterministic fallback:", err.message);
+        logger.warn("Resume AI analysis failed, using deterministic fallback", { reason: err.message });
       } else {
         throw err;
       }
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
     if (err instanceof AIServiceError) {
       return NextResponse.json({ error: err.message }, { status: 502 });
     }
-    console.error("Resume analyze error:", err);
+    logger.error("Resume analyze error", undefined, err);
     return NextResponse.json(
       { error: "AI analysis is temporarily unavailable. Please try again." },
       { status: 502 },

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Target, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { scoreColor } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScoreRing } from "@/components/ui/score-ring";
 import { Badge } from "@/components/ui/badge";
@@ -36,13 +37,6 @@ export interface DashboardData {
   actions: DashboardAction[];
   scoreHistory: { date: string; score: number }[];
 }
-
-const scoreColor = (score: number) => {
-  if (score >= 85) return "var(--chart-1)";
-  if (score >= 70) return "var(--chart-2)";
-  if (score >= 50) return "var(--chart-3)";
-  return "var(--chart-5)";
-};
 
 export function DashboardView({ data }: { data: DashboardData }) {
   const hasTarget = Boolean(data.targetCompany && data.targetRole);

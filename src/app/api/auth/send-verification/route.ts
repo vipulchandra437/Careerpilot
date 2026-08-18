@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { toErrorResponse } from "@/lib/api";
 import { generateEmailVerificationToken } from "@/lib/email-verify";
 import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export async function POST() {
   try {
@@ -22,7 +23,7 @@ export async function POST() {
 
     const token = await generateEmailVerificationToken(session.user.email);
     const verifyUrl = `http://localhost:3000/verify-email?token=${token}&email=${encodeURIComponent(session.user.email)}`;
-    console.log(`[DEV] Email verification URL: ${verifyUrl}`);
+    logger.debug("DEV email verification URL generated", { url: verifyUrl });
 
     return NextResponse.json({ message: "Verification link sent." });
   } catch (error) {

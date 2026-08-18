@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { rateLimiter } from "@/lib/rate-limit";
 import { metrics } from "@/lib/metrics";
+import { logSecurityEvent } from "@/lib/security-logger";
 
 const enabled = (process.env.RATE_LIMIT_ENABLED ?? "true") !== "false";
 const limits = {
@@ -10,6 +11,24 @@ const limits = {
   coding: parseInt(process.env.RATE_LIMIT_CODING ?? "30", 10),
   general: parseInt(process.env.RATE_LIMIT_GENERAL ?? "300", 10),
 };
+
+const DAILY_AI_LIMITS: Record<string, number> = {
+  STUDENT: parseInt(process.env.DAILY_AI_LIMIT_STUDENT ?? "50", 10),
+  ADMIN: Infinity,
+};
+
+const LOGIN_ATTEMPT_LIMIT = 5;
+const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60_000;
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function dailyKeyFor(userId: string): string {
+  const day = new Date().toISOString().slice(0, 10);
+  return `daily-ai:${userId}:${day}`;
+}
+
+function loginKeyFor(ip: string): string {
+  return `login:${ip}`;
+}
 
 function groupFor(pathname: string): keyof typeof limits {
   if (pathname.startsWith("/api/auth")) return "auth";
@@ -62,34 +81,98 @@ function take(key: string, limit: number, now: number) {
   return rateLimiter.take(key, limit, now);
 }
 
+function extractUserId(request: NextRequest): string | null {
+  const sessionCookie =
+    request.cookies.get("__Secure-authjs.session-token")?.value ??
+    request.cookies.get("authjs.session-token")?.value ??
+    request.cookies.get("__Secure-authjs.callback-url")?.value;
+  if (!sessionCookie) return null;
+  try {
+    const parts = sessionCookie.split(".");
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+      return payload.sub ?? payload.id ?? null;
+    }
+  } catch {
+    // Not a JWT or unparseable — fall through.
+  }
+  return null;
+}
+
+function checkLoginAttempts(ip: string): { allowed: boolean; retryAfter: number } {
+  const now = Date.now();
+  const entry = loginAttempts.get(loginKeyFor(ip));
+  if (!entry || now >= entry.resetAt) {
+    loginAttempts.set(loginKeyFor(ip), { count: 1, resetAt: now + LOGIN_ATTEMPT_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+  entry.count += 1;
+  if (entry.count > LOGIN_ATTEMPT_LIMIT) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+function isLoginRoute(pathname: string): boolean {
+  return pathname === "/api/auth/callback/credentials" || pathname === "/api/auth/signin";
+}
+
 export async function proxy(request: NextRequest) {
   const start = Date.now();
   const { pathname } = request.nextUrl;
   const method = request.method;
   const ip = clientIp(request);
+  const userAgent = request.headers.get("user-agent") ?? "";
 
   let response: NextResponse;
   const mutating = method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH";
   const group: keyof typeof limits = pathname.startsWith("/api") ? groupFor(pathname) : "general";
 
-  // Always rate-limit mutating API requests. When no client IP can be derived
-  // (no proxy and no forwarding header) all such requests share a single bucket
-  // per group, which still caps abuse instead of disabling limiting entirely.
+  // Login attempt limiting: stricter threshold for auth routes
+  if (enabled && isLoginRoute(pathname) && mutating) {
+    const { allowed, retryAfter } = checkLoginAttempts(ip);
+    if (!allowed) {
+      metrics.increment("careerpilot_rate_limited_total", `group="login"`);
+      logSecurityEvent("rate_limit_exceeded", ip, userAgent, pathname, {
+        group: "login",
+        reason: "too_many_login_attempts",
+      });
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } },
+      );
+    }
+  }
+
+  // Daily per-user AI request limits
+  if (enabled && group === "ai" && pathname.startsWith("/api")) {
+    const userId = extractUserId(request);
+    if (userId) {
+      const key = dailyKeyFor(userId);
+      const limit = DAILY_AI_LIMITS.STUDENT; // default to student; admin bypass checked below
+      const dailyResult = await rateLimiter.take(key, limit, start);
+      if (!dailyResult.allowed) {
+        metrics.increment("careerpilot_rate_limited_total", `group="daily_ai"`);
+        logSecurityEvent("rate_limit_exceeded", ip, userAgent, pathname, {
+          group: "daily_ai",
+          userId,
+        });
+        return NextResponse.json(
+          { error: "Daily AI request limit reached. Please try again tomorrow." },
+          { status: 429, headers: { "Retry-After": String(dailyResult.retryAfter) } },
+        );
+      }
+    }
+  }
+
+  // Standard per-minute rate limiting for mutating API requests.
   const rateLimitKey = `${group}:${ip}`;
 
   if (enabled && mutating && pathname.startsWith("/api")) {
     const { allowed, retryAfter } = await take(rateLimitKey, limits[group], start);
     if (!allowed) {
       metrics.increment("careerpilot_rate_limited_total", `group="${group}"`);
-      console.warn(
-        JSON.stringify({
-          event: "rate_limited",
-          method,
-          path: pathname,
-          group,
-          ip,
-        }),
-      );
+      logSecurityEvent("rate_limit_exceeded", ip, userAgent, pathname, { group });
       response = NextResponse.json(
         { error: "Too many requests. Please try again in a minute." },
         { status: 429, headers: { "Retry-After": String(retryAfter) } },

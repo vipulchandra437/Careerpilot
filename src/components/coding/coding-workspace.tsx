@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import { Play, CheckCircle2, XCircle, Loader2, ChevronRight } from "lucide-react";
+import { Play, CheckCircle2, XCircle, Loader2, Search, Bookmark, Flame, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -72,6 +73,17 @@ type SubmitResult = {
   aiFeedback?: { verdict: string; feedback: string; suggestions: string[] } | null;
 };
 
+type StreakData = {
+  currentStreak: number;
+  longestStreak: number;
+  totalSolved: number;
+  easySolved: number;
+  mediumSolved: number;
+  hardSolved: number;
+  totalSubmissions: number;
+  acceptanceRate: number;
+};
+
 const DIFF_COLORS: Record<string, string> = {
   EASY: "text-emerald-600 dark:text-emerald-400",
   MEDIUM: "text-amber-600 dark:text-amber-400",
@@ -94,7 +106,54 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("ALL");
+  const [topicFilter, setTopicFilter] = useState<string>("ALL");
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
+  const [dailyChallengeId, setDailyChallengeId] = useState<string | null>(null);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
+
   const requestedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/coding/stats")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.streak) setStreakData(d.streak);
+      })
+      .catch(() => {});
+    fetch("/api/coding/daily-challenge")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.challenge?.problem) setDailyChallengeId(d.challenge.problem.id);
+      })
+      .catch(() => {});
+  }, []);
+
+  const allTopics = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of problems) for (const t of p.topics) set.add(t);
+    return Array.from(set).sort();
+  }, [problems]);
+
+  const filteredProblems = useMemo(() => {
+    let list = problems;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.topics.some((t) => t.toLowerCase().includes(q)),
+      );
+    }
+    if (difficultyFilter !== "ALL") {
+      list = list.filter((p) => p.difficulty === difficultyFilter);
+    }
+    if (topicFilter !== "ALL") {
+      list = list.filter((p) => p.topics.includes(topicFilter));
+    }
+    return list;
+  }, [problems, searchQuery, difficultyFilter, topicFilter]);
 
   const loadProblem = useCallback(async (id: string) => {
     requestedRef.current = id;
@@ -106,8 +165,6 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
       const res = await fetch(`/api/coding/problems/${id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load problem");
-      // Bail out if a newer problem was requested while this one was in
-      // flight; otherwise a slow response could overwrite the current editor.
       if (requestedRef.current !== id) return;
       setProblem(data.problem);
       setCode(starterFor(data.problem, language));
@@ -174,39 +231,129 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
     }
   }
 
+  async function toggleBookmark(problemId: string) {
+    setBookmarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(problemId)) next.delete(problemId);
+      else next.add(problemId);
+      return next;
+    });
+  }
+
   const selected = problems.find((p) => p.id === problemId);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-      <Card className="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
-        <CardHeader>
+    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+      <Card className="flex flex-col lg:max-h-[calc(100vh-10rem)] lg:overflow-hidden">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base">Problems</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1.5">
-          {problems.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => loadProblem(p.id)}
-              className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
-                p.id === problemId
-                  ? "border-primary bg-primary/5"
-                  : "hover:bg-muted",
-              )}
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-medium">{p.title}</span>
-                  {p.solved && <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />}
+        <CardContent className="flex flex-1 flex-col gap-3 overflow-hidden px-4 pb-4">
+          {/* Streak bar */}
+          {streakData && (
+            <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
+              <span className="flex items-center gap-1 font-medium text-orange-600 dark:text-orange-400">
+                <Flame className="size-3.5" />
+                {streakData.currentStreak} day streak
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span>{streakData.totalSolved} solved</span>
+              <span className="text-muted-foreground">|</span>
+              <span>{streakData.acceptanceRate}% acc</span>
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search problems..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+
+          {/* Difficulty filters */}
+          <div className="flex gap-1">
+            {(["ALL", "EASY", "MEDIUM", "HARD"] as const).map((d) => (
+              <Button
+                key={d}
+                size="sm"
+                variant={difficultyFilter === d ? "default" : "outline"}
+                className="h-7 flex-1 px-1 text-xs"
+                onClick={() => setDifficultyFilter(d)}
+              >
+                {d === "ALL" ? "All" : d.charAt(0) + d.slice(1).toLowerCase()}
+              </Button>
+            ))}
+          </div>
+
+          {/* Topic filter */}
+          <Select value={topicFilter} onValueChange={(v) => setTopicFilter(v ?? "ALL")}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="All Topics" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Topics</SelectItem>
+              {allTopics.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Problem count */}
+          <div className="text-xs text-muted-foreground">
+            {filteredProblems.length} problem{filteredProblems.length !== 1 ? "s" : ""}
+          </div>
+
+          {/* Problem list */}
+          <div className="flex-1 space-y-1 overflow-y-auto">
+            {filteredProblems.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => loadProblem(p.id)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                  p.id === problemId
+                    ? "border-primary bg-primary/5"
+                    : "hover:bg-muted",
+                )}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{p.title}</span>
+                    {p.solved && <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />}
+                    {dailyChallengeId === p.id && (
+                      <Star className="size-3.5 shrink-0 text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-xs font-medium", DIFF_COLORS[p.difficulty])}>
+                      {p.difficulty}
+                      {p.bestRatio > 0 && p.bestRatio < 100 ? ` · ${p.bestRatio}%` : ""}
+                    </span>
+                  </div>
                 </div>
-                <div className={cn("text-xs font-medium", DIFF_COLORS[p.difficulty])}>
-                  {p.difficulty}
-                  {p.bestRatio > 0 && p.bestRatio < 100 ? ` · ${p.bestRatio}%` : ""}
-                </div>
-              </div>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-            </button>
-          ))}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleBookmark(p.id);
+                  }}
+                  className="shrink-0 p-1 hover:bg-muted rounded"
+                >
+                  <Bookmark
+                    className={cn(
+                      "size-3.5",
+                      bookmarks.has(p.id) ? "fill-primary text-primary" : "text-muted-foreground",
+                    )}
+                  />
+                </button>
+              </button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -231,6 +378,12 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
                   </span>
                   {problem.expectedComplexity && (
                     <span className="text-xs text-muted-foreground">{problem.expectedComplexity}</span>
+                  )}
+                  {dailyChallengeId === problem.id && (
+                    <Badge variant="secondary" className="gap-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+                      <Star className="size-3 fill-current" />
+                      Daily Challenge
+                    </Badge>
                   )}
                 </div>
                 <CardDescription className="whitespace-pre-line">

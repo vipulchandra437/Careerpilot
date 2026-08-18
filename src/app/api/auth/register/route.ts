@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { ApiError, passwordSchema, toErrorResponse, validateBody } from "@/lib/api";
 import { generateEmailVerificationToken } from "@/lib/email-verify";
+import { logger } from "@/lib/logger";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -44,10 +45,10 @@ export async function POST(request: Request) {
     generateEmailVerificationToken(email)
       .then((token) => {
         const verifyUrl = `http://localhost:3000/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
-        console.log(`[DEV] Email verification URL: ${verifyUrl}`);
+        logger.debug("DEV email verification URL generated", { url: verifyUrl });
       })
       .catch((err) => {
-        console.error("Failed to generate verification token", err);
+        logger.error("Failed to generate verification token", undefined, err);
       });
 
     return NextResponse.json(

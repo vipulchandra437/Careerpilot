@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { toErrorResponse, validateBody } from "@/lib/api";
+import { logger } from "@/lib/logger";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       });
 
       if (process.env.NODE_ENV === "development") {
-        console.log(`[forgot-password] raw token for ${normalisedEmail}: ${rawToken}`);
+        logger.debug("DEV password reset token", { email: normalisedEmail, token: rawToken });
       }
     }
 

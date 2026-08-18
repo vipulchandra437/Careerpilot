@@ -111,6 +111,58 @@ export async function POST(request: Request) {
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
+    // Update coding streak (best-effort; table may not exist yet)
+    try {
+      if (status === "ACCEPTED") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const streak = await prisma.codingStreak.findUnique({ where: { userId: user.id } });
+        const lastActive = streak?.lastActiveDate;
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        let newCurrentStreak = 1;
+        if (lastActive && lastActive.getTime() === today.getTime()) {
+          newCurrentStreak = streak?.currentStreak ?? 1;
+        } else if (lastActive && lastActive.getTime() === yesterday.getTime()) {
+          newCurrentStreak = (streak?.currentStreak ?? 0) + 1;
+        }
+
+        const updatedStreak = await prisma.codingStreak.upsert({
+          where: { userId: user.id },
+          update: {
+            currentStreak: newCurrentStreak,
+            longestStreak: { increment: 0 },
+            lastActiveDate: today,
+            totalSolved: { increment: 1 },
+            easySolved: { increment: problem.difficulty === "EASY" ? 1 : 0 },
+            mediumSolved: { increment: problem.difficulty === "MEDIUM" ? 1 : 0 },
+            hardSolved: { increment: problem.difficulty === "HARD" ? 1 : 0 },
+          },
+          create: {
+            userId: user.id,
+            currentStreak: 1,
+            longestStreak: 1,
+            lastActiveDate: today,
+            totalSolved: 1,
+            easySolved: problem.difficulty === "EASY" ? 1 : 0,
+            mediumSolved: problem.difficulty === "MEDIUM" ? 1 : 0,
+            hardSolved: problem.difficulty === "HARD" ? 1 : 0,
+          },
+        });
+
+        if (updatedStreak.currentStreak > updatedStreak.longestStreak) {
+          await prisma.codingStreak.update({
+            where: { userId: user.id },
+            data: { longestStreak: updatedStreak.currentStreak },
+          });
+        }
+      }
+    } catch {
+      // Streak update is best-effort; don't fail the submission.
+    }
+
     // Optional AI feedback (best-effort).
     let aiFeedback: unknown = null;
     if (aiService.isConfigured()) {

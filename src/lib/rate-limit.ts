@@ -1,4 +1,5 @@
 import { Redis } from "ioredis";
+import { logger } from "@/lib/logger";
 
 /**
  * Fixed-window rate limiter (per minute).
@@ -112,12 +113,9 @@ export function createRateLimiter(): RateLimiter {
         return await redis.take(key, limit, now);
       } catch (err) {
         degraded = true;
-        console.warn(
-          JSON.stringify({
-            event: "rate_limiter_degraded",
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
+        logger.warn("Rate limiter degraded, falling back to memory", {
+          reason: err instanceof Error ? err.message : String(err),
+        });
         return memory.take(key, limit, now);
       }
     },

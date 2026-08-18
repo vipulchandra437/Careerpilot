@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 /**
  * Consistent error handling and validation helpers for API routes.
@@ -91,7 +92,7 @@ export function toErrorResponse(error: unknown): NextResponse {
     }
   }
   const requestId = crypto.randomUUID();
-  console.error(`[api][500][${requestId}]`, error);
+  logger.error("Unhandled error", { requestId }, error);
   return NextResponse.json(
     { error: "Internal server error", requestId },
     { status: 500 },

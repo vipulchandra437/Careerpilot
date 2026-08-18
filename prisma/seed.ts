@@ -431,6 +431,628 @@ const PROBLEMS: Problem[] = [
       { args: [[[1, 2], [3, 4]]], expected: [1, 2, 4, 3] },
     ],
   },
+  // ==================== EASY (6 new) ====================
+  {
+    title: "Valid Anagram",
+    slug: "valid-anagram",
+    description:
+      "Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise. An anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.",
+    constraints: [
+      "1 <= s.length, t.length <= 5 * 10^4",
+      "s and t consist of lowercase English letters.",
+    ],
+    examples: [
+      { input: 's = "anagram", t = "nagaram"', output: "true", explanation: 'The letters in "anagram" can be rearranged to form "nagaram".' },
+      { input: 's = "rat", t = "car"', output: "false", explanation: '"rat" and "car" do not contain the same characters.' },
+    ],
+    difficulty: "EASY",
+    topics: ["Hash Table", "String", "Sorting"],
+    companies: ["Google", "Amazon", "Microsoft"],
+    expectedComplexity: "O(n) time, O(1) space",
+    timeLimitMs: 2000,
+    starterPython: `def solution(s, t):\n    # Return True if t is an anagram of s\n    pass\n`,
+    starterJs: `function solution(s, t) {\n  // Return true if t is an anagram of s\n  \n}\n`,
+    testCases: [
+      { args: ["anagram", "nagaram"], expected: true },
+      { args: ["rat", "car"], expected: false },
+      { args: ["listen", "silent"], expected: true },
+    ],
+    hiddenTestCases: [
+      { args: ["a", "ab"], expected: false },
+      { args: ["", ""], expected: true },
+    ],
+  },
+  {
+    title: "Best Time to Buy and Sell Stock",
+    slug: "best-time-to-buy-and-sell-stock",
+    description:
+      "You are given an array `prices` where `prices[i]` is the price of a given stock on the `ith` day. You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock. Return the maximum profit you can achieve from this transaction. If you cannot achieve any profit, return `0`.",
+    constraints: [
+      "1 <= prices.length <= 10^5",
+      "0 <= prices[i] <= 10^4",
+    ],
+    examples: [
+      { input: "prices = [7,1,5,3,6,4]", output: "5", explanation: "Buy on day 2 (price=1) and sell on day 5 (price=6), profit = 6-1 = 5." },
+      { input: "prices = [7,6,4,3,1]", output: "0", explanation: "No transaction is done, max profit = 0." },
+    ],
+    difficulty: "EASY",
+    topics: ["Array", "Dynamic Programming"],
+    companies: ["Amazon", "Meta", "Google"],
+    expectedComplexity: "O(n) time, O(1) space",
+    timeLimitMs: 2000,
+    starterPython: `def solution(prices):\n    # Return the maximum profit\n    pass\n`,
+    starterJs: `function solution(prices) {\n  // Return the maximum profit\n  \n}\n`,
+    testCases: [
+      { args: [[7, 1, 5, 3, 6, 4]], expected: 5 },
+      { args: [[7, 6, 4, 3, 1]], expected: 0 },
+      { args: [[1, 2]], expected: 1 },
+    ],
+    hiddenTestCases: [
+      { args: [[2, 4, 1]], expected: 2 },
+      { args: [[3, 3, 5, 0, 0, 3, 1, 4]], expected: 7 },
+    ],
+  },
+  {
+    title: "Linked List Cycle",
+    slug: "linked-list-cycle",
+    description:
+      "Given `head`, the head of a linked list, determine if the linked list has a cycle in it. There is a cycle in a linked list if there is some node in the list that can be reached again by continuously following the `next` pointer. Internally, `pos` is used to denote the index of the node that the tail's `next` pointer is connected to. Note that `pos` is not passed as a parameter. Return `true` if there is a cycle in the linked list. Otherwise, return `false`.",
+    constraints: [
+      "The number of the nodes in the list is in the range [0, 10^4].",
+      "-10^5 <= Node.val <= 10^5",
+      "pos is -1 or a valid index in the linked-list.",
+    ],
+    examples: [
+      { input: "head = [3,2,0,-4], pos = 1", output: "true", explanation: "There is a cycle in the linked list, where the tail connects to the 1st node (0-indexed)." },
+      { input: "head = [1,2], pos = -1", output: "false", explanation: "There is no cycle in the linked list." },
+    ],
+    difficulty: "EASY",
+    topics: ["Linked List", "Two Pointers", "Floyd's"],
+    companies: ["Microsoft", "Amazon", "Google"],
+    expectedComplexity: "O(n) time, O(1) space",
+    timeLimitMs: 2000,
+    starterPython: `def solution(head):\n    # Return True if the linked list has a cycle\n    pass\n`,
+    starterJs: `function solution(head) {\n  // Return true if the linked list has a cycle\n  \n}\n`,
+    testCases: [
+      { args: [[3, 2, 0, -4], 1], expected: true },
+      { args: [[1, 2], -1], expected: false },
+      { args: [[1], 0], expected: true },
+    ],
+    hiddenTestCases: [
+      { args: [[1], -1], expected: false },
+      { args: [[1, 2, 3, 4, 5], 2], expected: true },
+    ],
+  },
+  {
+    title: "Invert Binary Tree",
+    slug: "invert-binary-tree",
+    description:
+      "Given the `root` of a binary tree, invert the tree, and return its root. Inverting a binary tree means swapping the left and right children of every node in the tree.",
+    constraints: [
+      "The number of nodes in the tree is in the range [0, 100].",
+      "-100 <= Node.val <= 100",
+    ],
+    examples: [
+      { input: "root = [4,2,7,1,3,6,9]", output: "[4,7,2,9,6,3,1]", explanation: "The left and right children of every node are swapped." },
+      { input: "root = [2,1,3]", output: "[2,3,1]" },
+    ],
+    difficulty: "EASY",
+    topics: ["Tree", "DFS", "BFS"],
+    companies: ["Google", "Meta", "Apple"],
+    expectedComplexity: "O(n) time, O(h) space",
+    timeLimitMs: 2000,
+    starterPython: `def solution(root):\n    # Return the root of the inverted binary tree\n    pass\n`,
+    starterJs: `function solution(root) {\n  // Return the root of the inverted binary tree\n  \n}\n`,
+    testCases: [
+      { args: [[4, 2, 7, 1, 3, 6, 9]], expected: [4, 7, 2, 9, 6, 3, 1] },
+      { args: [[2, 1, 3]], expected: [2, 3, 1] },
+      { args: [[]], expected: [] },
+    ],
+    hiddenTestCases: [
+      { args: [[1]], expected: [1] },
+      { args: [[1, 2, 3, 4, 5]], expected: [1, 3, 2, 5, 4] },
+    ],
+  },
+  {
+    title: "Climbing Stairs",
+    slug: "climbing-stairs",
+    description:
+      "You are climbing a staircase. It takes `n` steps to reach the top. Each time you can either climb `1` or `2` steps. In how many distinct ways can you climb to the top?",
+    constraints: [
+      "1 <= n <= 45",
+    ],
+    examples: [
+      { input: "n = 2", output: "2", explanation: "There are two ways: 1+1 and 2." },
+      { input: "n = 3", output: "3", explanation: "There are three ways: 1+1+1, 1+2, and 2+1." },
+    ],
+    difficulty: "EASY",
+    topics: ["Dynamic Programming", "Math"],
+    companies: ["Amazon", "Apple", "Google"],
+    expectedComplexity: "O(n) time, O(1) space",
+    timeLimitMs: 2000,
+    starterPython: `def solution(n):\n    # Return the number of distinct ways to climb to the top\n    pass\n`,
+    starterJs: `function solution(n) {\n  // Return the number of distinct ways to climb to the top\n  \n}\n`,
+    testCases: [
+      { args: [2], expected: 2 },
+      { args: [3], expected: 3 },
+      { args: [5], expected: 8 },
+    ],
+    hiddenTestCases: [
+      { args: [1], expected: 1 },
+      { args: [10], expected: 89 },
+    ],
+  },
+  {
+    title: "Merge Two Sorted Lists",
+    slug: "merge-two-sorted-lists",
+    description:
+      "You are given the heads of two sorted linked lists `list1` and `list2`. Merge the two lists into one sorted list. The list should be made by splicing together the nodes of the first two lists. Return the head of the merged linked list.",
+    constraints: [
+      "Both lists are sorted in non-decreasing order.",
+      "The number of nodes in both lists is in the range [0, 50].",
+      "-100 <= Node.val <= 100",
+    ],
+    examples: [
+      { input: "list1 = [1,2,4], list2 = [1,3,4]", output: "[1,1,2,3,4,4]" },
+      { input: "list1 = [], list2 = []", output: "[]" },
+    ],
+    difficulty: "EASY",
+    topics: ["Linked List", "Recursion"],
+    companies: ["Microsoft", "Amazon", "Meta"],
+    expectedComplexity: "O(m+n) time, O(1) space",
+    timeLimitMs: 2000,
+    starterPython: `def solution(list1, list2):\n    # Return the head of the merged sorted linked list\n    pass\n`,
+    starterJs: `function solution(list1, list2) {\n  // Return the head of the merged sorted linked list\n  \n}\n`,
+    testCases: [
+      { args: [[1, 2, 4], [1, 3, 4]], expected: [1, 1, 2, 3, 4, 4] },
+      { args: [[], []], expected: [] },
+      { args: [[], [0]], expected: [0] },
+    ],
+    hiddenTestCases: [
+      { args: [[2], [1]], expected: [1, 2] },
+      { args: [[1, 3, 5], [2, 4, 6]], expected: [1, 2, 3, 4, 5, 6] },
+    ],
+  },
+  // ==================== MEDIUM (8 new) ====================
+  {
+    title: "Number of Islands",
+    slug: "number-of-islands",
+    description:
+      "Given an `m x n` 2D binary grid `grid` which represents a map of '1's (land) and '0's (water), return the number of islands. An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically. You may assume all four edges of the grid are all surrounded by water.",
+    constraints: [
+      "m == grid.length",
+      "n == grid[i].length",
+      "1 <= m, n <= 300",
+      "grid[i][j] is '0' or '1'.",
+    ],
+    examples: [
+      { input: 'grid = [["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]]', output: "1" },
+      { input: 'grid = [["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]', output: "3" },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Graph", "DFS", "BFS", "Matrix"],
+    companies: ["Amazon", "Google", "Meta"],
+    expectedComplexity: "O(m*n) time, O(m*n) space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(grid):\n    # Return the number of islands\n    pass\n`,
+    starterJs: `function solution(grid) {\n  // Return the number of islands\n  \n}\n`,
+    testCases: [
+      { args: [[["1", "1", "1", "1", "0"], ["1", "1", "0", "1", "0"], ["1", "1", "0", "0", "0"], ["0", "0", "0", "0", "0"]]], expected: 1 },
+      { args: [[["1", "1", "0", "0", "0"], ["1", "1", "0", "0", "0"], ["0", "0", "1", "0", "0"], ["0", "0", "0", "1", "1"]]], expected: 3 },
+      { args: [[["1", "0", "1"], ["0", "1", "0"], ["1", "0", "1"]]], expected: 5 },
+    ],
+    hiddenTestCases: [
+      { args: [[["1"]]], expected: 1 },
+      { args: [[["0"]]], expected: 0 },
+    ],
+  },
+  {
+    title: "Binary Tree Level Order Traversal",
+    slug: "binary-tree-level-order-traversal",
+    description:
+      "Given the `root` of a binary tree, return the level order traversal of its nodes' values (i.e., from left to right, level by level).",
+    constraints: [
+      "The number of nodes in the tree is in the range [0, 2000].",
+      "-1000 <= Node.val <= 1000",
+    ],
+    examples: [
+      { input: "root = [3,9,20,null,null,15,7]", output: "[[3],[9,20],[15,7]]" },
+      { input: "root = [1]", output: "[[1]]" },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Tree", "BFS"],
+    companies: ["Microsoft", "Google", "Meta"],
+    expectedComplexity: "O(n) time, O(n) space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(root):\n    # Return the level order traversal of the binary tree\n    pass\n`,
+    starterJs: `function solution(root) {\n  // Return the level order traversal of the binary tree\n  \n}\n`,
+    testCases: [
+      { args: [[3, 9, 20, null, null, 15, 7]], expected: [[3], [9, 20], [15, 7]] },
+      { args: [[1]], expected: [[1]] },
+      { args: [[]], expected: [] },
+    ],
+    hiddenTestCases: [
+      { args: [[1, 2, 3, 4, 5]], expected: [[1], [2, 3], [4, 5]] },
+      { args: [[1, null, 2, null, 3]], expected: [[1], [2], [3]] },
+    ],
+  },
+  {
+    title: "Coin Change",
+    slug: "coin-change",
+    description:
+      "You are given an integer array `coins` representing coins of different denominations and an integer `amount` representing a total amount of money. Return the fewest number of coins that you need to make up that amount. If that amount of money cannot be made up by any combination of the coins, return `-1`. You may assume that you have an infinite number of each kind of coin.",
+    constraints: [
+      "1 <= coins.length <= 12",
+      "1 <= coins[i] <= 2^31 - 1",
+      "0 <= amount <= 10^4",
+    ],
+    examples: [
+      { input: "coins = [1,5,10,25], amount = 30", output: "2", explanation: "5 + 25 = 30." },
+      { input: "coins = [2], amount = 3", output: "-1", explanation: "It is impossible to make 3 with only coin of value 2." },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Dynamic Programming", "BFS"],
+    companies: ["Amazon", "Google", "Microsoft"],
+    expectedComplexity: "O(amount * n) time, O(amount) space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(coins, amount):\n    # Return the fewest number of coins needed, or -1\n    pass\n`,
+    starterJs: `function solution(coins, amount) {\n  // Return the fewest number of coins needed, or -1\n  \n}\n`,
+    testCases: [
+      { args: [[1, 5, 10, 25], 30], expected: 2 },
+      { args: [[2], 3], expected: -1 },
+      { args: [[1], 0], expected: 0 },
+    ],
+    hiddenTestCases: [
+      { args: [[1, 2, 5], 11], expected: 3 },
+      { args: [[186, 419, 83, 408], 6249], expected: 20 },
+    ],
+  },
+  {
+    title: "Product of Array Except Self",
+    slug: "product-of-array-except-self",
+    description:
+      "Given an integer array `nums`, return an array `answer` such that `answer[i]` is equal to the product of all the elements of `nums` except `nums[i]`. The product of any prefix or suffix of `nums` is guaranteed to fit in a 32-bit integer. You must write an algorithm that runs in O(n) time and without using the division operation.",
+    constraints: [
+      "2 <= nums.length <= 10^5",
+      "-30 <= nums[i] <= 30",
+      "The product of any prefix or suffix of nums is guaranteed to fit in a 32-bit integer.",
+    ],
+    examples: [
+      { input: "nums = [1,2,3,4]", output: "[24,12,8,6]" },
+      { input: "nums = [-1,1,0,-3,3]", output: "[0,0,9,0,0]" },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Array", "Prefix Sum"],
+    companies: ["Amazon", "Meta", "Google"],
+    expectedComplexity: "O(n) time, O(1) extra space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(nums):\n    # Return array where answer[i] = product of all nums except nums[i]\n    pass\n`,
+    starterJs: `function solution(nums) {\n  // Return array where answer[i] = product of all nums except nums[i]\n  \n}\n`,
+    testCases: [
+      { args: [[1, 2, 3, 4]], expected: [24, 12, 8, 6] },
+      { args: [[-1, 1, 0, -3, 3]], expected: [0, 0, 9, 0, 0] },
+      { args: [[2, 3]], expected: [3, 2] },
+    ],
+    hiddenTestCases: [
+      { args: [[-1, -1]], expected: [-1, -1] },
+      { args: [[1, 0]], expected: [0, 1] },
+    ],
+  },
+  {
+    title: "Search in Rotated Sorted Array",
+    slug: "search-in-rotated-sorted-array",
+    description:
+      "Given a sorted array that has been rotated at some pivot unknown to you beforehand (i.e., `[0,1,2,4,5,6,7]` might become `[4,5,6,7,0,1,2]`). You are given a target value to search. If found in the array return its index, otherwise return `-1`. You may assume no duplicate exists in the array. Your algorithm's runtime complexity must be in the order of O(log n).",
+    constraints: [
+      "1 <= nums.length <= 5000",
+      "-10^4 <= nums[i] <= 10^4",
+      "All values of nums are unique.",
+      "nums is an ascending array that is possibly rotated.",
+    ],
+    examples: [
+      { input: "nums = [4,5,6,7,0,1,2], target = 0", output: "4" },
+      { input: "nums = [4,5,6,7,0,1,2], target = 3", output: "-1" },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Binary Search", "Array"],
+    companies: ["Amazon", "Google", "Microsoft"],
+    expectedComplexity: "O(log n) time, O(1) space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(nums, target):\n    # Return the index of target in the rotated sorted array, or -1\n    pass\n`,
+    starterJs: `function solution(nums, target) {\n  // Return the index of target in the rotated sorted array, or -1\n  \n}\n`,
+    testCases: [
+      { args: [[4, 5, 6, 7, 0, 1, 2], 0], expected: 4 },
+      { args: [[4, 5, 6, 7, 0, 1, 2], 3], expected: -1 },
+      { args: [[1], 0], expected: -1 },
+    ],
+    hiddenTestCases: [
+      { args: [[1], 1], expected: 0 },
+      { args: [[5, 1, 3], 3], expected: 2 },
+    ],
+  },
+  {
+    title: "LRU Cache",
+    slug: "lru-cache",
+    description:
+      "Design a data structure that follows the constraints of a Least Recently Used (LRU) cache. Implement the `LRUCache` class with `get(key)` and `put(key, value)` methods. Both operations must run in O(1) average time complexity. The cache has a fixed capacity. When the cache exceeds capacity, the least recently used item should be evicted.",
+    constraints: [
+      "1 <= capacity <= 3000",
+      "0 <= key <= 10^4",
+      "0 <= value <= 10^5",
+      "At most 2 * 10^5 calls will be made to get and put.",
+    ],
+    examples: [
+      { input: '["LRUCache","put","put","get","put","get","put","get","get","get"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]', output: "[null,null,null,1,null,-1,null,-1,3,4]" },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Hash Table", "Linked List", "Design"],
+    companies: ["Amazon", "Google", "Microsoft"],
+    expectedComplexity: "O(1) time for get and put",
+    timeLimitMs: 3000,
+    starterPython: `class LRUCache:\n    def __init__(self, capacity):\n        pass\n    def get(self, key):\n        pass\n    def put(self, key, value):\n        pass\n`,
+    starterJs: `class LRUCache {\n  constructor(capacity) {\n  }\n  get(key) {\n  }\n  put(key, value) {\n  }\n}\n`,
+    testCases: [
+      { args: [2, [[1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]], expected: [null, null, 1, null, -1, null, -1, 3, 4] },
+      { args: [1, [[1, 1], [1, 2], [1]]], expected: [null, null, 2] },
+      { args: [2, [[1, 1], [2, 2], [3, 3], [2]]], expected: [null, null, null, -1] },
+    ],
+    hiddenTestCases: [
+      { args: [1, [[2, 1], [2], [2, 2], [2]]], expected: [null, 1, null, 2] },
+      { args: [2, [[2, 1], [3, 2], [3], [2, 3], [4, 4], [3]]], expected: [null, null, 2, null, null, -1] },
+    ],
+  },
+  {
+    title: "Validate BST",
+    slug: "validate-bst",
+    description:
+      "Given the `root` of a binary tree, determine if it is a valid binary search tree (BST). A valid BST is defined as follows: the left subtree of a node contains only nodes with keys less than the node's key; the right subtree of a node contains only nodes with keys greater than the node's key; both the left and right subtrees must also be binary search trees.",
+    constraints: [
+      "The number of nodes in the tree is in the range [1, 10^4].",
+      "-2^31 <= Node.val <= 2^31 - 1",
+    ],
+    examples: [
+      { input: "root = [2,1,3]", output: "true" },
+      { input: "root = [5,1,4,null,null,3,6]", output: "false", explanation: "The node with value 4 is in the right subtree of 5, but 4 < 5, which violates the BST property." },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Tree", "DFS", "Binary Search Tree"],
+    companies: ["Amazon", "Google", "Microsoft"],
+    expectedComplexity: "O(n) time, O(h) space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(root):\n    # Return True if the binary tree is a valid BST\n    pass\n`,
+    starterJs: `function solution(root) {\n  // Return true if the binary tree is a valid BST\n  \n}\n`,
+    testCases: [
+      { args: [[2, 1, 3]], expected: true },
+      { args: [[5, 1, 4, null, null, 3, 6]], expected: false },
+      { args: [[1]], expected: true },
+    ],
+    hiddenTestCases: [
+      { args: [[1, 1]], expected: false },
+      { args: [[10, 5, 15, null, null, 6, 20]], expected: false },
+    ],
+  },
+  {
+    title: "Graph Valid Tree",
+    slug: "graph-valid-tree",
+    description:
+      "You have a list of `n` nodes labeled from `0` to `n - 1` and a list of `edges` where `edges[i] = [ai, bi]` indicates that there is an undirected edge between nodes `ai` and `bi` in the graph. Return `true` if the edges of the given graph make up a valid tree, and `false` otherwise. A valid tree is connected and has no cycles.",
+    constraints: [
+      "1 <= n <= 2000",
+      "0 <= edges.length <= 5000",
+      "All the pairs (ai, bi) are distinct.",
+      "There are no self-loops or parallel edges.",
+    ],
+    examples: [
+      { input: "n = 5, edges = [[0,1],[0,2],[0,3],[1,4]]", output: "true", explanation: "All 5 nodes are connected and there are no cycles." },
+      { input: "n = 5, edges = [[0,1],[1,2],[2,3],[1,3],[1,4]]", output: "false", explanation: "There is a cycle between nodes 1, 2, and 3." },
+    ],
+    difficulty: "MEDIUM",
+    topics: ["Graph", "Union Find", "DFS"],
+    companies: ["Google", "Amazon", "Meta"],
+    expectedComplexity: "O(n + e) time, O(n) space",
+    timeLimitMs: 3000,
+    starterPython: `def solution(n, edges):\n    # Return True if the graph is a valid tree\n    pass\n`,
+    starterJs: `function solution(n, edges) {\n  // Return true if the graph is a valid tree\n  \n}\n`,
+    testCases: [
+      { args: [5, [[0, 1], [0, 2], [0, 3], [1, 4]]], expected: true },
+      { args: [5, [[0, 1], [1, 2], [2, 3], [1, 3], [1, 4]]], expected: false },
+      { args: [1, []], expected: true },
+    ],
+    hiddenTestCases: [
+      { args: [3, [[0, 1], [1, 2], [2, 0]]], expected: false },
+      { args: [4, [[0, 1], [2, 3]]], expected: false },
+    ],
+  },
+  // ==================== HARD (6 new) ====================
+  {
+    title: "Trapping Rain Water",
+    slug: "trapping-rain-water",
+    description:
+      "Given `n` non-negative integers representing an elevation map where the width of each bar is `1`, compute how much water it can trap after raining. Each element in the array represents the height of a bar at that position.",
+    constraints: [
+      "n == height.length",
+      "1 <= n <= 2 * 10^4",
+      "0 <= height[i] <= 10^5",
+    ],
+    examples: [
+      { input: "height = [0,1,0,2,1,0,1,3,2,1,2,1]", output: "6", explanation: "6 units of rain water are trapped." },
+      { input: "height = [4,2,0,3,2,5]", output: "9", explanation: "9 units of rain water are trapped." },
+    ],
+    difficulty: "HARD",
+    topics: ["Array", "Two Pointers", "Stack"],
+    companies: ["Amazon", "Google", "Microsoft"],
+    expectedComplexity: "O(n) time, O(1) space",
+    timeLimitMs: 5000,
+    starterPython: `def solution(height):\n    # Return the total water trapped\n    pass\n`,
+    starterJs: `function solution(height) {\n  // Return the total water trapped\n  \n}\n`,
+    testCases: [
+      { args: [[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]], expected: 6 },
+      { args: [[4, 2, 0, 3, 2, 5]], expected: 9 },
+      { args: [[1]], expected: 0 },
+    ],
+    hiddenTestCases: [
+      { args: [[1, 0, 1]], expected: 1 },
+      { args: [[5, 4, 3, 2, 1]], expected: 0 },
+    ],
+  },
+  {
+    title: "Word Ladder",
+    slug: "word-ladder",
+    description:
+      "A transformation sequence from word `beginWord` to word `endWord` using a dictionary `wordList` is a sequence of words `beginWord -> s1 -> s2 -> ... -> sk` such that every adjacent pair of words differs by a single letter, and every `si` is in `wordList`. Given `beginWord`, `endWord`, and a `wordList`, return the number of words in the shortest transformation sequence, or `0` if no such sequence exists.",
+    constraints: [
+      "1 <= beginWord.length <= 10",
+      "beginWord, endWord, and wordList[i] consist of lowercase English letters.",
+      "1 <= wordList.length <= 5000",
+    ],
+    examples: [
+      { input: 'beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log","cog"]', output: "5", explanation: 'hit -> hot -> dot -> dog -> cog (5 words).' },
+      { input: 'beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log"]', output: "0", explanation: '"cog" is not in wordList, so no transformation exists.' },
+    ],
+    difficulty: "HARD",
+    topics: ["Graph", "BFS", "String"],
+    companies: ["Amazon", "Google", "Meta"],
+    expectedComplexity: "O(M^2 * N) time where M is word length, N is wordList size",
+    timeLimitMs: 5000,
+    starterPython: `def solution(beginWord, endWord, wordList):\n    # Return the shortest transformation sequence length, or 0\n    pass\n`,
+    starterJs: `function solution(beginWord, endWord, wordList) {\n  // Return the shortest transformation sequence length, or 0\n  \n}\n`,
+    testCases: [
+      { args: ["hit", "cog", ["hot", "dot", "dog", "lot", "log", "cog"]], expected: 5 },
+      { args: ["hit", "cog", ["hot", "dot", "dog", "lot", "log"]], expected: 0 },
+      { args: ["a", "c", ["a", "b", "c"]], expected: 2 },
+    ],
+    hiddenTestCases: [
+      { args: ["lost", "cost", ["most", "fist", "lost", "cost", "boss"]], expected: 2 },
+      { args: ["qa", "sq", ["si", "go", "se", "cm", "so", "ph", "mt", "db", "mb", "sb", "kr", "ln", "tm", "av", "sm", "ar", "ca", "ms", "ba", "rn", "di", "fa", "bt", "rb", "ab", "sb", "oa", "qp", "ki", "hm", "ba"]], expected: 5 },
+    ],
+  },
+  {
+    title: "Merge K Sorted Lists",
+    slug: "merge-k-sorted-lists",
+    description:
+      "You are given an array of `k` linked lists `lists`, each linked list is sorted in ascending order. Merge all the linked lists into one sorted linked list and return it.",
+    constraints: [
+      "k == lists.length",
+      "0 <= k <= 10^4",
+      "0 <= lists[i].length <= 500",
+      "-10^4 <= lists[i][j] <= 10^4",
+      "Each lists[i] is sorted in ascending order.",
+    ],
+    examples: [
+      { input: "lists = [[1,4,5],[1,3,4],[2,6]]", output: "[1,1,2,3,4,4,5,6]" },
+      { input: "lists = []", output: "[]" },
+    ],
+    difficulty: "HARD",
+    topics: ["Linked List", "Heap", "Divide and Conquer"],
+    companies: ["Amazon", "Google", "Meta"],
+    expectedComplexity: "O(N log k) time, O(1) space",
+    timeLimitMs: 5000,
+    starterPython: `def solution(lists):\n    # Return the head of the merged sorted linked list\n    pass\n`,
+    starterJs: `function solution(lists) {\n  // Return the head of the merged sorted linked list\n  \n}\n`,
+    testCases: [
+      { args: [[1, 4, 5], [1, 3, 4], [2, 6]], expected: [1, 1, 2, 3, 4, 4, 5, 6] },
+      { args: [[]], expected: [] },
+      { args: [[], [1]], expected: [1] },
+    ],
+    hiddenTestCases: [
+      { args: [[1]], expected: [1] },
+      { args: [[1, 2, 3], [4, 5, 6], [7, 8, 9]], expected: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+    ],
+  },
+  {
+    title: "Binary Tree Maximum Path Sum",
+    slug: "binary-tree-maximum-path-sum",
+    description:
+      "A path in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge connecting them. A node can only appear in the sequence at most once. The path does not need to pass through the root. The path sum of a path is the sum of the node's values in the path. Given the `root` of a binary tree, return the maximum path sum of any non-empty path.",
+    constraints: [
+      "The number of nodes in the tree is in the range [1, 3 * 10^4].",
+      "-1000 <= Node.val <= 1000",
+    ],
+    examples: [
+      { input: "root = [1,2,3]", output: "6", explanation: "The path is 2 -> 1 -> 3 with sum 6." },
+      { input: "root = [-10,9,20,null,null,15,7]", output: "42", explanation: "The path is 15 -> 20 -> 7 with sum 42." },
+    ],
+    difficulty: "HARD",
+    topics: ["Tree", "DFS", "Dynamic Programming"],
+    companies: ["Amazon", "Google", "Meta"],
+    expectedComplexity: "O(n) time, O(h) space",
+    timeLimitMs: 5000,
+    starterPython: `def solution(root):\n    # Return the maximum path sum\n    pass\n`,
+    starterJs: `function solution(root) {\n  // Return the maximum path sum\n  \n}\n`,
+    testCases: [
+      { args: [[1, 2, 3]], expected: 6 },
+      { args: [[-10, 9, 20, null, null, 15, 7]], expected: 42 },
+      { args: [[-3]], expected: -3 },
+    ],
+    hiddenTestCases: [
+      { args: [[5, -10, 20, -5, -2, null, null]], expected: 35 },
+      { args: [[1, -2, 3]], expected: 3 },
+    ],
+  },
+  {
+    title: "Alien Dictionary",
+    slug: "alien-dictionary",
+    description:
+      "There is a new alien language that uses the English alphabet, but the order among the letters is unknown. You are given a list of strings `words` from the alien language's dictionary, where the strings in `words` are sorted lexicographically according to the new language's rules. The characters in each string are also sorted according to the new language's rules. Return a string of the unique letters in the alien language's dictionary, sorted in lexicographically increasing order. If there is no solution (i.e., there are inconsistent or contradictory rules), return an empty string.",
+    constraints: [
+      "1 <= words.length <= 100",
+      "1 <= words[i].length <= 100",
+      "words[i] consists of only lowercase English letters.",
+    ],
+    examples: [
+      { input: 'words = ["wrt","wrf","er","ett","rftt"]', output: "wertf", explanation: 'From the ordering: w < e < r < t < f.' },
+      { input: 'words = ["z","x"]', output: "zx", explanation: 'From the ordering: z > x, so z comes before x.' },
+    ],
+    difficulty: "HARD",
+    topics: ["Graph", "Topological Sort", "DFS"],
+    companies: ["Amazon", "Google", "Meta"],
+    expectedComplexity: "O(C) time where C is the total length of all words",
+    timeLimitMs: 5000,
+    starterPython: `def solution(words):\n    # Return the alien dictionary order as a string, or ""\n    pass\n`,
+    starterJs: `function solution(words) {\n  // Return the alien dictionary order as a string, or ""\n  \n}\n`,
+    testCases: [
+      { args: [["wrt", "wrf", "er", "ett", "rftt"]], expected: "wertf" },
+      { args: [["z", "x"]], expected: "zx" },
+      { args: [["z", "x", "z"]], expected: "" },
+    ],
+    hiddenTestCases: [
+      { args: [["abc", "ab"]], expected: "" },
+      { args: [["abc", "ab", "bc"]], expected: "acb" },
+    ],
+  },
+  {
+    title: "Regular Expression Matching",
+    slug: "regular-expression-matching",
+    description:
+      "Given an input string `s` and a pattern `p`, implement regular expression matching with support for `'.'` and `'*'` where `'.'` matches any single character and `'*'` matches zero or more of the preceding element. The matching should cover the entire input string (not partial).",
+    constraints: [
+      "1 <= s.length <= 20",
+      "1 <= p.length <= 20",
+      "s contains only lowercase English letters.",
+      "p contains only lowercase English letters, '.', and '*'.",
+      "It is guaranteed for each appearance of the character '*', there will be a previous valid character to match.",
+    ],
+    examples: [
+      { input: 's = "aa", p = "a"', output: "false", explanation: '"a" does not match the entire string "aa".' },
+      { input: 's = "aa", p = "a*"', output: "true", explanation: '"*" means zero or more of the preceding element "a".' },
+    ],
+    difficulty: "HARD",
+    topics: ["String", "Dynamic Programming", "Recursion"],
+    companies: ["Amazon", "Google", "Meta"],
+    expectedComplexity: "O(m*n) time, O(m*n) space",
+    timeLimitMs: 5000,
+    starterPython: `def solution(s, p):\n    # Return True if s matches the pattern p\n    pass\n`,
+    starterJs: `function solution(s, p) {\n  // Return true if s matches the pattern p\n  \n}\n`,
+    testCases: [
+      { args: ["aa", "a"], expected: false },
+      { args: ["aa", "a*"], expected: true },
+      { args: ["ab", ".*"], expected: true },
+    ],
+    hiddenTestCases: [
+      { args: ["aab", "c*a*b"], expected: true },
+      { args: ["mississippi", "mis*is*p*."], expected: false },
+    ],
+  },
 ];
 
 // companies with job roles
