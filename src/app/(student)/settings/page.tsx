@@ -9,7 +9,7 @@ export default async function SettingsPage() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { name: true, email: true, image: true },
+    select: { name: true, email: true, image: true, consentGivenAt: true, consentVersion: true },
   });
 
   return (
@@ -22,6 +22,8 @@ export default async function SettingsPage() {
         name={dbUser?.name ?? ""}
         email={dbUser?.email ?? ""}
         image={dbUser?.image ?? null}
+        consentGivenAt={dbUser?.consentGivenAt?.toISOString() ?? null}
+        consentVersion={dbUser?.consentVersion ?? null}
       />
     </div>
   );

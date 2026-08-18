@@ -10,6 +10,18 @@ const schema = z.object({
   newPassword: passwordSchema.optional(),
 });
 
+export async function GET() {
+  const user = await requireUser();
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { consentGivenAt: true, consentVersion: true },
+  });
+  return apiOk({
+    consentGivenAt: dbUser?.consentGivenAt?.toISOString() ?? null,
+    consentVersion: dbUser?.consentVersion ?? null,
+  });
+}
+
 export async function PUT(request: Request) {
   const user = await requireUser();
   try {

@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("audit");
 
 export type AuditActor = { id: string; email: string };
 
@@ -27,7 +30,7 @@ export async function recordAudit(
       },
     });
   } catch (error) {
-    console.error("[audit] failed to record", { action, resource, resourceId, error });
+    logger.error("failed to record audit", { action, resource, resourceId }, error);
   }
 }
 

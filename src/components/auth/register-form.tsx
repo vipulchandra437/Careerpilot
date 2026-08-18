@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,10 +14,15 @@ export function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!consentGiven) {
+      setError("You must agree to the Terms of Service and Privacy Policy to create an account.");
+      return;
+    }
     setLoading(true);
     try {
       const form = new FormData(e.currentTarget);
@@ -27,6 +33,7 @@ export function RegisterForm() {
           name: String(form.get("name") ?? ""),
           email: String(form.get("email") ?? ""),
           password: String(form.get("password") ?? ""),
+          consentGiven: true,
         }),
       });
       if (!res.ok) {
@@ -81,6 +88,24 @@ export function RegisterForm() {
           minLength={8}
           placeholder="At least 8 characters with letters and numbers"
         />
+      </div>
+      <div className="flex items-start gap-2">
+        <Checkbox
+          id="consent"
+          checked={consentGiven}
+          onCheckedChange={(checked) => setConsentGiven(checked === true)}
+          className="mt-0.5"
+        />
+        <Label htmlFor="consent" className="text-sm leading-snug font-normal">
+          I agree to the{" "}
+          <Link href="/terms" className="font-medium text-primary underline-offset-2 hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="font-medium text-primary underline-offset-2 hover:underline">
+            Privacy Policy
+          </Link>
+        </Label>
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Creating account…" : "Create account"}

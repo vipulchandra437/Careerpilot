@@ -3,11 +3,13 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { ApiError, passwordSchema, toErrorResponse, validateBody } from "@/lib/api";
+import { generateEmailVerificationToken } from "@/lib/email-verify";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   email: z.string().email("Please enter a valid email"),
   password: passwordSchema,
+  consentGiven: z.literal(true).optional(),
 });
 
 export async function POST(request: Request) {
@@ -29,6 +31,8 @@ export async function POST(request: Request) {
           email,
           passwordHash,
           role: "STUDENT",
+          consentGivenAt: data.consentGiven ? new Date() : undefined,
+          consentVersion: data.consentGiven ? "1.0" : undefined,
         },
       });
       await tx.studentProfile.create({
@@ -36,6 +40,15 @@ export async function POST(request: Request) {
       });
       return created;
     });
+
+    generateEmailVerificationToken(email)
+      .then((token) => {
+        const verifyUrl = `http://localhost:3000/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+        console.log(`[DEV] Email verification URL: ${verifyUrl}`);
+      })
+      .catch((err) => {
+        console.error("Failed to generate verification token", err);
+      });
 
     return NextResponse.json(
       { user: { id: user.id, name: user.name, email: user.email } },

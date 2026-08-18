@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Save, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,14 @@ export function SettingsForm({
   name,
   email,
   image,
+  consentGivenAt,
+  consentVersion,
 }: {
   name: string;
   email: string;
   image: string | null;
+  consentGivenAt: string | null;
+  consentVersion: string | null;
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(name);
@@ -210,6 +215,39 @@ export function SettingsForm({
               {busy === "delete" ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
               Delete my account
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Privacy &amp; Consent</CardTitle>
+          <CardDescription>Your GDPR consent status and links to legal documents.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div>
+            <span className="text-muted-foreground">Consent given: </span>
+            {consentGivenAt
+              ? new Date(consentGivenAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "No consent recorded"}
+          </div>
+          {consentVersion && (
+            <div>
+              <span className="text-muted-foreground">Consent version: </span>
+              {consentVersion}
+            </div>
+          )}
+          <div className="flex gap-4 pt-1">
+            <Link href="/privacy" className="text-primary underline-offset-2 hover:underline">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-primary underline-offset-2 hover:underline">
+              Terms of Service
+            </Link>
           </div>
         </CardContent>
       </Card>
