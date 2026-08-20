@@ -58,9 +58,16 @@ export function LoginForm() {
         <Label htmlFor="password">Password</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Logging in…" : "Log in"}
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button type="submit" className="flex-1" disabled={loading}>
+          {loading ? "Logging in…" : "Log in"}
+        </Button>
+      </div>
+      <div className="text-center text-sm text-muted-foreground">
+        <Link href="/forgot-password" className="font-medium text-primary underline-offset-2 hover:underline">
+          Forgot your password?
+        </Link>
+      </div>
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="font-medium text-primary underline-offset-2 hover:underline">

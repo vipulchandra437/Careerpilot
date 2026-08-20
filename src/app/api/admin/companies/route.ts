@@ -34,8 +34,11 @@ export async function POST(request: Request) {
           description: data.description || null,
         },
       });
-    } catch {
-      throw new ApiError(409, "Company name or slug already exists.");
+    } catch (e) {
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        throw new ApiError(409, "Company name or slug already exists.");
+      }
+      throw e;
     }
     await recordAudit(admin, "company.create", "company", company.id, { name: company.name }, clientIp(request));
     return NextResponse.json({ company }, { status: 201 });

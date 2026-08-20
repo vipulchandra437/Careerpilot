@@ -36,8 +36,11 @@ export async function POST(request: Request) {
       skill = await prisma.skill.create({
         data: { name: data.name, category: data.category, description: data.description || null },
       });
-    } catch {
-      throw new ApiError(409, "A skill with this name already exists.");
+    } catch (e) {
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        throw new ApiError(409, "A skill with this name already exists.");
+      }
+      throw e;
     }
     await recordAudit(admin, "skill.create", "skill", skill.id, { name: skill.name }, clientIp(request));
     return NextResponse.json({ skill }, { status: 201 });

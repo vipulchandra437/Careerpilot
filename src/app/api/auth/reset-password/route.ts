@@ -8,6 +8,8 @@ const resetPasswordSchema = z.object({
   password: passwordSchema,
 });
 
+const MAX_TOKEN_CHECKS = 20;
+
 export async function POST(request: Request) {
   try {
     const { token, password } = await validateBody(request, resetPasswordSchema);
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
         passwordResetExpires: { gt: new Date() },
         passwordResetToken: { not: null },
       },
+      take: MAX_TOKEN_CHECKS,
     });
 
     for (const user of users) {

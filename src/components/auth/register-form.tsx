@@ -33,7 +33,7 @@ export function RegisterForm() {
           name: String(form.get("name") ?? ""),
           email: String(form.get("email") ?? ""),
           password: String(form.get("password") ?? ""),
-          consentGiven: true,
+          consentGiven: consentGiven,
         }),
       });
       if (!res.ok) {

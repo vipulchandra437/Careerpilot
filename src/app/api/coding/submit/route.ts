@@ -159,8 +159,8 @@ export async function POST(request: Request) {
           });
         }
       }
-    } catch {
-      // Streak update is best-effort; don't fail the submission.
+    } catch (e) {
+      console.warn("Streak update failed (best-effort):", e instanceof Error ? e.message : e);
     }
 
     // Optional AI feedback (best-effort).

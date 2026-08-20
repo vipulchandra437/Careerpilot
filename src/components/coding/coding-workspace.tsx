@@ -314,7 +314,6 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
             {filteredProblems.map((p) => (
               <div
                 key={p.id}
-                role="button"
                 tabIndex={0}
                 onClick={() => loadProblem(p.id)}
                 onKeyDown={(e) => {

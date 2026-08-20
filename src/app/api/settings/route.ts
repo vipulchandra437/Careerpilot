@@ -11,15 +11,19 @@ const schema = z.object({
 });
 
 export async function GET() {
-  const user = await requireUser();
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { consentGivenAt: true, consentVersion: true },
-  });
-  return apiOk({
-    consentGivenAt: dbUser?.consentGivenAt?.toISOString() ?? null,
-    consentVersion: dbUser?.consentVersion ?? null,
-  });
+  try {
+    const user = await requireUser();
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { consentGivenAt: true, consentVersion: true },
+    });
+    return apiOk({
+      consentGivenAt: dbUser?.consentGivenAt?.toISOString() ?? null,
+      consentVersion: dbUser?.consentVersion ?? null,
+    });
+  } catch (error) {
+    return toErrorResponse(error);
+  }
 }
 
 export async function PUT(request: Request) {

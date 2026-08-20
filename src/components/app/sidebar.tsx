@@ -83,15 +83,6 @@ export function SidebarContent({
             </div>
           </div>
         ))}
-        {isAdmin && (
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <ShieldCheck className="size-4 shrink-0" />
-            Admin Console
-          </Link>
-        )}
       </nav>
 
       <div className="border-t p-3">

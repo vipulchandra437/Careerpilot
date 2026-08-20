@@ -33,7 +33,7 @@ export default async function CommunicationPage() {
           id: a.id,
           score: a.score,
           createdAt: a.createdAt.toISOString(),
-          preview: a.transcript.slice(0, 120),
+          preview: a.transcript?.slice(0, 120) ?? "",
         }))}
       />
     </div>

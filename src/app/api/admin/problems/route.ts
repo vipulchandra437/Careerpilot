@@ -70,8 +70,11 @@ export async function POST(request: Request) {
           expectedComplexity: data.expectedComplexity || null,
         },
       });
-    } catch {
-      throw new ApiError(409, "A problem with this title or slug already exists.");
+    } catch (e) {
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        throw new ApiError(409, "A problem with this title or slug already exists.");
+      }
+      throw e;
     }
     await recordAudit(admin, "problem.create", "problem", problem.id, { title: problem.title }, clientIp(request));
     return NextResponse.json({ problem }, { status: 201 });

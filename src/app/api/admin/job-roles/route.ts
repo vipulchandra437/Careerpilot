@@ -48,8 +48,11 @@ export async function POST(request: Request) {
           weights: weights as unknown as object,
         },
       });
-    } catch {
-      throw new ApiError(409, "A role with this slug already exists for the company.");
+    } catch (e) {
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        throw new ApiError(409, "A role with this slug already exists for the company.");
+      }
+      throw e;
     }
     await recordAudit(admin, "jobRole.create", "jobRole", role.id, { title: role.title }, clientIp(request));
     return NextResponse.json({ role }, { status: 201 });

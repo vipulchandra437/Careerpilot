@@ -27,15 +27,21 @@ type Message = {
   createdAt?: string;
 };
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function renderMarkdown(text: string): string {
-  let html = text
+  // Escape HTML first to prevent XSS
+  let html = escapeHtml(text)
     // code blocks first (triple backtick)
     .replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang: string, code: string) => {
-      const escaped = code
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-      return `<pre class="my-3 overflow-x-auto rounded-lg bg-zinc-900 p-4 text-sm text-zinc-100 dark:bg-zinc-800"><code>${escaped}</code></pre>`;
+      return `<pre class="my-3 overflow-x-auto rounded-lg bg-zinc-900 p-4 text-sm text-zinc-100 dark:bg-zinc-800"><code>${code}</code></pre>`;
     })
     // inline code
     .replace(/`([^`]+)`/g, '<code class="rounded bg-zinc-200 px-1.5 py-0.5 text-sm dark:bg-zinc-700">$1</code>')

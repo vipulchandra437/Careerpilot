@@ -125,7 +125,7 @@ export default function FeaturesPage() {
       <div className="mb-12 text-center">
         <h1 className="text-3xl font-bold tracking-tight">Features</h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Fifteen connected modules that each feed your central career profile.
+          Twelve connected modules that each feed your central career profile.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -134,7 +134,10 @@ export function ResumeAnalyzer({ analyses }: { analyses: PastAnalysis[] }) {
             onDragLeave={() => setDragging(false)}
             onDrop={(e) => { e.preventDefault(); setDragging(false); pickFile(e.dataTransfer.files?.[0]); }}
             onClick={() => inputRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
+            tabIndex={0}
             role="button"
+            aria-label="Upload resume"
           >
             <input
               ref={inputRef}

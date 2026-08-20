@@ -121,41 +121,46 @@ export function ProfileForm({
 
   async function save(completeOnboarding: boolean) {
     setSaving(true);
-    const payload = {
-      name,
-      location,
-      bio,
-      experienceLevel: experienceLevel || null,
-      studyHoursPerWeek: studyHours ? Number(studyHours) : null,
-      githubUrl: github,
-      linkedinUrl: linkedin,
-      portfolioUrl: portfolio,
-      education: {
-        college,
-        degree,
-        branch,
-        graduationYear: gradYear ? Number(gradYear) : null,
-        cgpa: cgpa ? Number(cgpa) : null,
-      },
-      skills: Object.entries(ratings).map(([skillId, rating]) => ({ skillId, rating })),
-      completeOnboarding,
-    };
-    const res = await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      toast.error(data.error ?? "Failed to save profile");
-      return;
-    }
-    toast.success("Profile saved");
-    if (completeOnboarding) {
-      router.push("/dashboard");
-    } else {
-      router.refresh();
+    try {
+      const payload = {
+        name,
+        location,
+        bio,
+        experienceLevel: experienceLevel || null,
+        studyHoursPerWeek: studyHours ? Number(studyHours) : null,
+        githubUrl: github,
+        linkedinUrl: linkedin,
+        portfolioUrl: portfolio,
+        education: {
+          college,
+          degree,
+          branch,
+          graduationYear: gradYear ? Number(gradYear) : null,
+          cgpa: cgpa ? Number(cgpa) : null,
+        },
+        skills: Object.entries(ratings).map(([skillId, rating]) => ({ skillId, rating })),
+        completeOnboarding,
+      };
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to save profile");
+        return;
+      }
+      toast.success("Profile saved");
+      if (completeOnboarding) {
+        router.push("/dashboard");
+      } else {
+        router.refresh();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save profile");
+    } finally {
+      setSaving(false);
     }
   }
 

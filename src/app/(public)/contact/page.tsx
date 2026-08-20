@@ -15,11 +15,11 @@ export default function ContactPage() {
         <CardContent className="space-y-4 pt-6">
           <div>
             <h2 className="font-medium">Email</h2>
-            <p className="text-sm text-muted-foreground">support@careerpilot.dev</p>
+            <a href="mailto:support@careerpilot.dev" className="text-sm text-primary underline-offset-2 hover:underline">support@careerpilot.dev</a>
           </div>
           <div>
             <h2 className="font-medium">GitHub</h2>
-            <p className="text-sm text-muted-foreground">github.com/careerpilot</p>
+            <a href="https://github.com/vipulchandra437/Careerpilot" target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline-offset-2 hover:underline">github.com/careerpilot</a>
           </div>
           <div>
             <h2 className="font-medium">Report an issue</h2>

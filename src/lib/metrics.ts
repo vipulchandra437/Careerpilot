@@ -24,6 +24,8 @@ interface MetricsStore {
 }
 
 const KEY = "__careerpilotMetrics__";
+const MAX_COUNTER_KEYS = 5000;
+const MAX_DURATION_KEYS = 5000;
 
 function store(): MetricsStore {
   const g = globalThis as Record<string, unknown>;
@@ -38,6 +40,10 @@ export const metrics = {
     const { counters } = store();
     const key = `${family}{${label}}`;
     counters[key] = (counters[key] ?? 0) + by;
+    if (Object.keys(counters).length > MAX_COUNTER_KEYS) {
+      const oldest = Object.keys(counters).sort()[0];
+      delete counters[oldest];
+    }
   },
 
   observe(family: string, label: Labeled, ms: number): void {
@@ -46,6 +52,10 @@ export const metrics = {
     const sample = (durations[key] ??= { sum: 0, count: 0 });
     sample.sum += ms;
     sample.count += 1;
+    if (Object.keys(durations).length > MAX_DURATION_KEYS) {
+      const oldest = Object.keys(durations).sort()[0];
+      delete durations[oldest];
+    }
   },
 
   /** Stable ordering for deterministic output. */

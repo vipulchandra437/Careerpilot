@@ -30,7 +30,8 @@ export function SettingsForm({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [busy, setBusy] = useState<null | "export" | "delete">(null);
 
   async function exportData() {
@@ -85,7 +86,7 @@ export function SettingsForm({
       toast.error("Name must be at least 2 characters.");
       return;
     }
-    setLoading(true);
+    setSavingProfile(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -101,7 +102,7 @@ export function SettingsForm({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update profile");
     } finally {
-      setLoading(false);
+      setSavingProfile(false);
     }
   }
 
@@ -114,7 +115,7 @@ export function SettingsForm({
       toast.error("Passwords do not match.");
       return;
     }
-    setLoading(true);
+    setSavingPassword(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -133,7 +134,7 @@ export function SettingsForm({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to change password");
     } finally {
-      setLoading(false);
+      setSavingPassword(false);
     }
   }
 
@@ -160,8 +161,8 @@ export function SettingsForm({
             <Input id="sname" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </div>
           <div className="flex justify-end">
-            <Button onClick={saveProfile} disabled={loading}>
-              {loading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            <Button onClick={saveProfile} disabled={savingProfile}>
+              {savingProfile ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Save changes
             </Button>
           </div>
@@ -190,8 +191,8 @@ export function SettingsForm({
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={savePassword} disabled={loading}>
-              {loading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            <Button onClick={savePassword} disabled={savingPassword}>
+              {savingPassword ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Change password
             </Button>
           </div>
