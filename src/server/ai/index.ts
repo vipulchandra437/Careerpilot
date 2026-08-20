@@ -2,7 +2,9 @@ import { z } from "zod";
 import { OpenRouterProvider, type AIMessage } from "@/server/ai/provider";
 import {
   resumeAnalysisSchema,
+  jdAnalysisSchema,
   type ResumeAnalysisResult,
+  type JDAnalysisResult,
 } from "@/server/ai/schemas";
 
 const maxTokens = Number(process.env.AI_MAX_TOKENS ?? 2000);
@@ -34,6 +36,26 @@ Scoring guidance:
 - Keyword: coverage of role-relevant technical and soft skills.
 - companyMatchScore: how well the resume matches the target company and role (omit relevance if no target given).`;
 
+const JD_SYSTEM_PROMPT = `You are a senior technical recruiter. Analyze the given job description and the candidate's existing skills to produce a structured analysis.
+
+You always respond with valid JSON only, matching this exact shape:
+{
+  "title": "Job title extracted from the JD (or 'Untitled Position' if not found)",
+  "company": "Company name extracted from the JD, or null if not found",
+  "requiredSkills": ["skill1", "skill2", ...],
+  "preferredSkills": ["skill1", "skill2", ...],
+  "matchScore": 0-100,
+  "missingSkills": ["skill1", "skill2", ...],
+  "recommendations": ["recommendation1", "recommendation2", ...]
+}
+
+Scoring guidance:
+- matchScore reflects how well the candidate's existing skills cover the required skills of the role.
+- requiredSkills: skills explicitly stated as required/mandatory in the JD.
+- preferredSkills: skills listed as nice-to-have, preferred, or bonus.
+- missingSkills: required skills the candidate does NOT have.
+- recommendations: 3-5 actionable steps the candidate should take to become a stronger applicant (e.g., learn a specific technology, build a project, get a certification).`;
+
 export const aiService = {
   isConfigured: () => provider.isConfigured(),
 
@@ -64,5 +86,20 @@ export const aiService = {
     ];
 
     return provider.generateStructured(resumeAnalysisSchema, messages);
+  },
+
+  async analyzeJobDescription(
+    jdText: string,
+    userSkills: string[],
+  ): Promise<JDAnalysisResult> {
+    const messages = [
+      { role: "system" as const, content: JD_SYSTEM_PROMPT },
+      {
+        role: "user" as const,
+        content: `The candidate has these skills: ${userSkills.length > 0 ? userSkills.join(", ") : "none listed"}\n\nJob description:\n\n${jdText}`,
+      },
+    ];
+
+    return provider.generateStructured(jdAnalysisSchema, messages);
   },
 };

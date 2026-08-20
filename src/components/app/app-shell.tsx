@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SidebarContent } from "@/components/app/sidebar";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { studentNav, adminNav } from "@/config/nav";
 
 export function AppShell({
@@ -44,6 +45,9 @@ export function AppShell({
             </SheetContent>
           </Sheet>
           <span className="font-semibold">CareerPilot</span>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">

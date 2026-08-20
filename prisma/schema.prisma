@@ -101,6 +101,34 @@ enum RoadmapStatus {
   ARCHIVED
 }
 
+enum JobStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+enum NotificationType {
+  JOB_ALERT
+  LEARNING_REMINDER
+  INTERVIEW_REMINDER
+  WEEKLY_SUMMARY
+  SYSTEM
+}
+
+enum PlanType {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIALING
+}
+
 enum TaskType {
   DAILY
   WEEKLY
@@ -138,6 +166,10 @@ model User {
   mentorConversations   MentorConversation[]
   codingStreak          CodingStreak?
   codingBookmarks       CodingBookmark[]
+  jdAnalyses            JDAnalysis[]
+  savedJobs             Job[]
+  notifications         Notification[]
+  subscription          Subscription?
 }
 
 // NextAuth.js (v5) adapter models — required by PrismaAdapter for OAuth
@@ -684,4 +716,66 @@ model CodingBookmark {
 
   @@unique([userId, problemId])
   @@index([userId])
+}
+
+model JDAnalysis {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  company         String?
+  description     String
+  requiredSkills  Json
+  preferredSkills Json
+  matchScore      Float?
+  missingSkills   Json
+  recommendations Json
+  createdAt       DateTime @default(now())
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  company     String?
+  location    String?
+  url         String?
+  description String?
+  salary      String?
+  status      JobStatus @default(SAVED)
+  notes       String?
+  appliedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 PlanType           @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([userId])
 }

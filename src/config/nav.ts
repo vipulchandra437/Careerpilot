@@ -23,6 +23,10 @@ import {
   Database,
   ClipboardList,
   BarChart3,
+  Search,
+  Bell,
+  CreditCard,
+  FileSearch,
 } from "lucide-react";
 import { GitHubIcon, LinkedInIcon } from "@/components/icons/brand-icons";
 
@@ -80,6 +84,13 @@ export const studentNav: NavGroup[] = [
     ],
   },
   {
+    label: "Job Hunt",
+    items: [
+      { title: "JD Analysis", href: "/jd-analysis", icon: FileSearch },
+      { title: "Job Tracker", href: "/jobs", icon: Briefcase },
+    ],
+  },
+  {
     label: "AI",
     items: [
       { title: "Career Mentor", href: "/mentor", icon: Sparkles },
@@ -87,7 +98,11 @@ export const studentNav: NavGroup[] = [
   },
   {
     label: "Account",
-    items: [{ title: "Settings", href: "/settings", icon: Settings }],
+    items: [
+      { title: "Notifications", href: "/notifications", icon: Bell },
+      { title: "Subscription", href: "/subscription", icon: CreditCard },
+      { title: "Settings", href: "/settings", icon: Settings },
+    ],
   },
 ];
 
