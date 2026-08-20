@@ -80,6 +80,10 @@ services:
       args:
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     depends_on:
       db:
         condition: service_healthy
@@ -104,12 +108,13 @@ services:
       RATE_LIMIT_AI: ${RATE_LIMIT_AI:-10}
       RATE_LIMIT_CODING: ${RATE_LIMIT_CODING:-30}
       RATE_LIMIT_GENERAL: ${RATE_LIMIT_GENERAL:-300}
+      NODE_OPTIONS: "--max-old-space-size=1024"
     ports:
-      - "127.0.0.1:3000:3000"
+      - "0.0.0.0:3000:3000"
     healthcheck:
       test:
         - CMD-SHELL
-        - wget -qO- http://localhost:3000/api/health >/dev/null || exit 1
+        - wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1
       interval: 15s
       timeout: 5s
       retries: 12

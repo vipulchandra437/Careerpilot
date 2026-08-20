@@ -1,5 +1,6 @@
 import { PrismaClient, SkillCategory, Importance, Difficulty, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { LECODE_PROBLEMS } from "./leetcode-seed";
 
 const prisma = new PrismaClient();
 
@@ -109,7 +110,15 @@ const SKILLS: { name: string; category: SkillCategory; description: string }[] =
   { name: "Time Management", category: "SOFT_SKILL", description: "Prioritization" },
 ];
 
-const PROBLEMS: Problem[] = [
+const PROBLEMS: Problem[] = LECODE_PROBLEMS.map((p) => ({
+  ...p,
+  difficulty: p.difficulty as Difficulty,
+  testCases: p.testCases as { args: unknown[]; expected: unknown }[],
+  hiddenTestCases: p.hiddenTestCases as { args: unknown[]; expected: unknown }[],
+}));
+
+/*
+const PROBLEMS_LEGACY: Problem[] = [
   {
     title: "Two Sum",
     slug: "two-sum",
@@ -1054,6 +1063,8 @@ const PROBLEMS: Problem[] = [
     ],
   },
 ];
+
+*/ // end PROBLEMS_LEGACY
 
 // companies with job roles
 const COMPANIES: {

@@ -108,15 +108,19 @@ enum TaskType {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified DateTime?
-  passwordHash  String?
-  image         String?
-  role          UserRole  @default(STUDENT)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  name                 String
+  email                String    @unique
+  emailVerified        DateTime?
+  passwordHash         String?
+  image                String?
+  role                 UserRole  @default(STUDENT)
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  consentGivenAt       DateTime?
+  consentVersion       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   profile               StudentProfile?
   codingSubmissions     CodingSubmission[]
@@ -131,6 +135,9 @@ model User {
   accounts              Account[]
   sessions              Session[]
   authenticators        Authenticator[]
+  mentorConversations   MentorConversation[]
+  codingStreak          CodingStreak?
+  codingBookmarks       CodingBookmark[]
 }
 
 // NextAuth.js (v5) adapter models — required by PrismaAdapter for OAuth
@@ -360,8 +367,10 @@ model CodingProblem {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  submissions CodingSubmission[]
-  assessments CodingAssessment[]
+  submissions     CodingSubmission[]
+  assessments     CodingAssessment[]
+  dailyChallenges DailyChallenge[]
+  bookmarks       CodingBookmark[]
 }
 
 model CodingSubmission {
@@ -609,4 +618,70 @@ model AuditLog {
 
   @@index([actorEmail])
   @@index([resource, createdAt])
+}
+
+// --- Mentor Chat Persistence ---
+
+model MentorConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("New conversation")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages MentorMessage[]
+
+  @@index([userId])
+}
+
+model MentorMessage {
+  id             String            @id @default(cuid())
+  conversationId String
+  conversation   MentorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String            // "user" | "assistant" | "system"
+  content        String
+  tokenCount     Int?
+  createdAt      DateTime          @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// --- Coding Streak & Daily Challenge ---
+
+model CodingStreak {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+  totalSolved    Int       @default(0)
+  easySolved     Int       @default(0)
+  mediumSolved   Int       @default(0)
+  hardSolved     Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId])
+}
+
+model DailyChallenge {
+  id             String    @id @default(cuid())
+  challengeDate  DateTime  @unique
+  problemId      String
+  problem        CodingProblem @relation(fields: [problemId], references: [id])
+  createdAt      DateTime  @default(now())
+}
+
+model CodingBookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId String
+  problem   CodingProblem @relation(fields: [problemId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, problemId])
+  @@index([userId])
 }

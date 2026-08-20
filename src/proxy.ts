@@ -4,6 +4,16 @@ import { rateLimiter } from "@/lib/rate-limit";
 import { metrics } from "@/lib/metrics";
 import { logSecurityEvent } from "@/lib/security-logger";
 
+// --- Security constants ---
+const BAD_UA = /(sqlmap|nikto|nmap|masscan|dirbuster|gobuster|wfuzz|ffuf|whatweb|wpscan|joomla|drupal)/i;
+const MAX_BODY_BYTES = 10 * 1024 * 1024;
+const WEBHOOK_PATHS = ["/api/webhook"];
+
+function isWebhook(pathname: string): boolean {
+  return WEBHOOK_PATHS.some((p) => pathname.startsWith(p));
+}
+
+// --- Rate limit config ---
 const enabled = (process.env.RATE_LIMIT_ENABLED ?? "true") !== "false";
 const limits = {
   auth: parseInt(process.env.RATE_LIMIT_AUTH ?? "20", 10),
@@ -117,6 +127,77 @@ function isLoginRoute(pathname: string): boolean {
   return pathname === "/api/auth/callback/credentials" || pathname === "/api/auth/signin";
 }
 
+// --- Security helpers ---
+async function readBodySnippet(request: NextRequest): Promise<string | null> {
+  try {
+    const clone = request.clone();
+    const text = await clone.text();
+    return text.length > 0 ? text : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasValidCsrfHeader(request: NextRequest): boolean {
+  const headerToken = request.headers.get("x-csrf-token");
+  if (!headerToken) return false;
+  const cookieToken = request.cookies.get("csrf_token")?.value;
+  return cookieToken != null && headerToken === cookieToken;
+}
+
+function hasCsrfBodyToken(body: string, cookieToken: string | undefined): boolean {
+  if (!cookieToken) return false;
+  try {
+    const parsed = JSON.parse(body);
+    if (typeof parsed._csrf === "string" && parsed._csrf === cookieToken) return true;
+  } catch { /* not JSON */ }
+  return false;
+}
+
+function addSecurityHeaders(response: NextResponse): void {
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("X-Permitted-Cross-Domain-Policies", "none");
+  response.headers.set("Cross-Origin-Embedder-Policy", "require-corp");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+}
+
+const STUDENT_PATHS = ["/dashboard", "/profile", "/coding", "/communication", "/career-goal", "/github", "/hiring-simulation", "/interview", "/linkedin", "/mentor", "/projects", "/progress", "/readiness", "/report", "/resume", "/roadmap", "/settings", "/skill-gaps"];
+const ADMIN_PREFIX = "/admin";
+
+function hasSessionCookie(request: NextRequest): boolean {
+  return !!(
+    request.cookies.get("__Secure-authjs.session-token")?.value ??
+    request.cookies.get("authjs.session-token")?.value
+  );
+}
+
+function hasAdminSession(request: NextRequest): boolean {
+  const token =
+    request.cookies.get("__Secure-authjs.session-token")?.value ??
+    request.cookies.get("authjs.session-token")?.value;
+  if (!token) return false;
+  try {
+    const parts = token.split(".");
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+      return payload.role === "ADMIN";
+    }
+  } catch { /* not a JWT */ }
+  return false;
+}
+
+function isProtectedPage(pathname: string): boolean {
+  if (pathname === "/login" || pathname === "/register") return false;
+  if (STUDENT_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
+  if (pathname.startsWith(ADMIN_PREFIX)) return true;
+  return false;
+}
+
+function isAdminPage(pathname: string): boolean {
+  return pathname.startsWith(ADMIN_PREFIX);
+}
+
 export async function proxy(request: NextRequest) {
   const start = Date.now();
   const { pathname } = request.nextUrl;
@@ -124,9 +205,75 @@ export async function proxy(request: NextRequest) {
   const ip = clientIp(request);
   const userAgent = request.headers.get("user-agent") ?? "";
 
-  let response: NextResponse;
+  // --- Auth check for protected page routes ---
+  if (!pathname.startsWith("/api") && isProtectedPage(pathname)) {
+    if (!hasSessionCookie(request)) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (isAdminPage(pathname) && !hasAdminSession(request)) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // --- Redirect logged-in users away from login/register ---
+  if ((pathname === "/login" || pathname === "/register") && hasSessionCookie(request)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // --- Security headers on every response ---
   const mutating = method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH";
+  let response: NextResponse;
   const group: keyof typeof limits = pathname.startsWith("/api") ? groupFor(pathname) : "general";
+
+  // --- Security checks for API routes ---
+  if (pathname.startsWith("/api")) {
+    // Bad user-agent blocking
+    if (BAD_UA.test(userAgent)) {
+      logSecurityEvent("bot_detected", ip, userAgent, pathname, { reason: "bad_user_agent" });
+      const res = NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      addSecurityHeaders(res);
+      return res;
+    }
+
+    if (mutating) {
+      // Request size limit
+      const contentLength = parseInt(request.headers.get("content-length") ?? "0", 10);
+      if (contentLength > MAX_BODY_BYTES) {
+        logSecurityEvent("request_size_exceeded", ip, userAgent, pathname, { contentLength, maxBytes: MAX_BODY_BYTES });
+        const res = NextResponse.json({ error: "Request too large" }, { status: 413 });
+        addSecurityHeaders(res);
+        return res;
+      }
+
+      // CSRF validation (skip for auth routes and webhooks)
+      if (!pathname.startsWith("/api/auth") && !isWebhook(pathname)) {
+        const contentType = request.headers.get("content-type") ?? "";
+        const isJsonOrText = contentType.includes("application/json") || contentType.includes("text/");
+        const bodySnippet = isJsonOrText ? await readBodySnippet(request) : null;
+
+        if (!hasValidCsrfHeader(request)) {
+          const cookieToken = request.cookies.get("csrf_token")?.value;
+          const csrfBodyValid = bodySnippet ? hasCsrfBodyToken(bodySnippet, cookieToken) : false;
+          if (!csrfBodyValid) {
+            logSecurityEvent("csrf_violation", ip, userAgent, pathname, { reason: "missing_or_invalid_token" });
+            const res = NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
+            addSecurityHeaders(res);
+            return res;
+          }
+        }
+
+        // Honeypot: non-empty "website" field = bot
+        if (bodySnippet && /"website"\s*:\s*"[^"]+"/.test(bodySnippet) && !/"website"\s*:\s*""/.test(bodySnippet)) {
+          logSecurityEvent("bot_detected", ip, userAgent, pathname, { reason: "honeypot_field" });
+          const res = NextResponse.json({ error: "Forbidden" }, { status: 403 });
+          addSecurityHeaders(res);
+          return res;
+        }
+      }
+    }
+  }
 
   // Login attempt limiting: stricter threshold for auth routes
   if (enabled && isLoginRoute(pathname) && mutating) {
@@ -137,10 +284,12 @@ export async function proxy(request: NextRequest) {
         group: "login",
         reason: "too_many_login_attempts",
       });
-      return NextResponse.json(
+      const res = NextResponse.json(
         { error: "Too many login attempts. Please try again later." },
         { status: 429, headers: { "Retry-After": String(retryAfter) } },
       );
+      addSecurityHeaders(res);
+      return res;
     }
   }
 
@@ -157,10 +306,12 @@ export async function proxy(request: NextRequest) {
           group: "daily_ai",
           userId,
         });
-        return NextResponse.json(
+        const res = NextResponse.json(
           { error: "Daily AI request limit reached. Please try again tomorrow." },
           { status: 429, headers: { "Retry-After": String(dailyResult.retryAfter) } },
         );
+        addSecurityHeaders(res);
+        return res;
       }
     }
   }
@@ -173,16 +324,21 @@ export async function proxy(request: NextRequest) {
     if (!allowed) {
       metrics.increment("careerpilot_rate_limited_total", `group="${group}"`);
       logSecurityEvent("rate_limit_exceeded", ip, userAgent, pathname, { group });
-      response = NextResponse.json(
+      const rateLimitedRes = NextResponse.json(
         { error: "Too many requests. Please try again in a minute." },
         { status: 429, headers: { "Retry-After": String(retryAfter) } },
       );
+      addSecurityHeaders(rateLimitedRes);
+      response = rateLimitedRes;
     } else {
       response = NextResponse.next();
     }
   } else {
     response = NextResponse.next();
   }
+
+  // --- Apply security headers ---
+  addSecurityHeaders(response);
 
   const requestId = `${start.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   response.headers.set("X-Request-Id", requestId);
@@ -210,5 +366,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

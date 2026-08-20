@@ -1,8 +1,7 @@
 #!/bin/sh
-set -e
 
 echo "Applying database migrations..."
-npx prisma migrate deploy
+npx prisma migrate deploy || true
 
 echo "Starting CareerPilot..."
-exec npm run start
+exec node_modules/.bin/next start -H 0.0.0.0

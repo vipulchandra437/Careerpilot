@@ -4,11 +4,13 @@ import { CodingWorkspace } from "@/components/coding/coding-workspace";
 
 export const metadata = { title: "Coding" };
 
-export default async function CodingPage() {
-  const user = await requireUser();
+const BATCH_SIZE = 500;
 
-  const problems = await prisma.codingProblem.findMany({
+async function fetchBatch(userId: string, skip: number, take: number) {
+  return prisma.codingProblem.findMany({
     orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
+    skip,
+    take,
     select: {
       id: true,
       title: true,
@@ -17,15 +19,27 @@ export default async function CodingPage() {
       topics: true,
       companies: true,
       submissions: {
-        where: { userId: user.id },
+        where: { userId },
         select: { status: true, passedTests: true, totalTests: true },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "desc" as const },
         take: 1,
       },
     },
   });
+}
 
-  const items = problems.map((p) => ({
+export default async function CodingPage() {
+  const user = await requireUser();
+
+  const totalCount = await prisma.codingProblem.count();
+
+  const allProblems: Awaited<ReturnType<typeof fetchBatch>> = [];
+  for (let skip = 0; skip < totalCount; skip += BATCH_SIZE) {
+    const batch = await fetchBatch(user.id, skip, BATCH_SIZE);
+    allProblems.push(...batch);
+  }
+
+  const items = allProblems.map((p) => ({
     id: p.id,
     title: p.title,
     difficulty: p.difficulty,

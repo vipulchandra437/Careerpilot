@@ -312,11 +312,19 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
           {/* Problem list */}
           <div className="flex-1 space-y-1 overflow-y-auto">
             {filteredProblems.map((p) => (
-              <button
+              <div
                 key={p.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => loadProblem(p.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    loadProblem(p.id);
+                  }
+                }}
                 className={cn(
-                  "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                  "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors cursor-pointer",
                   p.id === problemId
                     ? "border-primary bg-primary/5"
                     : "hover:bg-muted",
@@ -351,7 +359,7 @@ export function CodingWorkspace({ problems }: { problems: ProblemSummary[] }) {
                     )}
                   />
                 </button>
-              </button>
+              </div>
             ))}
           </div>
         </CardContent>
