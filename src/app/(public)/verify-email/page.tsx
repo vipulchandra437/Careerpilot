@@ -56,7 +56,7 @@ export default function VerifyEmailPage() {
           <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         )}
         {(status === "success" || status === "error") && (
-          <Button render={<Link href="/login" />}>Go to login</Button>
+          <Button nativeButton={false} render={<Link href="/login" />}>Go to login</Button>
         )}
       </div>
     </div>

@@ -55,7 +55,7 @@ export default function HowItWorksPage() {
         ))}
       </div>
       <div className="mt-12 text-center">
-        <Button size="lg" render={<Link href="/register" />}>
+        <Button size="lg" nativeButton={false} render={<Link href="/register" />}>
           Get started <ArrowRight className="ml-2 size-4" />
         </Button>
       </div>

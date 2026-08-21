@@ -106,10 +106,10 @@ export default function LandingPage() {
             then builds a personalized plan to close your gaps and get you hired.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" render={<Link href="/register" />}>
+            <Button size="lg" nativeButton={false} render={<Link href="/register" />}>
               Start free <ArrowRight className="ml-2 size-4" />
             </Button>
-            <Button size="lg" variant="outline" render={<Link href="/how-it-works" />}>
+            <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/how-it-works" />}>
               See how it works
             </Button>
           </div>
@@ -182,7 +182,7 @@ export default function LandingPage() {
               <span className="rounded-full bg-card px-3 py-1.5">Google · SWE</span>
               <span className="rounded-full bg-card px-3 py-1.5">Amazon · SDE</span>
             </div>
-            <Button size="lg" render={<Link href="/register" />}>
+            <Button size="lg" nativeButton={false} render={<Link href="/register" />}>
               Get started — it&apos;s free <ArrowRight className="ml-2 size-4" />
             </Button>
           </div>

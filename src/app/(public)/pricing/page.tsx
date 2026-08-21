@@ -75,7 +75,7 @@ export default function PricingPage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" variant={p.featured ? "default" : "outline"} render={<Link href={p.href} />}>
+              <Button className="w-full" variant={p.featured ? "default" : "outline"} nativeButton={false} render={<Link href={p.href} />}>
                 {p.cta}
               </Button>
             </CardFooter>

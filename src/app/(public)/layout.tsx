@@ -33,13 +33,13 @@ export default async function PublicLayout({ children }: LayoutProps<"/">) {
           </nav>
           <div className="flex items-center gap-2">
             {user ? (
-              <Button render={<Link href="/dashboard" />}>Dashboard</Button>
+              <Button nativeButton={false} render={<Link href="/dashboard" />}>Dashboard</Button>
             ) : (
               <>
-                <Button variant="ghost" render={<Link href="/login" />}>
+                <Button nativeButton={false} variant="ghost" render={<Link href="/login" />}>
                   Log in
                 </Button>
-                <Button render={<Link href="/register" />}>Get started</Button>
+                <Button nativeButton={false} render={<Link href="/register" />}>Get started</Button>
               </>
             )}
           </div>

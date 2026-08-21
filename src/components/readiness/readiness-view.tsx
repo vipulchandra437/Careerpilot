@@ -257,7 +257,7 @@ export function ReadinessView({
           <p className="text-sm text-muted-foreground">
             Want to target a different company or role?
           </p>
-          <Button variant="outline" render={<Link href="/career-goal" />}>
+          <Button variant="outline" nativeButton={false} render={<Link href="/career-goal" />}>
             Change target <ArrowRight className="ml-2 size-4" />
           </Button>
         </CardContent>

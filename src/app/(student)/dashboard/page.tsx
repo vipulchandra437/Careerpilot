@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { computeReadiness } from "@/server/scoring/readiness.service";
 import { CATEGORY_LABELS, readinessBand, type CategoryKey } from "@/server/scoring/score-engine";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
-import { CalendarCheck, Bell, Zap } from "lucide-react";
 
 export const metadata = { title: "Dashboard" };
 
@@ -99,13 +98,13 @@ export default async function DashboardPage() {
     href: CATEGORY_HREF[key],
   }));
 
-  const quickActions: { label: string; description: string; href: string; icon: typeof Bell; color: string }[] = [];
+  const quickActions: { label: string; description: string; href: string; icon: string; color: string }[] = [];
   if (notifications.length > 0) {
     quickActions.push({
       label: notifications[0].title,
       description: notifications[0].body.slice(0, 60),
       href: notifications[0].link ?? "/notifications",
-      icon: Bell,
+      icon: "bell",
       color: "bg-amber-500",
     });
   }
@@ -115,7 +114,7 @@ export default async function DashboardPage() {
       label: `Improve ${lowestArea.label}`,
       description: `Your ${lowestArea.label.toLowerCase()} score is ${lowestArea.score}/100`,
       href: lowestArea.href,
-      icon: Zap,
+      icon: "zap",
       color: "bg-blue-500",
     });
   }
@@ -124,7 +123,7 @@ export default async function DashboardPage() {
       label: "Daily challenge",
       description: "Solve a coding problem to keep your streak",
       href: "/coding",
-      icon: CalendarCheck,
+      icon: "calendar-check",
       color: "bg-emerald-500",
     });
   }

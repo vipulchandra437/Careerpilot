@@ -49,7 +49,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
           <p className="text-sm text-muted-foreground">Here&apos;s where your career preparation stands.</p>
         </div>
         {!hasTarget && (
-          <Button render={<Link href="/career-goal" />}>
+          <Button nativeButton={false} render={<Link href="/career-goal" />}>
             Set career goal <ArrowRight className="ml-2 size-4" />
           </Button>
         )}
@@ -99,7 +99,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
                     <p>Estimated from your current profile.</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" render={<Link href="/readiness" />}>
+                <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/readiness" />}>
                   View full breakdown
                 </Button>
               </div>
@@ -109,7 +109,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
                 <p className="text-sm text-muted-foreground">
                   Pick a company and role to start measuring readiness.
                 </p>
-                <Button size="sm" render={<Link href="/career-goal" />}>
+                <Button size="sm" nativeButton={false} render={<Link href="/career-goal" />}>
                   Choose a target
                 </Button>
               </div>
@@ -205,7 +205,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
               ))
             )}
             {data.gaps.length > 0 && (
-              <Button variant="outline" size="sm" render={<Link href="/skill-gaps" />}>
+              <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/skill-gaps" />}>
                 View all skill gaps
               </Button>
             )}

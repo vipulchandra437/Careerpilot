@@ -13,7 +13,15 @@ import {
   Sparkles,
   Target,
   Bell,
+  Zap,
+  CalendarCheck,
 } from "lucide-react";
+
+const ICON_MAP: Record<string, typeof Bell> = {
+  bell: Bell,
+  zap: Zap,
+  "calendar-check": CalendarCheck,
+};
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -65,7 +73,7 @@ type QuickAction = {
   label: string;
   description: string;
   href: string;
-  icon: typeof Bell;
+  icon: string;
   color: string;
 };
 
@@ -144,13 +152,15 @@ export function DashboardContent({
 
       {quickActions.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
-          {quickActions.map((qa) => (
-            <Link key={qa.label} href={qa.href}>
-              <Card className="h-full transition-colors hover:border-primary/50">
-                <CardContent className="flex items-center gap-3 pt-4">
-                  <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${qa.color}`}>
-                    <qa.icon className="size-4 text-white" />
-                  </div>
+          {quickActions.map((qa) => {
+            const Icon = ICON_MAP[qa.icon] ?? Bell;
+            return (
+              <Link key={qa.label} href={qa.href}>
+                <Card className="h-full transition-colors hover:border-primary/50">
+                  <CardContent className="flex items-center gap-3 pt-4">
+                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${qa.color}`}>
+                      <Icon className="size-4 text-white" />
+                    </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{qa.label}</p>
                     <p className="truncate text-xs text-muted-foreground">{qa.description}</p>
@@ -158,7 +168,8 @@ export function DashboardContent({
                 </CardContent>
               </Card>
             </Link>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -183,7 +194,7 @@ export function DashboardContent({
                 <div>{completed}/4 areas complete</div>
                 <Progress value={(completed / 4) * 100} className="mt-1 w-40" />
               </div>
-              <Button variant="secondary" render={<Link href={readiness.areas.some((a) => a.score < 70) ? [...readiness.areas].sort((a, b) => a.score - b.score)[0].href : "/interview"} />}>
+              <Button variant="secondary" nativeButton={false} render={<Link href={readiness.areas.some((a) => a.score < 70) ? [...readiness.areas].sort((a, b) => a.score - b.score)[0].href : "/interview"} />}>
                 Improve lowest area <ArrowRight className="ml-1 size-4" />
               </Button>
             </div>

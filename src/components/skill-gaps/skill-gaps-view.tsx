@@ -91,7 +91,7 @@ export function SkillGapsView({
             <p className="text-sm text-muted-foreground">
               Set a career goal to see which skills you still need to build.
             </p>
-            <Button render={<Link href="/career-goal" />}>
+            <Button nativeButton={false} render={<Link href="/career-goal" />}>
               Set career goal <ArrowRight className="ml-2 size-4" />
             </Button>
           </CardContent>
