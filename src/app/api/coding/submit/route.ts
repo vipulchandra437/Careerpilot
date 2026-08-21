@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const maxDuration = 60;
 import { z } from "zod";
 import { Prisma, SubmissionStatus } from "@prisma/client";
 import { requireUser } from "@/lib/auth-helpers";

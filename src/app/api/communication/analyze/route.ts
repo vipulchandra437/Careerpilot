@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const maxDuration = 60;
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import {

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const maxDuration = 60;
 import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { validateBody, toErrorResponse, isAIServiceError, ApiError } from "@/lib/api";
