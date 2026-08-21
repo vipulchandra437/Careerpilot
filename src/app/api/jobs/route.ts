@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { toErrorResponse, validateBody } from "@/lib/api";
+import { triggerJobMatch } from "@/lib/notification-triggers";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ const createSchema = z.object({
   description: z.string().max(10000).optional().nullable(),
   salary: z.string().max(100).optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
+  followUpDate: z.string().optional().nullable(),
 });
 
 const statusEnum = z.enum(["SAVED", "APPLIED", "INTERVIEW", "OFFER", "REJECTED"]);
@@ -39,6 +41,7 @@ export async function GET(request: Request) {
       jobs: jobs.map((j) => ({
         ...j,
         appliedAt: j.appliedAt?.toISOString() ?? null,
+        followUpDate: j.followUpDate?.toISOString() ?? null,
         createdAt: j.createdAt.toISOString(),
         updatedAt: j.updatedAt.toISOString(),
       })),
@@ -63,10 +66,15 @@ export async function POST(request: Request) {
         description: data.description || null,
         salary: data.salary || null,
         notes: data.notes || null,
+        followUpDate: data.followUpDate ? new Date(data.followUpDate) : null,
       },
     });
 
-    return NextResponse.json({ job: { ...job, appliedAt: job.appliedAt?.toISOString() ?? null, createdAt: job.createdAt.toISOString(), updatedAt: job.updatedAt.toISOString() } }, { status: 201 });
+    if (data.company) {
+      triggerJobMatch(user.id, data.title, data.company).catch(() => {});
+    }
+
+    return NextResponse.json({ job: { ...job, appliedAt: job.appliedAt?.toISOString() ?? null, followUpDate: job.followUpDate?.toISOString() ?? null, createdAt: job.createdAt.toISOString(), updatedAt: job.updatedAt.toISOString() } }, { status: 201 });
   } catch (error) {
     return toErrorResponse(error);
   }

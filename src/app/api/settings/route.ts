@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { ApiError, apiOk, passwordSchema, toErrorResponse, validateBody } from "@/lib/api";
+import { recordAudit, clientIp } from "@/lib/audit";
+
+export const runtime = "nodejs";
 
 const schema = z.object({
   name: z.string().min(2).max(100).optional(),
@@ -11,8 +14,8 @@ const schema = z.object({
 });
 
 export async function GET() {
+  const user = await requireUser();
   try {
-    const user = await requireUser();
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
       select: { consentGivenAt: true, consentVersion: true },
@@ -40,7 +43,6 @@ export async function PUT(request: Request) {
     if (body.newPassword) {
       const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
       if (existing?.passwordHash) {
-        // Accounts with a password require the current one to change it.
         if (!body.currentPassword) {
           throw new ApiError(400, "Current password is required to change your password.");
         }
@@ -50,6 +52,15 @@ export async function PUT(request: Request) {
         }
       }
       data.passwordHash = await bcrypt.hash(body.newPassword, 10);
+
+      await recordAudit(
+        { id: user.id, email: user.email },
+        "auth.password.change",
+        "user",
+        user.id,
+        {},
+        clientIp(request),
+      );
     }
 
     if (Object.keys(data).length > 0) {

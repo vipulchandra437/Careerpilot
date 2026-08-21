@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/utils";
-import { Printer, CheckCircle2, AlertTriangle, Target, ArrowRight } from "lucide-react";
+import { Printer, CheckCircle2, AlertTriangle, Target, ArrowRight, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +13,41 @@ import { ScoreRing } from "@/components/ui/score-ring";
 import type { ReportData } from "@/server/services/report.service";
 
 export function ReportView({ report }: { report: ReportData }) {
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportPDF() {
+    setExporting(true);
+    try {
+      const { generateReportPDF } = await import("@/lib/pdf-report");
+      const blob = generateReportPDF(report);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `career-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("PDF report downloaded");
+    } catch {
+      toast.error("Failed to generate PDF");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="space-y-6 print:space-y-4">
       <div className="flex items-center justify-between print:hidden">
         <p className="text-xs text-muted-foreground">Generated {formatDateTime(report.generatedAt)}</p>
-        <Button variant="outline" size="sm" onClick={() => window.print()}>
-          <Printer className="mr-2 size-4" /> Print report
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="mr-2 size-4" /> Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}>
+            <Download className="mr-2 size-4" /> {exporting ? "Generating…" : "Download PDF"}
+          </Button>
+        </div>
       </div>
 
       <Card className="bg-primary text-primary-foreground print:bg-primary">

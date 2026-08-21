@@ -145,6 +145,9 @@ model User {
   role                 UserRole  @default(STUDENT)
   passwordResetToken   String?
   passwordResetExpires DateTime?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorBackupCodes String?
   consentGivenAt       DateTime?
   consentVersion       String?
   createdAt            DateTime  @default(now())
@@ -168,8 +171,12 @@ model User {
   codingBookmarks       CodingBookmark[]
   jdAnalyses            JDAnalysis[]
   savedJobs             Job[]
-  notifications         Notification[]
-  subscription          Subscription?
+  notifications              Notification[]
+  notificationPreferences    NotificationPreference?
+  subscription               Subscription?
+  usageRecords               UsageRecord[]
+  careerGoals               CareerGoal[]
+  learningLogs              LearningLog[]
 }
 
 // NextAuth.js (v5) adapter models — required by PrismaAdapter for OAuth
@@ -242,6 +249,7 @@ model StudentProfile {
   updatedAt             DateTime         @updatedAt
 
   education          Education?
+  workExperience     WorkExperience[]
   studentSkills      StudentSkill[]
   skillGaps          SkillGap[]
   learningRoadmaps   LearningRoadmap[]
@@ -261,6 +269,20 @@ model Education {
   branch         String?
   graduationYear Int?
   cgpa           Float?
+}
+
+model WorkExperience {
+  id          String   @id @default(cuid())
+  profileId   String
+  profile     StudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title       String
+  company     String
+  location    String?
+  startDate   String
+  endDate     String?
+  current     Boolean  @default(false)
+  description String
+  createdAt   DateTime @default(now())
 }
 
 model Skill {
@@ -743,11 +765,12 @@ model Job {
   url         String?
   description String?
   salary      String?
-  status      JobStatus @default(SAVED)
-  notes       String?
-  appliedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  status       JobStatus @default(SAVED)
+  notes        String?
+  appliedAt    DateTime?
+  followUpDate DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Notification {
@@ -760,6 +783,23 @@ model Notification {
   read      Boolean          @default(false)
   link      String?
   createdAt DateTime         @default(now())
+}
+
+model NotificationPreference {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email               Boolean   @default(true)
+  push                Boolean   @default(true)
+  jobAlerts           Boolean   @default(true)
+  learningReminders   Boolean   @default(true)
+  interviewReminders  Boolean   @default(true)
+  weeklySummary       Boolean   @default(true)
+  system              Boolean   @default(true)
+  quietHoursStart     String?
+  quietHoursEnd       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model Subscription {
@@ -778,4 +818,43 @@ model Subscription {
   updatedAt            DateTime           @updatedAt
 
   @@unique([userId])
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature   String
+  count     Int      @default(1)
+  period    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, feature, period])
+}
+
+model CareerGoal {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    String
+  targetScore Float
+  deadline    DateTime?
+  status      String    @default("active")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model LearningLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String?
+  skillName String
+  minutes   Int
+  note      String?
+  date      DateTime @default(now())
+
+  @@index([userId, date])
 }

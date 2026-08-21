@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
-import { JDAnalyzer } from "@/components/jd-analysis/jd-analyzer";
+import { JDAnalysisPageClient } from "@/components/jd-analysis/jd-analysis-page-client";
 
 export const metadata = { title: "JD Analysis" };
 
@@ -19,9 +19,20 @@ export default async function JDAnalysisPage() {
       preferredSkills: true,
       missingSkills: true,
       recommendations: true,
+      description: true,
       createdAt: true,
     },
-    take: 10,
+  });
+
+  const resumes = await prisma.resume.findMany({
+    where: { profile: { userId: user.id } },
+    orderBy: [{ isPrimary: "desc" }, { updatedAt: "desc" }],
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      isPrimary: true,
+    },
   });
 
   return (
@@ -29,11 +40,11 @@ export default async function JDAnalysisPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">JD Analysis</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Paste a job description to extract required skills, see how well you
-          match, and get a personalized improvement plan.
+          Analyze job descriptions, compare roles, and optimize your resume for
+          each opportunity.
         </p>
       </div>
-      <JDAnalyzer
+      <JDAnalysisPageClient
         analyses={analyses.map((a) => ({
           id: a.id,
           title: a.title,
@@ -43,7 +54,14 @@ export default async function JDAnalysisPage() {
           preferredSkills: a.preferredSkills,
           missingSkills: a.missingSkills,
           recommendations: a.recommendations,
+          description: a.description,
           createdAt: a.createdAt.toISOString(),
+        }))}
+        resumes={resumes.map((r) => ({
+          id: r.id,
+          title: r.title,
+          content: r.content,
+          isPrimary: r.isPrimary,
         }))}
       />
     </div>

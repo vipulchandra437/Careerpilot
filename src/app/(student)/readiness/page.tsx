@@ -32,6 +32,17 @@ export default async function ReadinessPage() {
 
   const result = await computeCompanyReadiness(user.id, targetCompany.id, targetRole.id);
 
+  const historyRaw = await prisma.scoreHistory.findMany({
+    where: { userId: user.id, type: "COMPANY_READINESS" },
+    orderBy: { createdAt: "asc" },
+    select: { score: true, createdAt: true },
+    take: 20,
+  });
+  const history = historyRaw.map((h) => ({
+    score: h.score,
+    createdAt: h.createdAt.toISOString(),
+  }));
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
@@ -47,6 +58,7 @@ export default async function ReadinessPage() {
         level={targetRole.level}
         minExperience={targetRole.minExperience}
         breakdown={result.breakdown.map((b) => ({ key: b.key, label: b.label, score: b.score, weight: b.weight }))}
+        history={history}
       />
     </div>
   );

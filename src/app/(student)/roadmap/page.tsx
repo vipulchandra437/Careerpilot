@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { computeReadiness } from "@/server/scoring/readiness.service";
 import { generateRoadmap, flattenRoadmap } from "@/server/services/roadmap.service";
-import { RoadmapView } from "@/components/roadmap/roadmap-view";
+import { RoadmapClient } from "./roadmap-client";
 
 export const metadata = { title: "Learning Roadmap" };
 
@@ -31,8 +31,6 @@ export default async function RoadmapPage() {
 
   const input = generateRoadmap(readiness.skillCoverageItems);
 
-  // Transaction guards against two concurrent page loads racing to create
-  // duplicate ACTIVE roadmaps for the same profile + job role.
   const roadmap = await prisma.$transaction(async (tx) => {
     const existing = await tx.learningRoadmap.findFirst({
       where: { profileId: profile.id, jobRoleId: targetRole.id, status: "ACTIVE" },
@@ -50,7 +48,13 @@ export default async function RoadmapPage() {
         content: input.phases as unknown as object,
         status: "ACTIVE",
         tasks: {
-          create: flattenRoadmap(input.phases),
+          create: flattenRoadmap(input.phases).map((t) => ({
+            type: t.type,
+            week: t.week,
+            title: t.title,
+            description: t.description,
+            resources: t.resources as unknown as object,
+          })),
         },
       },
       include: { tasks: { orderBy: { week: "asc" } } },
@@ -59,33 +63,50 @@ export default async function RoadmapPage() {
 
   const content = (roadmap.content as unknown as { week: number; title: string; description: string }[]) ?? [];
   const phases = content.map((phase) => {
-    const tasks = roadmap.tasks.filter((t) => t.week === phase.week).map((t) => ({
-      id: t.id,
-      title: t.title,
-      description: t.description ?? "",
-      type: t.type,
-      week: t.week,
-      completed: t.completed,
-      completedAt: t.completedAt?.toISOString() ?? null,
-    }));
+    const tasks = roadmap.tasks.filter((t) => t.week === phase.week).map((t) => {
+      const rawResources = (t.resources as unknown as Record<string, unknown>[]) ?? [];
+      return {
+        id: t.id,
+        title: t.title,
+        description: t.description ?? "",
+        type: t.type,
+        week: t.week,
+        completed: t.completed,
+        completedAt: t.completedAt?.toISOString() ?? null,
+        resources: rawResources.map((r) => ({
+          title: String(r.title ?? ""),
+          url: String(r.url ?? ""),
+          type: String(r.type ?? ""),
+          platform: String(r.platform ?? ""),
+        })),
+      };
+    });
     return { week: phase.week, title: phase.title, description: phase.description, tasks };
   });
 
+  const completedCount = roadmap.tasks.filter((t) => t.completed).length;
+
+  const skillGaps = readiness.skillCoverageItems
+    .filter((g) => g.status !== "STRONG")
+    .map((g) => ({
+      skillName: g.skillName,
+      skillCategory: g.skillCategory,
+      currentRating: g.currentRating,
+      requiredRating: g.requiredRating,
+      status: g.status,
+      priority: g.priority,
+    }));
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Learning Roadmap</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Week-by-week plan for {readiness.targetRole.title} at {readiness.targetCompany?.name ?? "your target"}.
-        </p>
-      </div>
-      <RoadmapView
-        roadmapId={roadmap.id}
-        durationWeeks={roadmap.durationWeeks}
-        overview={roadmap.overview ?? ""}
-        phases={phases}
-        totalCount={roadmap.tasks.length}
-      />
-    </div>
+    <RoadmapClient
+      roadmapId={roadmap.id}
+      durationWeeks={roadmap.durationWeeks}
+      overview={roadmap.overview ?? ""}
+      phases={phases}
+      totalCount={roadmap.tasks.length}
+      completedCount={completedCount}
+      createdAt={roadmap.createdAt.toISOString()}
+      skillGaps={skillGaps}
+    />
   );
 }

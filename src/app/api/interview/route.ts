@@ -7,6 +7,7 @@ import {
   interviewTypeLabel,
 } from "@/server/services/interview.service";
 import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
+import { checkLimit, trackUsage } from "@/server/usage";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const user = await requireUser();
+  const limit = await checkLimit(user.id, "interview");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Monthly interview limit reached (${limit.limit}). Upgrade to Premium for unlimited access.` },
+      { status: 429 },
+    );
+  }
   try {
+    await trackUsage(user.id, "interview");
     const data = await validateBody(request, startSchema);
 
     let context: string | undefined;

@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
-import { SettingsForm } from "@/components/settings/settings-form";
+import { SettingsTabs } from "@/components/settings/settings-tabs";
 
 export const metadata = { title: "Settings" };
 
@@ -9,21 +9,31 @@ export default async function SettingsPage() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { name: true, email: true, image: true, consentGivenAt: true, consentVersion: true },
+    select: {
+      name: true,
+      email: true,
+      image: true,
+      consentGivenAt: true,
+      consentVersion: true,
+      twoFactorEnabled: true,
+    },
   });
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your account details and password.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your account, security, and preferences.
+        </p>
       </div>
-      <SettingsForm
+      <SettingsTabs
         name={dbUser?.name ?? ""}
         email={dbUser?.email ?? ""}
         image={dbUser?.image ?? null}
         consentGivenAt={dbUser?.consentGivenAt?.toISOString() ?? null}
         consentVersion={dbUser?.consentVersion ?? null}
+        twoFactorEnabled={dbUser?.twoFactorEnabled ?? false}
       />
     </div>
   );

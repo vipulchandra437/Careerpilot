@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { buildReport } from "@/server/services/interview.service";
 import { recordScoreHistory } from "@/server/scoring/company-readiness.service";
 import { ApiError, toErrorResponse, validateParams } from "@/lib/api";
+import { triggerInterviewReminder } from "@/lib/notification-triggers";
 
 export const runtime = "nodejs";
 
@@ -34,21 +35,25 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
     const evaluations = interview.questions
       .filter((q) => q.answer)
-      .map((q) => ({
-        question: q.prompt,
-        evaluation: q.answer!.evaluation as unknown as {
-          score: number;
-          feedback: string;
-          strengths: string[];
-          improvements: string[];
-        },
-      }));
+      .map((q) => {
+        const qCreated = q.createdAt.getTime();
+        const answered = q.answer!.answeredAt?.getTime() ?? null;
+        const timeSpent = answered != null ? Math.max(0, Math.round((answered - qCreated) / 1000)) : null;
+        return {
+          question: q.prompt,
+          questionType: q.questionType,
+          timeSpent,
+          evaluation: q.answer!.evaluation as unknown as {
+            score: number;
+            feedback: string;
+            strengths: string[];
+            improvements: string[];
+          },
+        };
+      });
 
     const report = buildReport(interview.interviewType, interview.difficulty, evaluations);
 
-    // Atomically claim the transition IN_PROGRESS -> COMPLETED so concurrent
-    // finish requests are idempotent and score history is recorded only once
-    // (and both updates commit together).
     const result = await prisma.$transaction(async (tx) => {
       const claimed = await tx.interview.updateMany({
         where: { id, userId: user.id, status: "IN_PROGRESS" },
@@ -68,7 +73,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
         return { claimed: false, current };
       }
 
-      // Progress tracking for the interview category.
       await recordScoreHistory(user.id, "INTERVIEW", report.totalScore, {
         interviewId: id,
         type: interview.interviewType,
@@ -88,6 +92,22 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
         },
       });
     }
+
+    let companyName: string | null = null;
+    if (interview.companyId) {
+      const company = await prisma.company.findUnique({
+        where: { id: interview.companyId },
+        select: { name: true },
+      });
+      companyName = company?.name ?? null;
+    }
+
+    triggerInterviewReminder(
+      user.id,
+      companyName ?? "your interview",
+      interview.interviewType,
+      new Date(),
+    ).catch(() => {});
 
     return NextResponse.json({
       interview: {

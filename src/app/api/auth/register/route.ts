@@ -5,6 +5,9 @@ import { prisma } from "@/lib/db";
 import { ApiError, passwordSchema, toErrorResponse, validateBody } from "@/lib/api";
 import { generateEmailVerificationToken } from "@/lib/email-verify";
 import { logger } from "@/lib/logger";
+import { recordAudit } from "@/lib/audit";
+
+export const runtime = "nodejs";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -41,6 +44,14 @@ export async function POST(request: Request) {
       });
       return created;
     });
+
+    await recordAudit(
+      { id: user.id, email: user.email },
+      "auth.register",
+      "user",
+      user.id,
+      { name: user.name },
+    );
 
     generateEmailVerificationToken(email)
       .then((token) => {

@@ -10,12 +10,14 @@ import {
   Info,
   Check,
   Trash2,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { NotificationPreferences } from "@/components/notifications/notification-preferences";
 
 type Notification = {
   id: string;
@@ -63,10 +65,10 @@ function typeIcon(type: string) {
   }
 }
 
-export function NotificationList({ userId }: { userId: string }) {
+export function NotificationList() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [filter, setFilter] = useState<"all" | "unread" | "preferences">("all");
   const [loading, setLoading] = useState(true);
 
   const fetchNotifications = useCallback(async () => {
@@ -136,7 +138,7 @@ export function NotificationList({ userId }: { userId: string }) {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as "all" | "unread")}>
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as "all" | "unread" | "preferences")}>
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="unread">
@@ -146,6 +148,10 @@ export function NotificationList({ userId }: { userId: string }) {
                     {unreadCount}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="preferences">
+                <Settings className="size-3.5" />
+                Preferences
               </TabsTrigger>
             </TabsList>
 
@@ -164,6 +170,9 @@ export function NotificationList({ userId }: { userId: string }) {
                 onClick={handleClick}
                 onDelete={deleteNotification}
               />
+            </TabsContent>
+            <TabsContent value="preferences" className="mt-4">
+              <NotificationPreferences />
             </TabsContent>
           </Tabs>
         </CardContent>

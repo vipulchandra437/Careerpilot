@@ -13,7 +13,7 @@ export default async function JobsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Job Tracker</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -32,6 +32,7 @@ export default async function JobsPage() {
           status: j.status,
           notes: j.notes,
           appliedAt: j.appliedAt?.toISOString() ?? null,
+          followUpDate: j.followUpDate?.toISOString() ?? null,
           createdAt: j.createdAt.toISOString(),
           updatedAt: j.updatedAt.toISOString(),
         }))}

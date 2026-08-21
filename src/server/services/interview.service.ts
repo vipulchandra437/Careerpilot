@@ -194,30 +194,158 @@ export function validateGeneratedQuestions(questions: unknown): questions is str
 
 export interface InterviewReport {
   totalScore: number;
+  grade: string;
   questionCount: number;
-  perQuestion: { question: string; score: number }[];
+  perQuestion: {
+    question: string;
+    score: number;
+    feedback: string;
+    strengths: string[];
+    improvements: string[];
+    timeSpent: number | null;
+  }[];
   strengths: string[];
   improvements: string[];
   type: string;
   difficulty: Difficulty;
+  timeAnalysis: {
+    avgTimePerQuestion: number | null;
+    totalTime: number | null;
+    fastestQuestion: { question: string; time: number } | null;
+    slowestQuestion: { question: string; time: number } | null;
+  };
+  typeBreakdown: {
+    strongest: { type: string; avgScore: number } | null;
+    weakest: { type: string; avgScore: number } | null;
+    byType: Record<string, { total: number; count: number }>;
+  };
+  recommendations: string[];
+}
+
+function computeGrade(score: number): string {
+  if (score >= 90) return "A";
+  if (score >= 80) return "B";
+  if (score >= 70) return "C";
+  if (score >= 55) return "D";
+  return "F";
 }
 
 export function buildReport(
   type: string,
   difficulty: string,
-  evaluations: { question: string; evaluation: AnswerEvaluation }[],
+  evaluations: {
+    question: string;
+    evaluation: AnswerEvaluation;
+    questionType?: string;
+    timeSpent?: number | null;
+  }[],
 ): InterviewReport {
   const total = evaluations.length;
-  const totalScore = total > 0 ? Math.round(evaluations.reduce((s, e) => s + e.evaluation.score, 0) / total) : 0;
-  const strengths = Array.from(new Set(evaluations.flatMap((e) => e.evaluation.strengths))).slice(0, 5);
-  const improvements = Array.from(new Set(evaluations.flatMap((e) => e.evaluation.improvements))).slice(0, 5);
+  const totalScore =
+    total > 0
+      ? Math.round(evaluations.reduce((s, e) => s + e.evaluation.score, 0) / total)
+      : 0;
+
+  const strengths = Array.from(
+    new Set(evaluations.flatMap((e) => e.evaluation.strengths)),
+  ).slice(0, 5);
+  const improvements = Array.from(
+    new Set(evaluations.flatMap((e) => e.evaluation.improvements)),
+  ).slice(0, 5);
+
+  const perQuestion = evaluations.map((e) => ({
+    question: e.question,
+    score: e.evaluation.score,
+    feedback: e.evaluation.feedback,
+    strengths: e.evaluation.strengths,
+    improvements: e.evaluation.improvements,
+    timeSpent: e.timeSpent ?? null,
+  }));
+
+  const times = perQuestion
+    .filter((q) => q.timeSpent != null)
+    .map((q) => ({ question: q.question, time: q.timeSpent! }));
+  const avgTimePerQuestion =
+    times.length > 0
+      ? Math.round(times.reduce((a, b) => a + b.time, 0) / times.length)
+      : null;
+  const totalTime =
+    times.length > 0 ? times.reduce((a, b) => a + b.time, 0) : null;
+  const fastestQuestion =
+    times.length > 0
+      ? times.reduce((a, b) => (a.time < b.time ? a : b))
+      : null;
+  const slowestQuestion =
+    times.length > 0
+      ? times.reduce((a, b) => (a.time > b.time ? a : b))
+      : null;
+
+  const byType: Record<string, { total: number; count: number }> = {};
+  for (const e of evaluations) {
+    const t = e.questionType ?? type;
+    if (!byType[t]) byType[t] = { total: 0, count: 0 };
+    byType[t].total += e.evaluation.score;
+    byType[t].count += 1;
+  }
+
+  const typeEntries = Object.entries(byType).map(([t, v]) => ({
+    type: t,
+    avgScore: Math.round(v.total / v.count),
+  }));
+  typeEntries.sort((a, b) => b.avgScore - a.avgScore);
+
+  const strongest = typeEntries.length > 0 ? typeEntries[0] : null;
+  const weakest =
+    typeEntries.length > 1 ? typeEntries[typeEntries.length - 1] : null;
+
+  const recommendations: string[] = [];
+  if (totalScore < 60) {
+    recommendations.push(
+      "Focus on structuring answers clearly before diving into details.",
+    );
+  }
+  if (slowestQuestion && fastestQuestion && slowestQuestion.time > fastestQuestion.time * 2) {
+    recommendations.push(
+      `You spent significantly more time on "${slowestQuestion.question.slice(0, 60)}..." — practice time management for complex questions.`,
+    );
+  }
+  if (weakest && weakest.avgScore < 60) {
+    recommendations.push(
+      `Your ${weakest.type} answers scored lowest on average — consider targeted practice in this area.`,
+    );
+  }
+  const lowScoreQs = perQuestion.filter((q) => q.score < 50);
+  for (const q of lowScoreQs.slice(0, 3)) {
+    recommendations.push(
+      `Review "${q.question.slice(0, 80)}..." — aim to include specific examples and measurable outcomes.`,
+    );
+  }
+  if (recommendations.length === 0) {
+    recommendations.push(
+      "Strong performance! Keep refining specificity and delivery speed.",
+    );
+  }
+
   return {
     totalScore,
+    grade: computeGrade(totalScore),
     questionCount: total,
-    perQuestion: evaluations.map((e) => ({ question: e.question, score: e.evaluation.score })),
+    perQuestion,
     strengths,
     improvements,
     type,
     difficulty: difficulty as Difficulty,
+    timeAnalysis: {
+      avgTimePerQuestion,
+      totalTime,
+      fastestQuestion,
+      slowestQuestion,
+    },
+    typeBreakdown: {
+      strongest,
+      weakest,
+      byType,
+    },
+    recommendations: recommendations.slice(0, 5),
   };
 }

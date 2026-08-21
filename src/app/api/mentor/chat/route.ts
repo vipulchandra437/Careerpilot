@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { computeReadiness } from "@/server/scoring/readiness.service";
 import { mentorReply } from "@/server/services/mentor.service";
 import { toErrorResponse, validateBody } from "@/lib/api";
+import { checkLimit, trackUsage } from "@/server/usage";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,15 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const user = await requireUser();
+  const limit = await checkLimit(user.id, "mentor_chat");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Daily mentor chat limit reached (${limit.limit}). Upgrade to Premium for unlimited access.` },
+      { status: 429 },
+    );
+  }
   try {
+    await trackUsage(user.id, "mentor_chat");
     const data = await validateBody(request, schema);
 
     const [profile, readiness] = await Promise.all([

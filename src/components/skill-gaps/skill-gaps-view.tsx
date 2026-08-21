@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ArrowRight, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,11 +34,13 @@ export function SkillGapsView({
   targetRole,
   targetCompany,
   items,
+  onAssessSkill,
 }: {
   coverage: number;
   targetRole: string | null;
   targetCompany: string | null;
   items: GapItem[];
+  onAssessSkill?: (skillId: string) => void;
 }) {
   const [filter, setFilter] = useState("ALL");
   const filtered = items.filter((i) => {
@@ -141,7 +143,20 @@ export function SkillGapsView({
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span>→ {item.recommendedAction}</span>
-                  <Badge variant="secondary">{item.estimatedEffort}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{item.estimatedEffort}</Badge>
+                    {onAssessSkill && item.status !== "STRONG" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => onAssessSkill(item.skillId)}
+                      >
+                        <Zap className="mr-1 size-3" />
+                        Assess
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

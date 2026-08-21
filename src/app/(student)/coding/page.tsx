@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { CodingWorkspace } from "@/components/coding/coding-workspace";
+import { DailyChallengeBanner } from "@/components/coding/daily-challenge-banner";
 
 export const metadata = { title: "Coding" };
 
@@ -56,6 +57,8 @@ export default async function CodingPage() {
 
   return (
     <div className="space-y-6">
+      <DailyChallengeBanner />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Coding Assessment</h1>

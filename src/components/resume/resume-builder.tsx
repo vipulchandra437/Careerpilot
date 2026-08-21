@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -11,12 +11,16 @@ import {
   runAtsAnalysis,
   type ResumeContent,
 } from "@/server/actions/resume.actions";
+import { resumeToText, deterministicAnalyzeResume } from "@/server/services/resume-content";
 import { ResumePreview } from "@/components/resume/resume-preview";
 import {
   TemplateSelector,
   type TemplateId,
 } from "@/components/resume/template-selector";
 import { ResumeAnalyzer } from "@/components/resume/resume-analyzer";
+import { CoverLetterBuilder } from "@/components/resume/cover-letter-builder";
+import { ResumeTailor } from "@/components/resume/resume-tailor";
+import { VersionDiff } from "@/components/resume/version-diff";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -52,6 +56,10 @@ import {
   Eye,
   ChevronUp,
   ChevronDown,
+  Mail,
+  Wand2,
+  GitCompare,
+  Gauge,
 } from "lucide-react";
 import {
   type ResumeVersion,
@@ -556,6 +564,55 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
   const [techInput, setTechInput] = useState("");
   const [techProjectIndex, setTechProjectIndex] = useState(-1);
   const [expandedExp, setExpandedExp] = useState<Record<number, boolean>>({});
+  const [liveAtsScore, setLiveAtsScore] = useState<number | null>(null);
+  const [rewritingSection, setRewritingSection] = useState<string | null>(null);
+  const atsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (atsTimerRef.current) clearTimeout(atsTimerRef.current);
+    atsTimerRef.current = setTimeout(() => {
+      const text = resumeToText(content as Parameters<typeof resumeToText>[0], 12000);
+      if (text.trim()) {
+        const result = deterministicAnalyzeResume(text);
+        setLiveAtsScore(result.overallScore);
+      } else {
+        setLiveAtsScore(null);
+      }
+    }, 500);
+    return () => {
+      if (atsTimerRef.current) clearTimeout(atsTimerRef.current);
+    };
+  }, [content]);
+
+  const handleRewriteSection = useCallback(
+    async (section: string, currentText: string, onUpdate: (newText: string) => void) => {
+      if (!currentText.trim()) {
+        toast.error("Section is empty — add content before rewriting");
+        return;
+      }
+      setRewritingSection(section);
+      try {
+        const res = await fetch("/api/resume/rewrite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section, content: currentText }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data.error ?? "Rewrite failed");
+          return;
+        }
+        onUpdate(data.rewritten);
+        markDirty();
+        toast.success(data.aiGenerated ? "Rewritten with AI" : "Content improved");
+      } catch {
+        toast.error("Rewrite failed");
+      } finally {
+        setRewritingSection(null);
+      }
+    },
+    [markDirty]
+  );
 
   if (resumes.length === 0) {
     return (
@@ -590,16 +647,44 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
   return (
     <div className="space-y-4">
       <Tabs value={pageTab} onValueChange={setPageTab}>
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="builder">
-            <FileText className="mr-1.5 size-3.5" />
-            Resume Builder
-          </TabsTrigger>
-          <TabsTrigger value="analyze">
-            <Sparkles className="mr-1.5 size-3.5" />
-            Upload &amp; Analyze
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList className="w-auto justify-start">
+            <TabsTrigger value="builder">
+              <FileText className="mr-1.5 size-3.5" />
+              Resume Builder
+            </TabsTrigger>
+            <TabsTrigger value="cover-letter">
+              <Mail className="mr-1.5 size-3.5" />
+              Cover Letters
+            </TabsTrigger>
+            <TabsTrigger value="tailor">
+              <Wand2 className="mr-1.5 size-3.5" />
+              Tailor
+            </TabsTrigger>
+            <TabsTrigger value="diff">
+              <GitCompare className="mr-1.5 size-3.5" />
+              Version Diff
+            </TabsTrigger>
+            <TabsTrigger value="analyze">
+              <Sparkles className="mr-1.5 size-3.5" />
+              Upload &amp; Analyze
+            </TabsTrigger>
+          </TabsList>
+          {pageTab === "builder" && liveAtsScore !== null && (
+            <div className="flex items-center gap-2 rounded-lg border px-3 py-1.5">
+              <Gauge className="size-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">ATS</span>
+              <span
+                className={cn(
+                  "text-sm font-semibold",
+                  liveAtsScore >= 70 ? "text-emerald-600" : liveAtsScore >= 40 ? "text-amber-600" : "text-red-600"
+                )}
+              >
+                {liveAtsScore}/100
+              </span>
+            </div>
+          )}
+        </div>
 
         <TabsContent value="builder">
           <div className="mt-4 grid gap-4 lg:grid-cols-[260px_1fr_595px]">
@@ -715,7 +800,27 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
 
               {/* Personal info */}
               <Card>
-                <CardHeader><CardTitle className="text-sm">Personal Information</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm">Personal Information</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={rewritingSection === "summary" || !content.personal.summary.trim()}
+                    onClick={() =>
+                      handleRewriteSection("Professional Summary", content.personal.summary, (v) =>
+                        updatePersonal("summary", v)
+                      )
+                    }
+                  >
+                    {rewritingSection === "summary" ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="size-3" />
+                    )}
+                    Rewrite Summary
+                  </Button>
+                </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1"><Label className="text-xs">Full Name</Label><Input value={content.personal.name} onChange={(e) => updatePersonal("name", e.target.value)} placeholder="John Doe" /></div>
@@ -734,7 +839,36 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Experience</CardTitle>
-                  <Button variant="outline" size="sm" onClick={addExperience}><Plus className="size-3.5" /> Add</Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={rewritingSection === "experience" || content.experience.length === 0}
+                      onClick={() => {
+                        const expText = content.experience
+                          .map((e) => `${e.title} at ${e.company}\n${e.description.join("\n")}`)
+                          .join("\n\n");
+                        handleRewriteSection("Experience", expText, (v) => {
+                          const lines = v.split("\n").filter((l) => l.trim());
+                          if (content.experience.length > 0 && lines.length > 0) {
+                            const bullets = lines.filter((l) => l.startsWith("-") || l.startsWith("\u2022")).map((l) => l.replace(/^[-\u2022]\s*/, ""));
+                            if (bullets.length > 0) {
+                              updateExperienceBullet(0, 0, bullets.join("\n"));
+                            }
+                          }
+                        });
+                      }}
+                    >
+                      {rewritingSection === "experience" ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Wand2 className="size-3" />
+                      )}
+                      Rewrite
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={addExperience}><Plus className="size-3.5" /> Add</Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {content.experience.length === 0 && <p className="text-xs text-muted-foreground">No experience added yet.</p>}
@@ -778,7 +912,26 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Education</CardTitle>
-                  <Button variant="outline" size="sm" onClick={addEducation}><Plus className="size-3.5" /> Add</Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={rewritingSection === "education" || content.education.length === 0}
+                      onClick={() => {
+                        const eduText = content.education.map((e) => `${e.title} at ${e.company}`).join("\n");
+                        handleRewriteSection("Education", eduText, () => {});
+                      }}
+                    >
+                      {rewritingSection === "education" ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Wand2 className="size-3" />
+                      )}
+                      Rewrite
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={addEducation}><Plus className="size-3.5" /> Add</Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {content.education.length === 0 && <p className="text-xs text-muted-foreground">No education added yet.</p>}
@@ -806,7 +959,26 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Projects</CardTitle>
-                  <Button variant="outline" size="sm" onClick={addProject}><Plus className="size-3.5" /> Add</Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={rewritingSection === "projects" || content.projects.length === 0}
+                      onClick={() => {
+                        const projText = content.projects.map((p) => `${p.name}: ${p.description}`).join("\n");
+                        handleRewriteSection("Projects", projText, () => {});
+                      }}
+                    >
+                      {rewritingSection === "projects" ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Wand2 className="size-3" />
+                      )}
+                      Rewrite
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={addProject}><Plus className="size-3.5" /> Add</Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {content.projects.length === 0 && <p className="text-xs text-muted-foreground">No projects added yet.</p>}
@@ -859,7 +1031,25 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
 
               {/* Skills */}
               <Card>
-                <CardHeader><CardTitle className="text-sm">Skills</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm">Skills</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={rewritingSection === "skills" || content.skills.length === 0}
+                    onClick={() =>
+                      handleRewriteSection("Skills", content.skills.join(", "), () => {})
+                    }
+                  >
+                    {rewritingSection === "skills" ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="size-3" />
+                    )}
+                    Suggest
+                  </Button>
+                </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex flex-wrap gap-1">
                     {content.skills.map((s, idx) => (
@@ -904,7 +1094,25 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
 
               {/* Languages */}
               <Card>
-                <CardHeader><CardTitle className="text-sm">Languages</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm">Languages</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={rewritingSection === "languages" || content.languages.length === 0}
+                    onClick={() =>
+                      handleRewriteSection("Languages", content.languages.join(", "), () => {})
+                    }
+                  >
+                    {rewritingSection === "languages" ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="size-3" />
+                    )}
+                    Suggest
+                  </Button>
+                </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex flex-wrap gap-1">
                     {content.languages.map((l, idx) => (
@@ -944,6 +1152,24 @@ export function ResumeBuilder({ initialResumes, profileData, pastAnalyses }: Pro
         <TabsContent value="analyze">
           <div className="mt-4">
             <ResumeAnalyzer analyses={pastAnalyses} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="cover-letter">
+          <div className="mt-4">
+            <CoverLetterBuilder resumeContent={content} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tailor">
+          <div className="mt-4">
+            <ResumeTailor resumeContent={content} onUpdate={(c) => { setContent(c); markDirty(); }} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="diff">
+          <div className="mt-4">
+            <VersionDiff versions={resumes} />
           </div>
         </TabsContent>
       </Tabs>

@@ -7,6 +7,8 @@ import { executeCode, type CodeLanguage } from "@/server/coding/executor";
 import { recordScoreHistory } from "@/server/scoring/company-readiness.service";
 import { aiService } from "@/server/ai";
 import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
+import { triggerScoreChange } from "@/lib/notification-triggers";
+import { checkLimit, trackUsage } from "@/server/usage";
 
 export const runtime = "nodejs";
 
@@ -22,7 +24,15 @@ const FEEDBACK_SYSTEM = `You are a coding interviewer. Given a coding problem, t
 
 export async function POST(request: Request) {
   const user = await requireUser();
+  const limit = await checkLimit(user.id, "coding_submit");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Daily coding submission limit reached (${limit.limit}). Upgrade to Premium for unlimited access.` },
+      { status: 429 },
+    );
+  }
   try {
+    await trackUsage(user.id, "coding_submit");
     const data = await validateBody(request, submitSchema);
 
     const problem = await prisma.codingProblem.findUnique({
@@ -158,6 +168,8 @@ export async function POST(request: Request) {
             data: { longestStreak: updatedStreak.currentStreak },
           });
         }
+
+        triggerScoreChange(user.id, "Coding", streak?.currentStreak ?? 0, updatedStreak.currentStreak).catch(() => {});
       }
     } catch (e) {
       console.warn("Streak update failed (best-effort):", e instanceof Error ? e.message : e);

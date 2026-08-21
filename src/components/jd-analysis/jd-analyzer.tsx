@@ -143,27 +143,7 @@ export function JDAnalyzer({ analyses }: { analyses: PastAnalysis[] }) {
         />
       )}
 
-      {past.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground">
-            Past analyses
-          </h3>
-          {past.map((a) => (
-            <MatchReport
-              key={a.id}
-              data={{
-                title: a.title,
-                company: a.company,
-                matchScore: a.matchScore,
-                requiredSkills: toStringArray(a.requiredSkills),
-                preferredSkills: toStringArray(a.preferredSkills),
-                missingSkills: toStringArray(a.missingSkills),
-                recommendations: toStringArray(a.recommendations),
-              }}
-            />
-          ))}
-        </div>
-      )}
+
     </div>
   );
 }

@@ -7,10 +7,16 @@ import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
 
 export const runtime = "nodejs";
 
+const customTestCaseSchema = z.object({
+  args: z.array(z.unknown()),
+  expected: z.unknown().nullable(),
+});
+
 const runSchema = z.object({
   problemId: z.string(),
   language: z.enum(["python", "javascript"]),
   code: z.string().min(1).max(20000),
+  customTestCases: z.array(customTestCaseSchema).max(5).optional(),
 });
 
 export async function POST(request: Request) {
@@ -26,7 +32,18 @@ export async function POST(request: Request) {
       throw new ApiError(404, "Problem not found");
     }
 
-    const cases = (problem.testCases as unknown as { args: unknown[]; expected: unknown }[]) ?? [];
+    let cases: { args: unknown[]; expected: unknown }[];
+
+    if (data.customTestCases && data.customTestCases.length > 0) {
+      cases = data.customTestCases.map((ct) => ({
+        args: ct.args,
+        expected: ct.expected,
+      }));
+    } else {
+      cases =
+        (problem.testCases as unknown as { args: unknown[]; expected: unknown }[]) ?? [];
+    }
+
     const outcome = await executeCode(
       data.language as CodeLanguage,
       data.code,

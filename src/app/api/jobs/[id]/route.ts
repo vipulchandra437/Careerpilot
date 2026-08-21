@@ -16,7 +16,32 @@ const updateSchema = z.object({
   salary: z.string().max(100).optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
   status: z.enum(["SAVED", "APPLIED", "INTERVIEW", "OFFER", "REJECTED"]).optional(),
+  followUpDate: z.string().optional().nullable(),
 });
+
+function serializeJob(job: {
+  id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  url: string | null;
+  description: string | null;
+  salary: string | null;
+  status: string;
+  notes: string | null;
+  appliedAt: Date | null;
+  followUpDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    ...job,
+    appliedAt: job.appliedAt?.toISOString() ?? null,
+    followUpDate: job.followUpDate?.toISOString() ?? null,
+    createdAt: job.createdAt.toISOString(),
+    updatedAt: job.updatedAt.toISOString(),
+  };
+}
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -26,14 +51,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const job = await prisma.job.findFirst({ where: { id, userId: user.id } });
     if (!job) throw new ApiError(404, "Job not found");
 
-    return apiOk({
-      job: {
-        ...job,
-        appliedAt: job.appliedAt?.toISOString() ?? null,
-        createdAt: job.createdAt.toISOString(),
-        updatedAt: job.updatedAt.toISOString(),
-      },
-    });
+    return apiOk({ job: serializeJob(job) });
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -55,6 +73,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (data.description !== undefined) updateData.description = data.description || null;
     if (data.salary !== undefined) updateData.salary = data.salary || null;
     if (data.notes !== undefined) updateData.notes = data.notes || null;
+    if (data.followUpDate !== undefined) {
+      updateData.followUpDate = data.followUpDate ? new Date(data.followUpDate) : null;
+    }
 
     if (data.status === "APPLIED" && existing.status !== "APPLIED" && !existing.appliedAt) {
       updateData.appliedAt = new Date();
@@ -65,14 +86,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       data: updateData,
     });
 
-    return apiOk({
-      job: {
-        ...job,
-        appliedAt: job.appliedAt?.toISOString() ?? null,
-        createdAt: job.createdAt.toISOString(),
-        updatedAt: job.updatedAt.toISOString(),
-      },
-    });
+    return apiOk({ job: serializeJob(job) });
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, Sparkles, Crown, CreditCard, ExternalLink, AlertCircle } from "lucide-react";
+import { Check, X, Sparkles, Crown, CreditCard, ExternalLink, AlertCircle, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { UsageDisplay } from "@/components/subscription/usage-display";
+import { CancellationSurvey } from "@/components/subscription/cancellation-survey";
 
 interface PricingPageProps {
   subscription: {
@@ -50,13 +52,26 @@ const PREMIUM_FEATURES = [
 
 export function PricingPage({ subscription, stripeConfigured }: PricingPageProps) {
   const [loading, setLoading] = useState<"checkout" | "portal" | null>(null);
+  const [annual, setAnnual] = useState(false);
+  const [showSurvey, setShowSurvey] = useState(false);
 
   const isPremium = subscription.plan === "PREMIUM";
+  const monthlyPrice = 19;
+  const annualPrice = 190;
+  const displayPrice = annual ? annualPrice : monthlyPrice;
+  const displayPeriod = annual ? "/year" : "/month";
 
-  async function handleCheckout() {
+  async function handleCheckout(priceId?: string) {
     setLoading("checkout");
     try {
-      const res = await fetch("/api/subscription/checkout", { method: "POST" });
+      const body: Record<string, unknown> = {};
+      if (priceId) body.priceId = priceId;
+      if (annual) body.interval = "year";
+      const res = await fetch("/api/subscription/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -120,6 +135,53 @@ export function PricingPage({ subscription, stripeConfigured }: PricingPageProps
         </Card>
       )}
 
+      {isPremium && subscription.status === "TRIALING" && (
+        <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
+          <CardContent className="flex items-center gap-3 pt-4">
+            <Tag className="size-5 shrink-0 text-blue-600 dark:text-blue-400" />
+            <div>
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Free trial active
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Your trial gives you full Premium access. {subscription.currentPeriodEnd && <>Expires {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.</>}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isPremium && (
+        <UsageDisplay />
+      )}
+
+      <div className="flex items-center justify-center gap-3">
+        <span className={cn("text-sm", !annual && "font-medium text-foreground")}>Monthly</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={annual}
+          onClick={() => setAnnual(!annual)}
+          className={cn(
+            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+            annual ? "bg-primary" : "bg-muted",
+          )}
+        >
+          <span
+            className={cn(
+              "pointer-events-none block size-5 rounded-full bg-background shadow-lg ring-0 transition-transform",
+              annual ? "translate-x-5" : "translate-x-0",
+            )}
+          />
+        </button>
+        <span className={cn("text-sm", annual && "font-medium text-foreground")}>
+          Annual
+          <Badge variant="secondary" className="ml-1.5 text-xs">
+            Save 17%
+          </Badge>
+        </span>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
         <PricingCard
           title="Free"
@@ -134,19 +196,29 @@ export function PricingPage({ subscription, stripeConfigured }: PricingPageProps
         />
         <PricingCard
           title="Premium"
-          price="$19"
-          period="/month"
+          price={`$${displayPrice}`}
+          period={displayPeriod}
           features={PREMIUM_FEATURES}
           currentPlan={isPremium}
-          onAction={isPremium ? handlePortal : handleCheckout}
+          onAction={isPremium ? handlePortal : () => handleCheckout()}
           actionLabel={isPremium ? "Manage Subscription" : "Subscribe Now"}
           loading={isPremium ? loading === "portal" : loading === "checkout"}
           stripeConfigured={stripeConfigured}
           highlighted
           cancelAtPeriodEnd={isPremium ? subscription.cancelAtPeriodEnd : false}
           periodEnd={isPremium ? subscription.currentPeriodEnd : null}
+          onCancelClick={isPremium ? () => setShowSurvey(true) : undefined}
         />
       </div>
+
+      {showSurvey && (
+        <div className="flex justify-center">
+          <CancellationSurvey
+            onSubmitted={() => setShowSurvey(false)}
+            onCancel={() => setShowSurvey(false)}
+          />
+        </div>
+      )}
 
       <div className="space-y-4">
         <h2 className="font-heading text-xl font-semibold">Feature Comparison</h2>
@@ -198,6 +270,7 @@ function PricingCard({
   highlighted = false,
   cancelAtPeriodEnd = false,
   periodEnd = null,
+  onCancelClick,
 }: {
   title: string;
   price: string;
@@ -211,6 +284,7 @@ function PricingCard({
   highlighted?: boolean;
   cancelAtPeriodEnd?: boolean;
   periodEnd?: string | null;
+  onCancelClick?: () => void;
 }) {
   return (
     <Card
@@ -263,9 +337,21 @@ function PricingCard({
         </ul>
         <div className="space-y-2">
           {currentPlan ? (
-            <div className="flex items-center justify-center gap-1.5 rounded-lg border bg-muted/50 py-2 text-sm font-medium text-muted-foreground">
-              <Crown className="size-4" />
-              Current Plan
+            <div className="space-y-2">
+              <div className="flex items-center justify-center gap-1.5 rounded-lg border bg-muted/50 py-2 text-sm font-medium text-muted-foreground">
+                <Crown className="size-4" />
+                Current Plan
+              </div>
+              {onCancelClick && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground hover:text-destructive"
+                  onClick={onCancelClick}
+                >
+                  Cancel Subscription
+                </Button>
+              )}
             </div>
           ) : onAction ? (
             <Button

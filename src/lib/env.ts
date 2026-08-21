@@ -35,6 +35,10 @@ const envSchema = z.object({
     .string()
     .default("true")
     .transform((v) => v === "true"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GITHUB_ID: z.string().optional(),
+  GITHUB_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

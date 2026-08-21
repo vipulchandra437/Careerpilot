@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Camera, X } from "lucide-react";
 
 interface GroupedSkills {
   category: string;
@@ -49,6 +50,15 @@ function RatingSelect({
   );
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export function ProfileForm({
   user,
   profile,
@@ -64,6 +74,7 @@ export function ProfileForm({
     githubUrl: string | null;
     linkedinUrl: string | null;
     portfolioUrl: string | null;
+    photoUrl: string | null;
     onboardingCompletedAt: Date | null;
     targetCompanyId: string | null;
     education: {
@@ -78,8 +89,14 @@ export function ProfileForm({
   currentRatings: Record<string, number>;
 }) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("personal");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(profile?.photoUrl ?? null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const [name, setName] = useState(user.name);
   const [location, setLocation] = useState(profile?.location ?? "");
@@ -117,6 +134,67 @@ export function ProfileForm({
       else delete next[skillId];
       return next;
     });
+  }
+
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Photo must be under 2MB");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Only JPG, PNG, and WebP images are allowed");
+      return;
+    }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  async function uploadPhoto() {
+    if (!photoFile) return;
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", photoFile);
+      const res = await fetch("/api/profile/photo", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to upload photo");
+        return;
+      }
+      const data = await res.json();
+      setPhotoUrl(data.url);
+      setPhotoPreview(null);
+      setPhotoFile(null);
+      toast.success("Photo uploaded");
+      router.refresh();
+    } catch {
+      toast.error("Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  async function removePhoto() {
+    try {
+      const res = await fetch("/api/profile/photo", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to remove photo");
+        return;
+      }
+      setPhotoUrl(null);
+      setPhotoPreview(null);
+      setPhotoFile(null);
+      toast.success("Photo removed");
+      router.refresh();
+    } catch {
+      toast.error("Failed to remove photo");
+    }
   }
 
   async function save(completeOnboarding: boolean) {
@@ -164,6 +242,8 @@ export function ProfileForm({
     }
   }
 
+  const displayPhoto = photoPreview ?? photoUrl;
+
   return (
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList className="w-full justify-start overflow-x-auto">
@@ -179,7 +259,71 @@ export function ProfileForm({
             <CardTitle>Personal details</CardTitle>
             <CardDescription>Basic information about you.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative flex size-24 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-primary/50"
+                >
+                  {displayPhoto ? (
+                    <img
+                      src={displayPhoto}
+                      alt="Profile photo"
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold text-muted-foreground">
+                      {getInitials(name || "U")}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Camera className="size-5 text-white" />
+                  </div>
+                </button>
+                {photoUrl && !photoPreview && (
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+              <div className="flex flex-col gap-2 text-center sm:text-left">
+                <p className="text-sm text-muted-foreground">
+                  Click the circle to upload a profile photo.
+                </p>
+                <p className="text-xs text-muted-foreground">JPG, PNG, or WebP. Max 2MB.</p>
+                {photoFile && (
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={uploadPhoto} disabled={uploadingPhoto}>
+                      {uploadingPhoto ? "Uploading..." : "Save photo"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setPhotoFile(null);
+                        setPhotoPreview(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full name</Label>
@@ -201,7 +345,7 @@ export function ProfileForm({
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
-                placeholder="CS student passionate about AI and building products…"
+                placeholder="CS student passionate about AI and building products..."
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -255,7 +399,7 @@ export function ProfileForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="college">College / University</Label>
-                <Input id="college" value={college} onChange={(e) => setCollege(e.target.value)} placeholder="MIT, IIT…" />
+                <Input id="college" value={college} onChange={(e) => setCollege(e.target.value)} placeholder="MIT, IIT..." />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="degree">Degree</Label>
@@ -299,7 +443,7 @@ export function ProfileForm({
                 id="skillFilter"
                 value={skillFilter}
                 onChange={(e) => setSkillFilter(e.target.value)}
-                placeholder="Search skills…"
+                placeholder="Search skills..."
               />
             </div>
             {filteredGroups.map((group) => (

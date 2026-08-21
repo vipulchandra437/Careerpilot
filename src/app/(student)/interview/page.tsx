@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { InterviewWorkspace } from "@/components/interview/interview-workspace";
+import { InterviewHistoryTab } from "./history-tab";
 
 export const metadata = { title: "Mock Interview" };
 
@@ -39,20 +40,24 @@ export default async function InterviewPage() {
           Practice a realistic interview with adaptive AI feedback on every answer.
         </p>
       </div>
-      <InterviewWorkspace
-        companies={companies.map((c) => ({
-          id: c.id,
-          name: c.name,
-          jobRoles: c.jobRoles.map((r) => ({ id: r.id, title: r.title })),
-        }))}
-        recent={recent.map((i) => ({
-          id: i.id,
-          type: i.interviewType,
-          difficulty: i.difficulty,
-          status: i.status,
-          score: i.score,
-          createdAt: i.createdAt.toISOString(),
-        }))}
+      <InterviewHistoryTab
+        workspace={
+          <InterviewWorkspace
+            companies={companies.map((c) => ({
+              id: c.id,
+              name: c.name,
+              jobRoles: c.jobRoles.map((r) => ({ id: r.id, title: r.title })),
+            }))}
+            recent={recent.map((i) => ({
+              id: i.id,
+              type: i.interviewType,
+              difficulty: i.difficulty,
+              status: i.status,
+              score: i.score,
+              createdAt: i.createdAt.toISOString(),
+            }))}
+          />
+        }
       />
     </div>
   );

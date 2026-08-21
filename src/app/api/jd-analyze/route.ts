@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { aiService } from "@/server/ai";
@@ -12,6 +13,7 @@ import {
   isAIServiceError,
 } from "@/lib/api";
 import { logger } from "@/lib/logger";
+import { checkLimit, trackUsage } from "@/server/usage";
 
 export const runtime = "nodejs";
 
@@ -134,7 +136,15 @@ function deterministicAnalyzeJD(
 
 export async function POST(request: Request) {
   const user = await requireUser();
+  const limit = await checkLimit(user.id, "jd_analyze");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Monthly JD analysis limit reached (${limit.limit}). Upgrade to Premium for unlimited access.` },
+      { status: 429 },
+    );
+  }
   try {
+    await trackUsage(user.id, "jd_analyze");
     const { description } = await validateBody(request, postSchema);
 
     const userSkills = await getUserSkills(user.id);

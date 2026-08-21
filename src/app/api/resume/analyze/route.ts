@@ -13,6 +13,7 @@ import { getOrCreateProfile } from "@/server/services/profile.service";
 import { logger } from "@/lib/logger";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
+import { checkLimit, trackUsage } from "@/server/usage";
 
 export const runtime = "nodejs";
 
@@ -77,9 +78,18 @@ async function extractTextFromFile(file: File): Promise<string> {
 export async function POST(request: Request) {
   const user = await requireUser();
 
+  const limit = await checkLimit(user.id, "resume_analyze");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Monthly resume analysis limit reached (${limit.limit}). Upgrade to Premium for unlimited access.` },
+      { status: 429 },
+    );
+  }
+
   const contentType = request.headers.get("content-type") ?? "";
 
   try {
+    await trackUsage(user.id, "resume_analyze");
     let resumeText: string;
     let resumeId: string | undefined;
     let targetCompany: string | undefined;

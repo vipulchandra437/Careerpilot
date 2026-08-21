@@ -16,6 +16,7 @@ export type JobFormData = {
   salary: string;
   notes: string;
   status?: "SAVED" | "APPLIED" | "INTERVIEW" | "OFFER" | "REJECTED";
+  followUpDate: string;
 };
 
 type JobFormProps = {
@@ -52,6 +53,7 @@ export function JobForm({
     salary: initialData?.salary ?? "",
     notes: initialData?.notes ?? "",
     status: initialData?.status ?? "SAVED",
+    followUpDate: initialData?.followUpDate ?? "",
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +145,16 @@ export function JobForm({
           onChange={(e) => handleChange("notes", e.target.value)}
           placeholder="Personal notes about this job..."
           className="min-h-[80px]"
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="followUpDate">Follow-up Date</Label>
+        <Input
+          id="followUpDate"
+          type="date"
+          value={form.followUpDate}
+          onChange={(e) => handleChange("followUpDate", e.target.value)}
         />
       </div>
 

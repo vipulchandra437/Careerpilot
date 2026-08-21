@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { Separator } from "@/components/ui/separator";
 
 export function LoginForm() {
   const router = useRouter();
@@ -44,36 +46,49 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
+    <div className="space-y-6">
+      <OAuthButtons callbackUrl={callbackUrl} />
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <Separator />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">or continue with email</span>
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" required />
-      </div>
-      <div className="flex items-center justify-between">
-        <Button type="submit" className="flex-1" disabled={loading}>
-          {loading ? "Logging in…" : "Log in"}
-        </Button>
-      </div>
-      <div className="text-center text-sm text-muted-foreground">
-        <Link href="/forgot-password" className="font-medium text-primary underline-offset-2 hover:underline">
-          Forgot your password?
-        </Link>
-      </div>
-      <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-medium text-primary underline-offset-2 hover:underline">
-          Register
-        </Link>
-      </p>
-    </form>
+
+      <form onSubmit={onSubmit} className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" name="password" type="password" autoComplete="current-password" required />
+        </div>
+        <div className="flex items-center justify-between">
+          <Button type="submit" className="flex-1" disabled={loading}>
+            {loading ? "Logging in…" : "Log in"}
+          </Button>
+        </div>
+        <div className="text-center text-sm text-muted-foreground">
+          <Link href="/forgot-password" className="font-medium text-primary underline-offset-2 hover:underline">
+            Forgot your password?
+          </Link>
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-medium text-primary underline-offset-2 hover:underline">
+            Register
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
