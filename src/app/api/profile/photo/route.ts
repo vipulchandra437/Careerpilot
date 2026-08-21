@@ -47,6 +47,13 @@ export async function POST(request: Request) {
     await mkdir(UPLOAD_DIR, { recursive: true });
     const filename = `${user.id}.${ext}`;
     const filepath = path.join(UPLOAD_DIR, filename);
+
+    const resolvedUpload = path.resolve(UPLOAD_DIR);
+    const resolvedFile = path.resolve(filepath);
+    if (!resolvedFile.startsWith(resolvedUpload)) {
+      return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filepath, buffer);
 

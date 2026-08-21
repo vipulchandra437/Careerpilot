@@ -11,6 +11,7 @@ export async function GET() {
     const history = await prisma.scoreHistory.findMany({
       select: { userId: true, type: true, score: true },
       orderBy: { createdAt: "desc" },
+      take: 5000,
     });
 
     const latestByUser = new Map<string, Map<string, number>>();

@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       const data = verifySchema.parse(body);
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { twoFactorSecret: true, twoFactorEnabled: true },
+        select: { twoFactorSecret: true, twoFactorEnabled: true, twoFactorBackupCodes: true },
       });
 
       if (!dbUser?.twoFactorSecret) {
@@ -56,13 +56,14 @@ export async function POST(request: Request) {
         throw new ApiError(400, "Invalid verification code. Please try again.");
       }
 
-      const backupCodes = generateTwoFactorSecret(user.email).backupCodes;
+      const backupCodes: string[] = dbUser.twoFactorBackupCodes
+        ? JSON.parse(dbUser.twoFactorBackupCodes)
+        : [];
 
       await prisma.user.update({
         where: { id: user.id },
         data: {
           twoFactorEnabled: true,
-          twoFactorBackupCodes: JSON.stringify(backupCodes),
         },
       });
 
@@ -96,7 +97,10 @@ export async function POST(request: Request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { twoFactorSecret: setup.secret },
+      data: {
+        twoFactorSecret: setup.secret,
+        twoFactorBackupCodes: JSON.stringify(setup.backupCodes),
+      },
     });
 
     return apiOk({

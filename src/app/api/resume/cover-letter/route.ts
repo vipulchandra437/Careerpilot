@@ -5,6 +5,7 @@ import { AIServiceError } from "@/server/ai/provider";
 import { aiService } from "@/server/ai";
 import { resumeToText, type ResumeContent } from "@/server/services/resume-content";
 import { logger } from "@/lib/logger";
+import { toErrorResponse, ApiError } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -45,20 +46,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = coverLetterSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Missing required fields: targetCompany and targetRole" },
-        { status: 400 },
-      );
+      return toErrorResponse(new ApiError(400, "Missing required fields: targetCompany and targetRole"));
     }
 
     const { resumeContent, targetCompany, targetRole, jdDescription } = parsed.data;
     const resumeText = resumeToText(resumeContent as ResumeContent, 8000);
 
     if (!resumeText.trim()) {
-      return NextResponse.json(
-        { error: "Resume content is empty" },
-        { status: 400 },
-      );
+      return toErrorResponse(new ApiError(400, "Resume content is empty"));
     }
 
     if (aiService.isConfigured()) {
@@ -103,10 +98,6 @@ ${resumeText}`,
     );
     return NextResponse.json({ coverLetter, aiGenerated: false });
   } catch (err) {
-    logger.error("Cover letter generation error", undefined, err);
-    return NextResponse.json(
-      { error: "Failed to generate cover letter" },
-      { status: 500 },
-    );
+    return toErrorResponse(err);
   }
 }

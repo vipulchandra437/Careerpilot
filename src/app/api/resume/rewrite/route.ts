@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { AIServiceError } from "@/server/ai/provider";
 import { aiService } from "@/server/ai";
 import { logger } from "@/lib/logger";
+import { toErrorResponse, ApiError } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -51,10 +52,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = rewriteSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Missing required fields: section and content" },
-        { status: 400 },
-      );
+      return toErrorResponse(new ApiError(400, "Missing required fields: section and content"));
     }
 
     const { section, content, jobDescription } = parsed.data;
@@ -97,10 +95,6 @@ Rewrite this to be more impactful and ATS-friendly:`,
     const rewritten = deterministicRewrite(section, content);
     return NextResponse.json({ rewritten, aiGenerated: false });
   } catch (err) {
-    logger.error("Rewrite error", undefined, err);
-    return NextResponse.json(
-      { error: "Failed to rewrite content" },
-      { status: 500 },
-    );
+    return toErrorResponse(err);
   }
 }

@@ -5,6 +5,7 @@ import { AIServiceError } from "@/server/ai/provider";
 import { aiService } from "@/server/ai";
 import { resumeToText, type ResumeContent } from "@/server/services/resume-content";
 import { logger } from "@/lib/logger";
+import { toErrorResponse, ApiError } from "@/lib/api";
 
 export const runtime = "nodejs";
 
@@ -95,14 +96,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = tailorSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return toErrorResponse(new ApiError(400, "Missing required fields"));
     }
 
     const { resumeContent, jobDescription } = parsed.data;
     const resumeText = resumeToText(resumeContent as ResumeContent, 8000);
 
     if (!resumeText.trim()) {
-      return NextResponse.json({ error: "Resume content is empty" }, { status: 400 });
+      return toErrorResponse(new ApiError(400, "Resume content is empty"));
     }
 
     if (aiService.isConfigured()) {
@@ -139,7 +140,6 @@ export async function POST(request: Request) {
     const result = deterministicTailor(resumeText, jobDescription);
     return NextResponse.json({ ...result, aiGenerated: false });
   } catch (err) {
-    logger.error("Tailor error", undefined, err);
-    return NextResponse.json({ error: "Failed to analyze job description" }, { status: 500 });
+    return toErrorResponse(err);
   }
 }

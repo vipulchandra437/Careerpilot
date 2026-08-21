@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
-import { validateBody, toErrorResponse, isAIServiceError } from "@/lib/api";
+import { validateBody, toErrorResponse, isAIServiceError, ApiError } from "@/lib/api";
 import { aiService } from "@/server/ai/index";
 
 export const runtime = "nodejs";
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   await requireUser();
   const body = await validateBody(request, studyPlanSchema).catch(() => null);
   if (!body) {
-    return toErrorResponse(new Error("Invalid input"));
+    return toErrorResponse(new ApiError(400, "Invalid input"));
   }
 
   try {
