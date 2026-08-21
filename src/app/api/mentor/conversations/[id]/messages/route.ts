@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { computeReadiness } from "@/server/scoring/readiness.service";
-import { mentorReply } from "@/server/services/mentor.service";
+import { mentorReplyStream, generateConversationTitle, type MentorContext } from "@/server/services/mentor.service";
 import { ApiError, toErrorResponse, validateBody } from "@/lib/api";
 
 export const runtime = "nodejs";
@@ -11,14 +11,6 @@ export const runtime = "nodejs";
 const postSchema = z.object({
   content: z.string().min(1).max(2000),
 });
-
-function generateTitle(firstMessage: string): string {
-  const cleaned = firstMessage.replace(/\n/g, " ").trim();
-  if (cleaned.length <= 40) return cleaned;
-  const cut = cleaned.slice(0, 40);
-  const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > 20 ? cut.slice(0, lastSpace) : cut) + "...";
-}
 
 export async function GET(
   _request: Request,
@@ -70,6 +62,7 @@ export async function POST(
       throw new ApiError(404, "Conversation not found");
     }
 
+    // Save user message
     await prisma.mentorMessage.create({
       data: {
         conversationId: id,
@@ -78,13 +71,15 @@ export async function POST(
       },
     });
 
+    // Get full conversation history
     const history = await prisma.mentorMessage.findMany({
       where: { conversationId: id },
       select: { role: true, content: true },
       orderBy: { createdAt: "asc" },
     });
 
-    const [profile, readiness] = await Promise.all([
+    // Build enriched context
+    const [profile, readiness, codingSubmissions, latestResume, latestInterview] = await Promise.all([
       prisma.studentProfile.findUnique({
         where: { userId: user.id },
         include: {
@@ -103,47 +98,114 @@ export async function POST(
         },
       }),
       computeReadiness(user.id),
+      prisma.codingSubmission.findMany({
+        where: { userId: user.id },
+        select: { status: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      prisma.resumeAnalysis.findFirst({
+        orderBy: { createdAt: "desc" },
+        select: { overallScore: true },
+      }),
+      prisma.interview.findFirst({
+        where: { userId: user.id, status: "COMPLETED" },
+        orderBy: { createdAt: "desc" },
+        select: { score: true },
+      }),
     ]);
 
-    const context = {
+    const totalSolved = codingSubmissions.filter((s) => s.status === "ACCEPTED").length;
+    const acceptanceRate = codingSubmissions.length > 0
+      ? Math.round((totalSolved / codingSubmissions.length) * 100)
+      : null;
+
+    const recentActivity: string[] = [];
+    if (codingSubmissions.length > 0) {
+      recentActivity.push(`Solved ${totalSolved} coding problems`);
+    }
+    if (latestResume) {
+      recentActivity.push(`Resume score: ${latestResume.overallScore}/100`);
+    }
+    if (latestInterview) {
+      recentActivity.push(`Last interview score: ${latestInterview.score}/100`);
+    }
+
+    const context: MentorContext = {
       name: user.name,
       targetRole: profile?.targetJobRole?.title ?? null,
       targetCompany: profile?.targetCompany?.name ?? null,
       readinessScore: readiness.overall,
       topSkills: profile?.studentSkills?.slice(0, 5).map((s) => s.skill.name) ?? [],
       weakSkills: profile?.skillGaps?.map((g) => g.skill.name) ?? [],
+      codingStats: {
+        totalSolved,
+        acceptanceRate: acceptanceRate ?? undefined,
+      },
+      resumeScore: latestResume?.overallScore ?? null,
+      interviewScore: latestInterview?.score ?? null,
+      recentActivity,
     };
 
-    const replyText = await mentorReply(data.content, context, history);
+    // Stream the reply
+    const encoder = new TextEncoder();
+    let fullReply = "";
 
-    const assistantMessage = await prisma.mentorMessage.create({
-      data: {
-        conversationId: id,
-        role: "assistant",
-        content: replyText,
-      },
-      select: {
-        id: true,
-        role: true,
-        content: true,
-        createdAt: true,
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          fullReply = await mentorReplyStream(
+            data.content,
+            context,
+            history.slice(0, -1), // exclude the just-saved user message from history
+            (token) => {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+            },
+          );
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, content: fullReply })}\n\n`));
+        } catch (err) {
+          const errorMsg = "I encountered an error generating a response. Please try again.";
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, content: errorMsg })}\n\n`));
+          fullReply = errorMsg;
+        } finally {
+          // Save assistant message to DB
+          try {
+            await prisma.mentorMessage.create({
+              data: {
+                conversationId: id,
+                role: "assistant",
+                content: fullReply,
+              },
+            });
+
+            // Update conversation title if first message
+            if (conversation.title === "New conversation") {
+              const newTitle = await generateConversationTitle(data.content);
+              await prisma.mentorConversation.update({
+                where: { id },
+                data: { title: newTitle },
+              });
+            } else {
+              await prisma.mentorConversation.update({
+                where: { id },
+                data: { updatedAt: new Date() },
+              });
+            }
+          } catch (dbErr) {
+            // Log but don't fail the response
+          }
+          controller.close();
+        }
       },
     });
 
-    if (conversation.title === "New conversation") {
-      const newTitle = generateTitle(data.content);
-      await prisma.mentorConversation.update({
-        where: { id },
-        data: { title: newTitle },
-      });
-    } else {
-      await prisma.mentorConversation.update({
-        where: { id },
-        data: { updatedAt: new Date() },
-      });
-    }
-
-    return NextResponse.json({ message: assistantMessage });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -67,6 +67,12 @@ export const aiService = {
   chat: (messages: AIMessage[], options?: { maxTokens?: number }) =>
     provider.chat(messages, options),
 
+  /** Stream tokens as they arrive. Returns full text when done. */
+  chatStream: (
+    messages: AIMessage[],
+    options?: { maxTokens?: number; onToken?: (token: string) => void },
+  ) => provider.chatStream(messages, options),
+
   async analyzeResume(
     resumeText: string,
     targetCompany?: string,

@@ -36,6 +36,94 @@ export class OpenRouterProvider {
     return Boolean(this.apiKey);
   }
 
+  async chatStream(
+    messages: AIMessage[],
+    options?: { maxTokens?: number; onToken?: (token: string) => void },
+  ): Promise<string> {
+    if (!this.isConfigured()) {
+      throw new AIServiceError(
+        "AI provider is not configured. Set OPENROUTER_API_KEY in your .env file.",
+      );
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+          "X-Title": "CareerPilot",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          max_tokens: options?.maxTokens ?? this.maxTokens,
+          temperature: 0.3,
+          stream: true,
+        }),
+        signal: AbortSignal.timeout(120000),
+      });
+    } catch (err) {
+      throw new AIServiceError(
+        `Could not reach the AI provider: ${err instanceof Error ? err.message : "network error"}`,
+      );
+    }
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new AIServiceError(
+        `AI provider returned ${response.status}. ${detail.slice(0, 300)}`,
+      );
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new AIServiceError("No response stream");
+
+    const decoder = new TextDecoder();
+    let fullContent = "";
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6);
+          if (data === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(data) as {
+              choices?: { delta?: { content?: string } }[];
+            };
+            const token = parsed.choices?.[0]?.delta?.content;
+            if (token) {
+              fullContent += token;
+              options?.onToken?.(token);
+            }
+          } catch {
+            // skip malformed SSE lines
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (!fullContent.trim()) {
+      throw new AIServiceError("AI provider returned an empty response.");
+    }
+    return fullContent;
+  }
+
   async chat(
     messages: AIMessage[],
     options?: { maxTokens?: number; json?: boolean },

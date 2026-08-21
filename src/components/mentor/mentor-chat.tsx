@@ -9,6 +9,11 @@ import {
   X,
   Loader2,
   Sparkles,
+  Copy,
+  Check,
+  RefreshCw,
+  Pencil,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,19 +42,13 @@ function escapeHtml(text: string): string {
 }
 
 function renderMarkdown(text: string): string {
-  // Escape HTML first to prevent XSS
   let html = escapeHtml(text)
-    // code blocks first (triple backtick)
     .replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang: string, code: string) => {
-      return `<pre class="my-3 overflow-x-auto rounded-lg bg-zinc-900 p-4 text-sm text-zinc-100 dark:bg-zinc-800"><code>${code}</code></pre>`;
+      return `<pre class="my-3 overflow-x-auto rounded-lg bg-zinc-900 p-4 text-sm text-zinc-100 dark:bg-zinc-800"><code>${code.trim()}</code></pre>`;
     })
-    // inline code
     .replace(/`([^`]+)`/g, '<code class="rounded bg-zinc-200 px-1.5 py-0.5 text-sm dark:bg-zinc-700">$1</code>')
-    // bold
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    // italic
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    // headers (### then ## then #)
     .replace(/^### (.+)$/gm, '<h4 class="mt-4 mb-1 text-base font-semibold">$1</h4>')
     .replace(/^## (.+)$/gm, '<h3 class="mt-4 mb-1 text-lg font-semibold">$1</h3>')
     .replace(/^# (.+)$/gm, '<h2 class="mt-4 mb-1 text-xl font-bold">$1</h2>');
@@ -74,7 +73,7 @@ function renderMarkdown(text: string): string {
     return `<ol class="my-2 list-decimal space-y-1 pl-5">${items}</ol>`;
   });
 
-  // paragraphs: double newline → paragraph break
+  // paragraphs
   html = html.replace(/\n\n+/g, '</p><p class="mt-2">');
 
   // single newlines → <br> (but not inside pre blocks)
@@ -105,10 +104,10 @@ function formatDate(iso: string): string {
 }
 
 const SUGGESTIONS = [
-  "What should I improve first?",
-  "How do I get better at interviews?",
-  "Which skills am I missing?",
-  "Help me plan my week",
+  "How should I prepare for technical interviews?",
+  "What skills should I learn for Google?",
+  "Help me optimize my resume",
+  "I'm feeling overwhelmed with career prep",
 ];
 
 export function MentorChat({ name }: { name: string }) {
@@ -119,6 +118,10 @@ export function MentorChat({ name }: { name: string }) {
   const [sending, setSending] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingConvo, setLoadingConvo] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -132,7 +135,6 @@ export function MentorChat({ name }: { name: string }) {
     });
   }, []);
 
-  // Load conversations on mount
   useEffect(() => {
     fetch("/api/mentor/conversations")
       .then((r) => r.json())
@@ -142,7 +144,6 @@ export function MentorChat({ name }: { name: string }) {
       .catch(() => {});
   }, []);
 
-  // Auto-scroll on new messages
   useEffect(() => {
     scrollToBottom();
   }, [messages, sending, scrollToBottom]);
@@ -171,25 +172,70 @@ export function MentorChat({ name }: { name: string }) {
     }
   }
 
-  async function startNewChat() {
+  function startNewChat() {
     setActiveConvoId(null);
     setMessages([]);
     setSidebarOpen(false);
     inputRef.current?.focus();
   }
 
-  async function sendMessage(text: string) {
+  function stopGenerating() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setSending(false);
+  }
+
+  function copyMessage(content: string, id: string) {
+    navigator.clipboard.writeText(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  async function regenerateMessage(messageIndex: number) {
+    if (sending) return;
+
+    // Find the user message that preceded this assistant message
+    let userMsgIndex = messageIndex - 1;
+    while (userMsgIndex >= 0 && messages[userMsgIndex].role !== "user") {
+      userMsgIndex--;
+    }
+    if (userMsgIndex < 0) return;
+
+    // Remove everything from this assistant message onward
+    const newMessages = messages.slice(0, messageIndex);
+    setMessages(newMessages);
+
+    // Re-send the user message
+    const userMsg = messages[userMsgIndex];
+    await sendMessage(userMsg.content, true);
+  }
+
+  async function sendMessage(text: string, isRegenerate = false) {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
 
-    const userMsg: Message = {
-      role: "user",
-      content: trimmed,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
+    let userMsg: Message;
+    if (!isRegenerate) {
+      userMsg = {
+        role: "user",
+        content: trimmed,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+    }
+
     setSending(true);
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+
+    // Add placeholder for streaming response
+    const assistantIndex = (isRegenerate ? messages : [...messages, userMsg!]).length;
+    let fullContent = "";
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "", createdAt: new Date().toISOString() },
+    ]);
 
     try {
       let convoId = activeConvoId;
@@ -218,38 +264,81 @@ export function MentorChat({ name }: { name: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: trimmed }),
+        signal: abortController.signal,
       });
-      const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error ?? "Mentor could not respond");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error ?? "Mentor could not respond");
+      }
 
-      const assistantMsg: Message = {
-        id: data.message.id,
-        role: "assistant",
-        content: data.message.content,
-        createdAt: data.message.createdAt,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      // Read SSE stream
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+            if (data.token) {
+              fullContent += data.token;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[assistantIndex] = {
+                  ...updated[assistantIndex],
+                  content: fullContent,
+                };
+                return updated;
+              });
+            }
+            if (data.done) {
+              fullContent = data.content || fullContent;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[assistantIndex] = {
+                  ...updated[assistantIndex],
+                  content: fullContent,
+                };
+                return updated;
+              });
+            }
+          } catch {
+            // skip malformed lines
+          }
+        }
+      }
 
       // Update conversation title in sidebar
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === convoId
-            ? {
-                ...c,
-                title:
-                  c.title === "New conversation"
-                    ? data.message.content.slice(0, 40).replace(/\n/g, " ") +
-                      (data.message.content.length > 40 ? "..." : "")
-                    : c.title,
-                updatedAt: new Date().toISOString(),
-              }
-            : c,
-        ),
-      );
+      if (!isRegenerate && messages.length <= 1) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === convoId
+              ? {
+                  ...c,
+                  title:
+                    c.title === "New conversation"
+                      ? trimmed.slice(0, 40) + (trimmed.length > 40 ? "..." : "")
+                      : c.title,
+                  updatedAt: new Date().toISOString(),
+                }
+              : c,
+          ),
+        );
 
-      // Refresh conversation list to get server-generated title
-      if (messages.length === 0) {
+        // Refresh to get AI-generated title
         fetch("/api/mentor/conversations")
           .then((r) => r.json())
           .then((d) => {
@@ -258,17 +347,32 @@ export function MentorChat({ name }: { name: string }) {
           .catch(() => {});
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Mentor could not respond");
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "I couldn't reach my response service. Please try again in a moment.",
-        },
-      ]);
+      if (e instanceof Error && e.name === "AbortError") {
+        // User stopped generation
+        setMessages((prev) => {
+          const updated = [...prev];
+          if (updated[assistantIndex]?.content === "") {
+            updated[assistantIndex] = {
+              ...updated[assistantIndex],
+              content: fullContent || "Generation stopped.",
+            };
+          }
+          return updated;
+        });
+      } else {
+        toast.error(e instanceof Error ? e.message : "Mentor could not respond");
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[assistantIndex] = {
+            ...updated[assistantIndex],
+            content: "I couldn't generate a response. Please try again.",
+          };
+          return updated;
+        });
+      }
     } finally {
       setSending(false);
+      abortRef.current = null;
     }
   }
 
@@ -291,7 +395,6 @@ export function MentorChat({ name }: { name: string }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:hidden",
         )}
       >
-        {/* Sidebar header */}
         <div className="flex items-center justify-between border-b p-3">
           <span className="text-sm font-semibold">Conversations</span>
           <Button
@@ -304,7 +407,6 @@ export function MentorChat({ name }: { name: string }) {
           </Button>
         </div>
 
-        {/* New chat button */}
         <div className="p-3">
           <Button
             variant="outline"
@@ -316,7 +418,6 @@ export function MentorChat({ name }: { name: string }) {
           </Button>
         </div>
 
-        {/* Conversation list */}
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           {conversations.length === 0 && (
             <p className="px-2 py-4 text-center text-xs text-muted-foreground">
@@ -411,26 +512,107 @@ export function MentorChat({ name }: { name: string }) {
           ) : (
             <div className="mx-auto max-w-3xl space-y-4 p-4">
               {messages.map((m, i) => (
-                <div key={i} className="space-y-1">
-                  <div
-                    className={cn(
-                      "rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                      m.role === "user"
-                        ? "ml-auto max-w-[85%] rounded-br-sm bg-primary text-primary-foreground"
-                        : "max-w-[85%] rounded-bl-sm bg-muted",
-                    )}
-                  >
-                    {m.role === "assistant" ? (
-                      <div
-                        className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_li]:my-0.5"
-                        dangerouslySetInnerHTML={{
-                          __html: renderMarkdown(m.content),
-                        }}
+                <div key={i} className="group space-y-1">
+                  {editingId === `user-${i}` && m.role === "user" ? (
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="min-h-[60px] text-sm"
+                        autoFocus
                       />
-                    ) : (
-                      <span className="whitespace-pre-wrap">{m.content}</span>
-                    )}
-                  </div>
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const newMessages = [...messages];
+                            newMessages[i] = { ...newMessages[i], content: editContent };
+                            setMessages(newMessages.slice(0, i + 1));
+                            setEditingId(null);
+                            sendMessage(editContent);
+                          }}
+                        >
+                          Send
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                          m.role === "user"
+                            ? "ml-auto max-w-[85%] rounded-br-sm bg-primary text-primary-foreground"
+                            : "max-w-[85%] rounded-bl-sm bg-muted",
+                        )}
+                      >
+                        {m.role === "assistant" ? (
+                          <div
+                            className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_li]:my-0.5"
+                            dangerouslySetInnerHTML={{
+                              __html: renderMarkdown(m.content),
+                            }}
+                          />
+                        ) : (
+                          <span className="whitespace-pre-wrap">{m.content}</span>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div
+                        className={cn(
+                          "flex gap-1 px-4 opacity-0 transition-opacity group-hover:opacity-100",
+                          m.role === "user" ? "justify-end" : "justify-start",
+                        )}
+                      >
+                        {m.role === "assistant" && m.content && !sending && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => copyMessage(m.content, `msg-${i}`)}
+                            >
+                              {copiedId === `msg-${i}` ? (
+                                <Check className="size-3.5" />
+                              ) : (
+                                <Copy className="size-3.5" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              onClick={() => regenerateMessage(i)}
+                            >
+                              <RefreshCw className="size-3.5" />
+                            </Button>
+                          </>
+                        )}
+                        {m.role === "user" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7"
+                            onClick={() => {
+                              setEditingId(`user-${i}`);
+                              setEditContent(m.content);
+                            }}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
+
                   {m.createdAt && (
                     <p
                       className={cn(
@@ -443,7 +625,7 @@ export function MentorChat({ name }: { name: string }) {
                   )}
                 </div>
               ))}
-              {sending && (
+              {sending && messages[messages.length - 1]?.content === "" && (
                 <div className="space-y-1">
                   <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
                     <div className="flex items-center gap-1.5">
@@ -480,18 +662,25 @@ export function MentorChat({ name }: { name: string }) {
                 target.style.height = Math.min(target.scrollHeight, 128) + "px";
               }}
             />
-            <Button
-              onClick={() => sendMessage(input)}
-              disabled={sending || !input.trim()}
-              className="shrink-0"
-              size="icon"
-            >
-              {sending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
+            {sending ? (
+              <Button
+                onClick={stopGenerating}
+                variant="destructive"
+                size="icon"
+                className="shrink-0"
+              >
+                <Square className="size-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={() => sendMessage(input)}
+                disabled={!input.trim()}
+                className="shrink-0"
+                size="icon"
+              >
                 <Send className="size-4" />
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             CareerPilot Mentor can make mistakes. Verify important information.
