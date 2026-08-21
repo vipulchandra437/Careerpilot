@@ -6,15 +6,15 @@ import { toErrorResponse, validateParams } from "@/lib/api";
 
 export const runtime = "nodejs";
 
-const paramsSchema = z.object({ id: z.string() });
+const paramsSchema = z.object({ problemId: z.string() });
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(_request: Request, context: { params: Promise<{ problemId: string }> }) {
   await requireUser();
   try {
-    const { id } = await validateParams(paramsSchema, await context.params);
+    const { problemId } = await validateParams(paramsSchema, await context.params);
 
     const problem = await prisma.codingProblem.findUnique({
-      where: { id },
+      where: { id: problemId },
       select: {
         id: true,
         title: true,
