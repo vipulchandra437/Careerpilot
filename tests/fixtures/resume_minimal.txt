@@ -1,0 +1,8 @@
+JOHN DOE
+john@email.com
+
+Skills: Python
+
+Experience: Intern at TechCorp (2021)
+
+Education: BS Computer Science, State University (2021)

@@ -1,0 +1,27 @@
+hey there!! i'm bob jones and i need a job lol
+
+basically i know some stuff about computers and programming
+
+what i can do:
+- python (made some scripts)
+- javascript (made a website once)
+- react (kind of)
+- docker (i think i used it?)
+- sql (mysql not postgres sorry)
+- git (i use github sometimes)
+
+where i worked:
+google - software engineer thing (2020 to now) - did some stuff with backend
+facebook - intern (2019 summer) - made a dashboard
+my college - web developer (2018) - updated the website
+
+school:
+i went to MIT for computer science, graduated 2020 or 2019 i forget exactly
+
+oh also i made a cool app that does something with AI and machine learning using tensorflow and pytorch but i lost the code
+
+and i know some linux and bash scripting too
+
+i'm looking for a backend engineer role or maybe full stack idk
+
+thanks!!

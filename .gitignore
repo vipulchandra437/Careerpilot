@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+node_modules/
+.next/
+.env.local
+.env.*.local
+*.log
+graphify-out/
+*.db
+reticle/
