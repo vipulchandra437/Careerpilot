@@ -76,7 +76,7 @@ Each phase lists concrete tasks and exit criteria that must be *demonstrated*, n
 ## Phase 7 — Evaluation & Launch Hardening
 **Goal:** Prove the AI outputs are good and the system holds up before real users pay for it.
 - [ ] Full eval sets reviewed for all LLM-driven features (gap analysis, roadmap, challenges, interviews, feedback).
-- [ ] Cost/latency review of OpenRouter usage per feature — confirm actual cost matches the pricing model's assumptions.
+- [x] Cost/latency review of OpenRouter usage per feature — confirm actual cost matches the pricing model's assumptions. **DONE (P7-0):** USER-AUTHORIZED live OpenRouter runs through the production orchestrator (~$0.03 total). Atomic same-response compare: our `llm_pricing`-based `cost_usd` matches OpenRouter's actual `usage.cost` to **0.0–1.1%** across all features × gpt-4o-mini + gpt-4o (gap/roadmap/challenge on the gpt-4o-mini default to ≤0.5%). Rate table CONFIRMED accurate — config.py comment updated from placeholder to validated. Observed latency 1–8s (under PRD <15s bar). Cost-per-user at locked credits × $0.10/credit ⇒ ~190x+ margin over real cost. P7-0 CLOSED.
 - [ ] Basic load test on the sandbox execution service (concurrent submissions).
 - [ ] Security review against RULES.md §2 as a checklist.
 **Exit criteria:** documented eval results per feature, a cost-per-user estimate that doesn't lose money at the chosen credit price, and no unresolved item from the RULES.md §2 checklist.

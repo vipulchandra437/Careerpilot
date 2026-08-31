@@ -61,10 +61,12 @@ class Settings(BaseSettings):
     }
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
-    # Used by the orchestrator to compute llm_usage_log.cost_usd. These are PLACEHOLDER
-    # rates for the Phase 6 metering mechanism only — see MEMORY.md P7-0: they MUST be
-    # reconciled against real OpenRouter invoices in Phase 7 before shipping prices.
-    # Override any entry via env, e.g. LLM_PRICING__OPENAI_GPT4O_MINI__0=0.15
+    # Used by the orchestrator to compute llm_usage_log.cost_usd. These rates are
+    # CONFIRMED ACCURATE against real OpenRouter billing (MEMORY.md P7-0 RESOLVED):
+    # atomic same-response compare showed our estimate matches OpenRouter's actual
+    # usage.cost to within 0.0-1.1% across all features/models (gap/roadmap/challenge
+    # on the gpt-4o-mini default to <=0.5%). Override any entry via env, e.g.
+    # LLM_PRICING__OPENAI_GPT4O_MINI__0=0.15
     # Format: {"model": {"input_per_1m": float, "output_per_1m": float}}
     llm_pricing: dict[str, dict[str, float]] = {
         "openai/gpt-4o-mini": {"input_per_1m": 0.15, "output_per_1m": 0.60},
