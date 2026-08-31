@@ -1,0 +1,38 @@
+CAROL MARTINEZ
+
+Backend Engineer | Distributed Systems
+
+SUMMARY
+Backend engineer with 6 years of experience designing and operating distributed systems on Kubernetes and AWS. Comfortable owning services end-to-end: design, implementation, observability, and on-call.
+
+EXPERIENCE
+
+Acme Cloud
+Senior Backend Engineer
+March 2021 – June 2025
+
+Built and operated the event-streaming platform (Kafka, Go, Postgres) serving 3M daily events. Introduced structured logging and tracing, reducing mean-time-to-detect from hours to minutes. Mentored two junior engineers through production-readiness reviews.
+
+Northwind Systems
+Backend Engineer
+July 2018 – February 2021
+
+Owned the order-processing API (Python, FastAPI). Migrated a monolith to microservices, cutting deploy time from 30 minutes to 4. Wrote integration tests that raised confidence and caught two severe regressions pre-release.
+
+EDUCATION
+
+Carnegie Mellon University
+M.S. in Computer Science
+2019
+
+Georgia Tech
+B.S. in Computer Science
+2017
+
+MORE
+- Docker
+- Kafka
+- Go
+- Terraform
+- Prometheus
+- gRPC

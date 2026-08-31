@@ -11,6 +11,7 @@ from backend.models.user import User
 from backend.models.profile import ProfileSnapshot
 from backend.api.dependencies import get_current_user
 from backend.services.resume_parser import parse_resume
+from backend.services.resume_ai import parse_resume_with_ai
 from backend.services.github import get_github_auth_url, connect_github_account, get_github_data
 from backend.services.linkedin import parse_linkedin_import, parse_linkedin_paste
 from backend.services.profile_merge import compute_merge
@@ -58,7 +59,9 @@ async def upload_resume(
         )
 
     try:
-        parsed = parse_resume(file.filename or "resume.pdf", content)
+        parsed = await parse_resume_with_ai(
+            file.filename or "resume.pdf", content, str(user.id), db
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

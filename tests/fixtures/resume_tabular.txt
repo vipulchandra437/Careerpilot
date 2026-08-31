@@ -1,0 +1,26 @@
+ALICE CHEN — FULL-STACK DEVELOPER
+alice.chen@example.com | (415) 555-0199
+
+PROFILE
+7 years building product-facing web software. Strong on the frontend-to-backend seam: React, Node, Postgres, AWS.
+
+CORE COMPETENCIES
+React · TypeScript · Node.js · Express · PostgreSQL · Redis · Docker · AWS (EC2, S3, Lambda) · GraphQL · Jest · Git
+
+EMPLOYMENT HISTORY
+
+2021–Present | Senior Full-Stack Engineer @ Finly
+Architected the payments ledger service (Node/Postgres), cut p95 latency 45%, and shipped the v2 customer dashboard (React/TS). Led a pod of 4.
+
+2018–2021 | Full-Stack Developer @ Shopify
+Built internal fulfillment tooling on React + GraphQL; owned the analytics export pipeline; added end-to-end Jest coverage.
+
+2016–2018 | Junior Web Developer @ Agency Co
+Delivered ~20 client sites; migrated legacy jQuery to React; set up CI with Docker + GitHub Actions.
+
+EDUCATION
+2016 — B.S. Computer Science, UC Berkeley
+
+PROJECTS
+Ledger visualization dashboard — React + D3 + WebSockets, live metrics.
+Open-source GraphQL rate-limiter — TS, 400 stars.

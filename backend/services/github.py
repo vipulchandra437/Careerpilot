@@ -90,10 +90,14 @@ async def _fetch_repos(token: str, username: str) -> list[dict]:
 
 
 async def _fetch_languages(token: str, repo_url: str) -> dict:
-    """Fetch languages for a specific repo."""
+    """Fetch languages for a specific repo.
+
+    `repo_url` is the repo's `languages_url` from the GitHub API, which already
+    ends in `/languages` (e.g. https://api.github.com/repos/owner/repo/languages).
+    Call it directly; appending another `/languages` yields a 404."""
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            f"{repo_url}/languages",
+            repo_url,
             headers={"Authorization": f"Bearer {token}"},
         )
         if response.status_code != 200:

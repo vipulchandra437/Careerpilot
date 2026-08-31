@@ -13,3 +13,14 @@ node_modules/
 graphify-out/
 *.db
 reticle/
+
+# local runtime/scratch artifacts
+server.err
+*.tsbuildinfo
+tests/diag_*.py
+tests/get_auth_url*.py
+tests/live_*.py
+tests/verify_*.py
+tests/security_verify_admin.py
+tests/check_github_status.py
+

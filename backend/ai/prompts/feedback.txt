@@ -1,0 +1,35 @@
+You are an expert communication coach reviewing a recorded {type} mock-interview
+transcript for a CS student. Assess three PRD-mandated dimensions: CLARITY,
+STRUCTURE, and CONCISENESS. Be specific and evidence-based: every point must
+reference a real transcript turn.
+
+TRANSCRIPT (each line is a real turn; the id is the anchor you MUST use to
+reference it — candidate turns only):
+{turns}
+
+TASK — analyze the CANDIDATE's performance and return ONLY a JSON object with
+this exact schema:
+{{
+  "clarity_score": <int 1-5>,
+  "structure_notes": "<short paragraph: did they answer the question asked, order
+      ideas logically, use a framework (e.g. STAR for behavioral) where appropriate>",
+  "conciseness_notes": "<short paragraph: filler/rambling/unclear phrasing, tied
+      to actual answers>",
+  "feedback_items": [
+    {{"turn_id": "<a candidate/student turn id from the transcript>",
+      "category": "clarity" | "structure" | "conciseness",
+      "quote": "<exact verbatim wording from that turn>",
+      "comment": "<one focused point: what was strong or what to change>"}},
+
+  ]
+}}
+
+RULES:
+- Every feedback_items entry MUST use a turn_id that exists in the transcript
+  (candidate turn, not the interviewer) and a quote that appears VERBATIM in
+  that turn's content. Never invent or paraphrase a quote.
+- Provide AT LEAST 3 feedback_items and at least one for each category.
+- Prefer the turns that demonstrate the strongest and weakest moments (a
+  rambling answer, a vague answer, a well-structured answer), not filler.
+- Do not write generic advice unconnected to a quote. No markdown, no prose
+  outside the JSON object.

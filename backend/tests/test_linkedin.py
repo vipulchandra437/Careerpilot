@@ -76,7 +76,8 @@ def test_parse_json_export():
     assert len(profile.education) >= 1
 
 
-def test_parse_csv_export():
+def test_parse_csv_export_keyvalue_dump():
+    """Hand-pasted 'Key,Value' profile dump."""
     csv_data = """Name,John Doe
 Headline,Software Engineer
 Skills,Python
@@ -87,6 +88,30 @@ Education,BS CS Stanford"""
     profile = _parse_csv_export(csv_data)
     assert "John Doe" in profile.name
     assert len(profile.skills) >= 1
+
+
+def test_parse_csv_export_columnar_skills():
+    """Real LinkedIn export Skills.csv: header row `Name,Endorsements` + rows."""
+    csv_data = """Name,Endorsements
+Python,17
+Docker,9
+"Machine Learning",5"""
+    profile = _parse_csv_export(csv_data)
+    assert "Python" in profile.skills
+    assert "Docker" in profile.skills
+    assert "Machine Learning" in profile.skills
+    assert len(profile.skills) == 3
+
+
+def test_parse_csv_export_columnar_positions():
+    """Real LinkedIn export Positions.csv: `Title,Company Name,...` header."""
+    csv_data = """Title,Company Name,Location
+Software Engineer,Google,Remote
+Senior Data Scientist,Meta,NYC"""
+    profile = _parse_csv_export(csv_data)
+    assert len(profile.experience) == 2
+    assert profile.experience[0]["title"] == "Software Engineer"
+    assert profile.experience[0]["company"] == "Google"
 
 
 def test_parse_linkedin_import_json():

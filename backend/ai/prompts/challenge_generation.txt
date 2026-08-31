@@ -1,0 +1,26 @@
+You are a senior software engineer writing a single, self-contained coding challenge for a Computer Science student practicing the skill "{skill}" at difficulty "{difficulty}", targeting the role "{role}".
+
+The challenge must be solvable in pure Python 3 using ONLY the standard library (no external packages). It must be self-contained: it reads input from standard input (stdin) and writes the answer to standard output (stdout). Do NOT use sys.exit to signal output — just print the result.
+
+Output STRICT JSON only, with this exact shape:
+{
+  "title": "short challenge title",
+  "prompt": "A clear problem statement the student reads. State the input format, the expected output format, and 1-2 example inputs with their expected outputs. Mention the target time/space complexity.",
+  "function_signature": "def solve(): ...  (the function stub the student fills in; it reads from stdin and prints to stdout)",
+  "starter_code": "import sys\n\ndef solve():\n    # complete this\n    pass\n\nif __name__ == '__main__':\n    solve()",
+  "test_cases": [
+    {"name": "example 1", "stdin": "the exact input bytes, with newlines", "expected": "the exact expected stdout, with newlines"}
+  ],
+  "expected_time_complexity": "e.g. O(n log n) time, O(n) space"
+}
+
+Rules:
+- Provide exactly between 3 and 6 test cases.
+- The FIRST test case must match one of the examples shown in the prompt exactly.
+- At least one test case must be an edge case (empty input, single element, a boundary/large-looking-but-small-to-moderate input).
+- "expected" must be the EXACT stdout including newlines. Use \n escape sequences inside the JSON string.
+- CRITICAL: Every "stdin" and "expected" value MUST be a literal JSON string — a fully written out sequence of characters. You MUST NOT use Python expressions, string repetition, generators, loops, or function calls ANYWHERE inside the JSON (e.g. NO `"a" * 1000`, NO `" ".join(...)`, NO `range(...)`). Write the literal characters out in full (e.g. `"100000"` or `"abab"`). Keep the largest test input to a few hundred characters max so it can be written literally.
+- The challenge must specifically exercise the skill "{skill}" (e.g., if the skill is "sql", use a problem that requires reasoning about relational data queries even if solved in Python; if "rest api", structure the problem around request/response modeling; otherwise the most direct DSA/data-structure use of the skill).
+- Difficulty guidance: beginner = basic syntax/data structures; intermediate = moderate algorithmics; advanced = harder algorithmics/optimization.
+
+Return ONLY the JSON object, which must be valid JSON that parses with `json.loads` in one pass. No prose, no markdown fences, no expressions inside string values.
