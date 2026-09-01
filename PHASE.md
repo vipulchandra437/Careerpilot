@@ -82,3 +82,13 @@ Each phase lists concrete tasks and exit criteria that must be *demonstrated*, n
 **Exit criteria:** documented eval results per feature, a cost-per-user estimate that doesn't lose money at the chosen credit price, and no unresolved item from the RULES.md §2 checklist.
 
 - [x] **Phase 7 SIGNED OFF by user (P7-3) — FULL 8-PHASE BUILD COMPLETE.** User reviewed real evidence for all four Phase 7 items and signed off: P7-0 (cost reconciliation: estimate matched OpenRouter actual to +0.06%, pricing table confirmed accurate, no change), §2 security checklist all 7 items pass incl. Rule-4 XOR→Fernet fix, sandbox load test (30 concurrent, isolation held), eval summaries (gap/roadmap/challenges, with the present/absent skill asymmetry pinned). All 8 phases signed off. Final suite 182 pass.
+
+---
+
+## Before Production Deployment (post-Phase-7 checklist)
+
+Checklist to complete before the platform is sellable in production. Each item is
+demonstrated with real proof before being marked done (RULES.md §4).
+
+- [~] **Item 1 — Migrate public Judge0 CE → self-hosted Judge0 (P7-4, Path A).** Public `ce.judge0.com` is dev-only (P3-3); production runs our own instance. **Delivery DONE:** `deploy/judge0/` kit — pinned official `judge0/judge0:1.13.1` compose (server+worker+postgres+redis), hardened `judge0.conf` (auth `X-Judge0-Token`, telemetry off, no network, limits matching `backend/config.py`), VM runbook README. **Code DONE (config-only, P3-2):** config-driven `check_health()` in `backend/sandbox/executor.py` surfaced on `/api/health`; suite 182 → **187 pass**; live `check_health()` → `{'status':'ok','version':'1.14.0'}`; live `run_code` sum-of-ints → **3/3 passed** through the exact app path (proves base-URL/auth-header/poll loop — self-hosting is a pure 2-line `.env` switch). **Remaining (needs Docker, runs on the cloud VM):** boot the stack, set 4 secrets, point `JUDGE0_BASE_URL`/`JUDGE0_AUTH_HEADERS` at the VM, re-run a real submission against the self-hosted instance to verify end-to-end. Not yet marked done — container boot + live self-hosted submission pending the VM.
+- [ ] **Item 2 — …** (remaining pre-production items TBD by user; this checklist tracks them in order.)

@@ -93,6 +93,33 @@ def _submit_url() -> str:
     return settings.judge0_base_url.rstrip("/") + "/submissions/batch"
 
 
+def check_health() -> dict:
+    """Probe the configured Judge0 instance and report its reachability + version.
+
+    Config-driven and works identically against the public CE (`/about` returns
+    200) or a self-hosted instance (`/about` and `/version` are unauthenticated,
+    while other endpoints require the auth token). Used by the `/api/health`
+    endpoint and by the deploy runbook to verify a self-hosted instance before
+    pointing the app at it.
+
+    Returns {"status": "ok", "version": str} on success. Raises SandboxRunError
+    for infrastructure failures (unreachable, HTTP error, bad payload) — never
+    falls back to running code in-process (RULES.md §2).
+    """
+    base = settings.judge0_base_url.rstrip("/")
+    with httpx.Client(timeout=10.0) as client:
+        try:
+            resp = client.get(base + "/about", headers=_auth_headers())
+        except httpx.HTTPError as e:
+            raise SandboxRunError(f"Judge0 health check transport error: {e}") from e
+    if resp.status_code != 200:
+        raise SandboxRunError(
+            f"Judge0 health check failed (HTTP {resp.status_code}): {resp.text[:300]}"
+        )
+    version = (resp.json() or {}).get("version", "unknown")
+    return {"status": "ok", "version": version}
+
+
 def _b64(s: str) -> str:
     return base64.b64encode(s.encode("utf-8")).decode("ascii")
 

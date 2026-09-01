@@ -10,8 +10,12 @@ node_modules/
 .env.local
 .env.*.local
 *.log
-graphify-out/
 *.db
+
+# graphify: track the deliverables, ignore machine-specific/temp working files
+graphify-out/.graphify_*
+graphify-out/.graphify_root
+graphify-out/cache/
 reticle/
 
 # local runtime/scratch artifacts

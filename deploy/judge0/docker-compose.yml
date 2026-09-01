@@ -1,0 +1,100 @@
+# Self-hosted Judge0 CE - production compose stack.
+#
+# Demonstrates the self-hosted migration (pre-production checklist item 1).
+# Service topology and image are the OFFICIAL Judge0 CE setup (see
+# https://github.com/judge0/judge0 -> docker-compose.yml), pinned to a
+# specific release for reproducibility, plus added health checks.
+#
+# Privileged mode is REQUIRED: Judge0 uses the `isolate` sandbox (mounts,
+# namespaces, rlimits). This is expected per the official docs.
+#
+# USAGE (run on the production VM, NOT this Windows dev box - see README.md):
+#   cd deploy/judge0
+#   cp judge0.conf judge0.conf.local   # or edit judge0.conf secrets first
+#   # set REDIS_PASSWORD, POSTGRES_PASSWORD, AUTHN_TOKEN, SECRET_KEY_BASE
+#   docker compose up -d db redis
+#   sleep 10s
+#   docker compose up -d
+#   sleep 5s
+#   docker compose ps
+#   curl http://127.0.0.1:2358/healthz      # -> {"status":"ok"}  (unauthenticated)
+#   curl http://127.0.0.1:2358/version      # -> {"version":"1.13.1"}
+#   curl -H "X-Judge0-Token: <AUTHN_TOKEN>" http://127.0.0.1:2358/about
+
+x-logging:
+  &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 50M
+      max-file: "5"
+
+services:
+  server:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - "2358:2358"
+    privileged: true
+    <<: *default-logging
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:2358/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    <<: *default-logging
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16.2
+    env_file: judge0.conf
+    volumes:
+      - judge0-data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0 -d judge0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2.4
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly yes --requirepass "$${REDIS_PASSWORD}"'
+    ]
+    env_file: judge0.conf
+    volumes:
+      - judge0-redis:/data
+    <<: *default-logging
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  judge0-data:
+  judge0-redis:
