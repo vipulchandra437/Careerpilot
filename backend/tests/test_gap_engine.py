@@ -305,3 +305,92 @@ class TestRunGapAnalysis:
 
         mock_orch.call_llm.assert_not_awaited()
         assert any(g["skill"] == "sql" for g in report.gaps)
+
+
+class TestEvalSetBeyondSql:
+    """RULES.md §4 eval set — gap analysis beyond the single-skill SQL case.
+
+    Mixed-evidence, non-fabrication across multiple skills. Deterministic guards
+    that back the eval-set entry (the LLM-side stability check is run live).
+    """
+
+    MIXED_REQUIRED = [
+        {"skill": "python", "weight": 1.0, "min_depth": "working"},
+        {"skill": "docker", "weight": 0.8, "min_depth": "basic"},
+        {"skill": "kubernetes", "weight": 0.6, "min_depth": "basic"},
+        {"skill": "aws", "weight": 0.7, "min_depth": "basic"},
+    ]
+
+    def _mixed_profile(self):
+        # python: bare resume tag. docker: project the demonstrably USES it.
+        # kubernetes: only a GitHub language, no explicit bullet. aws: NO evidence.
+        return MergedProfile(
+            skills=[Skill(name="python", source="resume", confidence="medium")],
+            languages_used={"Kubernetes": 8000},
+            projects=[
+                {
+                    "name": "K8s-Deployer",
+                    "description": "Wrote Dockerfiles and deployed the service to a Kubernetes cluster",
+                    "technologies": ["Docker", "Kubernetes"],
+                }
+            ],
+        )
+
+    def test_absent_skill_fallback_is_grounded_when_llm_silent(self):
+        # aws has NO evidence. When the LLM is silent on it, the deterministic
+        # fallback must never fabricate a source — it says "no evidence".
+        det = deterministic_pass(self._mixed_profile(), self.MIXED_REQUIRED)
+        llm = [
+            {"skill": "python", "severity": "important", "reason": "", "suggested_resource": ""},
+        ]  # note: no aws entry -> deterministic fallback reason
+        final = merge_passes(det, llm, "Backend Engineer")
+        aws = next(g for g in final if g["skill"] == "aws")
+        assert aws["matched"] is False
+        assert "no evidence" in aws["reason"].lower()  # grounded, never invented
+        assert "resume" not in aws["reason"].lower()
+
+    def test_absent_skill_reason_respects_llm_but_merge_never_clears(self):
+        # For an ABSENT skill the merge uses the LLM's reason if given (subject to the
+        # prompt's CORRECTNESS-FIRST rule), but the skill itself is never cleared/dropped.
+        det = deterministic_pass(self._mixed_profile(), self.MIXED_REQUIRED)
+        llm = [
+            {"skill": "aws", "severity": "critical",
+             "reason": "No cloud experience evidenced",
+             "suggested_resource": ""},
+        ]
+        final = merge_passes(det, llm, "Backend Engineer")
+        aws = next(g for g in final if g["skill"] == "aws")
+        assert aws["matched"] is False
+        # The hard-miss skills is never dropped even if the LLM had said none.
+        assert any(g["skill"] == "aws" for g in final)
+
+    def test_deep_project_evidence_matches_not_bare_tag(self):
+        # docker is evidenced by a project that demonstrably uses it -> matched.
+        # aws is not -> hard miss.
+        det = deterministic_pass(self._mixed_profile(), self.MIXED_REQUIRED)
+        assert det["docker"]["matched"] is True      # project tech + prose
+        assert det["aws"]["matched"] is False        # no evidence anywhere
+        assert det["kubernetes"]["matched"] is True  # github language + project prose
+
+    def test_present_skill_reason_is_grounded_to_project_source(self):
+        det = deterministic_pass(self._mixed_profile(), self.MIXED_REQUIRED)
+        llm = [
+            {"skill": "docker", "severity": "important",
+             "reason": "not evidenced in the current profile",  # false; it IS evidenced
+             "suggested_resource": "Docker docs"},
+        ]
+        final = merge_passes(det, llm, "Backend Engineer")
+        docker = next(g for g in final if g["skill"] == "docker")
+        # Reason grounded & deterministic; never claims "not evidenced" for an evidenced skill.
+        assert "not evidenced" not in docker["reason"]
+        assert docker["matched"] is True
+
+    def test_kubernetes_github_language_reason_attributes_github(self):
+        det = deterministic_pass(self._mixed_profile(), self.MIXED_REQUIRED)
+        llm = [{"skill": "kubernetes", "severity": "important",
+                "reason": "", "suggested_resource": "K8s docs"}]
+        final = merge_passes(det, llm, "Backend Engineer")
+        k8s = next(g for g in final if g["skill"] == "kubernetes")
+        assert k8s["matched"] is True
+        # Deterministic reason references the actual proven source (project uses it).
+        assert k8s["reason"]
