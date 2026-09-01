@@ -259,6 +259,47 @@ function ProfileContent() {
     }
   }
 
+  async function handleLinkedinFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/profile/linkedin/import", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/login?reason=expired");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.detail || "Import failed");
+        return;
+      }
+
+      setLinkedinPaste("");
+      setShowLinkedinPaste(false);
+      await fetchSnapshot();
+    } catch {
+      setError("Import failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
   if (loading) {
     return (
       <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
@@ -488,6 +529,18 @@ function ProfileContent() {
                 placeholder="Paste your LinkedIn profile information here..."
                 className="mb-4 h-48 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
               />
+              <label className="block mb-4">
+                <span className={`${mutedText} mb-1 block`}>
+                  Or upload a JSON/CSV data export file
+                </span>
+                <input
+                  type="file"
+                  accept=".json,.csv,.txt"
+                  onChange={handleLinkedinFileUpload}
+                  className={`${inputFileClass} mt-2`}
+                  disabled={uploading}
+                />
+              </label>
               <div className="flex gap-4">
                 <button
                   onClick={handleLinkedinImport}

@@ -29,7 +29,9 @@ class AnalyzeRequest(BaseModel):
 
 class GapResponse(BaseModel):
     id: uuid.UUID
+    snapshot_id: str
     target_role_id: uuid.UUID
+    target_role_name: str
     gaps: list
     created_at: object
 
@@ -80,7 +82,9 @@ async def analyze(
 
     return GapResponse(
         id=uuid.UUID(report.id),
+        snapshot_id=report.snapshot_id,
         target_role_id=uuid.UUID(report.target_role_id),
+        target_role_name=role.name,
         gaps=report.gaps,
         created_at=report.created_at,
     )
@@ -112,9 +116,18 @@ async def get_report(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No gap report yet. Run POST /api/gap/analyze first.",
         )
+
+    role_result = await db.execute(
+        select(TargetRoleProfile).where(TargetRoleProfile.id == report.target_role_id)
+    )
+    role = role_result.scalar_one_or_none()
+    role_name = role.name if role else "Unknown"
+
     return GapResponse(
         id=uuid.UUID(report.id),
+        snapshot_id=report.snapshot_id,
         target_role_id=uuid.UUID(report.target_role_id),
+        target_role_name=role_name,
         gaps=report.gaps,
         created_at=report.created_at,
     )

@@ -1,5 +1,6 @@
 """Roadmap API endpoints."""
 
+import logging
 import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
@@ -13,6 +14,8 @@ from backend.models.target_role import TargetRoleProfile
 from backend.services.profile_merge import MergedProfile
 from backend.services.credit import authorize_use, refund_last, InsufficientCredits
 from backend.services.roadmap import get_roadmap_with_milestones, get_roadmap_by_id_with_milestones, run_roadmap_generation
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 
@@ -118,8 +121,9 @@ async def _generate_roadmap_background(
                 merged=merged,
                 target_role_name=target_role_name,
             )
-        except Exception:
+        except Exception as exc:
             # Log error but don't crash background task; refund if this was paid.
+            logger.exception("Roadmap background generation failed for gap_report=%s: %s", gap_report_id, exc)
             if refund_feature:
                 try:
                     await refund_last(db, user_id, refund_feature)

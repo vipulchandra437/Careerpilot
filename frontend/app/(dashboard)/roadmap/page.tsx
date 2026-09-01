@@ -66,6 +66,7 @@ const pillColors: Record<string, string> = {
   important: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
   nice_to_have: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
   none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
+  gray: "bg-slate-500/15 text-slate-300 border border-slate-500/20",
 };
 
 const primaryBtn =
@@ -106,6 +107,14 @@ function RoadmapContent() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
 
+  // Backend GET /api/roadmap/{id} returns {roadmap: {...}, milestones: [...]}.
+  // Normalize to the frontend's Roadmap shape (milestones merged onto roadmap).
+  const normalizeRoadmap = (data: any): Roadmap => {
+    const base = data.roadmap && data.milestones ? data.roadmap : data;
+    const milestones = data.milestones || data.roadmap?.milestones || [];
+    return { ...base, milestones };
+  };
+
   const fetchTargetRoles = useCallback(async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -114,7 +123,7 @@ function RoadmapContent() {
       });
       if (res.ok) {
         const data = await res.json();
-        setTargetRoles(data.roles || []);
+        setTargetRoles(Array.isArray(data) ? data : data.roles || []);
       }
     } catch {
       // Ignore
@@ -128,13 +137,10 @@ function RoadmapContent() {
       const token = localStorage.getItem("access_token");
       
       // First get the gap report to find its ID
-      const gapRes = await fetch("/api/gap/report", {
-        method: "POST",
+      const gapRes = await fetch(`/api/gap/report?target_role_id=${encodeURIComponent(roleId)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ target_role_id: roleId }),
       });
       
       if (gapRes.status === 401) {
@@ -159,7 +165,7 @@ function RoadmapContent() {
         
         if (roadmapRes.ok) {
           const roadmapData = await roadmapRes.json();
-          setRoadmap(roadmapData);
+          setRoadmap(normalizeRoadmap(roadmapData));
         } else if (roadmapRes.status === 404) {
           // No roadmap yet - will show generate button
           setRoadmap(null);
@@ -202,7 +208,7 @@ function RoadmapContent() {
           });
           if (roadmapRes.ok) {
             const roadmapData = await roadmapRes.json();
-            setRoadmap(roadmapData);
+            setRoadmap(normalizeRoadmap(roadmapData));
             break;
           }
           attempts++;

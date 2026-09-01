@@ -55,6 +55,7 @@ const pillColors: Record<string, string> = {
   important: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
   nice_to_have: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
   none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
+  blue: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
 };
 
 const primaryBtn =
@@ -96,7 +97,7 @@ function GapReportContent() {
       });
       if (res.ok) {
         const data = await res.json();
-        setTargetRoles(data.roles || []);
+        setTargetRoles(Array.isArray(data) ? data : data.roles || []);
       }
     } catch {
       // Ignore
@@ -108,13 +109,10 @@ function GapReportContent() {
     setError("");
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/gap/report", {
-        method: "POST",
+      const res = await fetch(`/api/gap/report?target_role_id=${encodeURIComponent(roleId)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ target_role_id: roleId }),
       });
       if (res.status === 401) {
         localStorage.removeItem("access_token");
