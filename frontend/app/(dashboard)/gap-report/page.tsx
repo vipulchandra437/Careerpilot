@@ -42,7 +42,7 @@ interface TargetRole {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-colors";
+  "card p-6 transition-colors";
 
 const cardTitleClass = "text-lg font-semibold text-white mb-1 flex items-center gap-2";
 
@@ -59,7 +59,7 @@ const pillColors: Record<string, string> = {
 };
 
 const primaryBtn =
-  "inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/40 hover:brightness-110 disabled:pointer-events-none disabled:opacity-50";
+  "btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50";
 
 const darkBtn =
   "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white";
@@ -338,7 +338,7 @@ function GapReportContent() {
                 <Target className="h-4 w-4" />
                 Generate Roadmap
               </button>
-              <p className={mutedText} mt-2>
+              <p className={mutedText + " mt-2"}>
                 Get a personalized learning plan with milestones and resources
               </p>
             </div>
@@ -347,7 +347,7 @@ function GapReportContent() {
           <div className={`${cardClass} text-center py-12`}>
             <Target className="h-12 w-12 text-slate-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">No gap report yet</h3>
-            <p className={mutedText} mb-4>
+            <p className={mutedText + " mb-4"}>
               Select a target role and run an analysis to see your skill gaps.
             </p>
             <button

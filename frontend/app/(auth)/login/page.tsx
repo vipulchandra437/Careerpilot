@@ -53,13 +53,14 @@ function LoginContent() {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 -z-10"
       >
-        <div className="absolute -top-1/2 -left-1/2 h-[150%] w-[150%] animate-float-slow rounded-full bg-gradient-to-tr from-blue-600/15 via-transparent to-indigo-600/15 blur-[200px]" />
-        <div className="absolute -bottom-1/2 -right-1/2 h-[150%] w-[150%] animate-float-slower rounded-full bg-gradient-to-bl from-indigo-600/15 via-transparent to-purple-600/15 blur-[200px]" />
+        <div className="absolute -top-1/2 -left-1/2 h-[150%] w-[150%] animate-float-slow rounded-full bg-gradient-to-tr from-brand-600/20 via-transparent to-indigo-600/20 blur-[200px]" />
+        <div className="absolute -bottom-1/2 -right-1/2 h-[150%] w-[150%] animate-float-slower rounded-full bg-gradient-to-bl from-indigo-600/20 via-transparent to-violet-600/20 blur-[200px]" />
+        <div className="absolute inset-0 bg-hero-grid bg-[length:52px_52px] [mask-image:radial-gradient(ellipse_at_center,black_10%,transparent_70%)]" />
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Glassmorphism card */}
-        <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl shadow-2xl shadow-black/50">
+        <div className="glass relative animate-scale-in p-8 shadow-2xl shadow-black/50">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-white">
               Welcome Back
@@ -70,8 +71,8 @@ function LoginContent() {
           </div>
 
           {error && (
-            <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur">
-              <AlertTriangle className="h-4 w-4 text-red-400" />
+            <div className="alert alert-error mb-6 animate-fade-in">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               <p>{error}</p>
             </div>
           )}
@@ -90,10 +91,10 @@ function LoginContent() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-10 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+className="input !px-10 focus-ring disabled:pointer-events-none"
                   disabled={loading}
                   required
-                  autoComplete="email"
+                  autoComplete="current-password"
                 />
               </div>
             </div>
@@ -111,10 +112,10 @@ function LoginContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-10 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+className="input !px-10 focus-ring disabled:pointer-events-none"
                   disabled={loading}
                   required
-                  autoComplete="current-password"
+                  autoComplete="email"
                 />
                 <button
                   type="button"
@@ -141,7 +142,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/50 hover:brightness-110 active:translate-y-0 active:scale-[0.98] active:shadow-md disabled:pointer-events-none disabled:opacity-70"
+              className="btn-primary focus-ring w-full !py-3 disabled:pointer-events-none disabled:opacity-70"
             >
               {loading ? (
                 <>

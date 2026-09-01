@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
             .animate-float-slow, .animate-float-slower { animation: none; }
           }
         `}</style>
-        <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl shadow-2xl shadow-black/50">
+        <div className="glass relative animate-scale-in rounded-2xl p-8 shadow-2xl shadow-black/50">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-white">
               Reset Password
@@ -86,13 +86,13 @@ export default function ForgotPasswordPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       autoComplete="email"
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-10 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+                      className="input !px-10 focus-ring"
                     />
                   </div>
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:brightness-110"
+                  className="btn-primary focus-ring w-full !py-3"
                 >
                   Send reset link
                 </button>

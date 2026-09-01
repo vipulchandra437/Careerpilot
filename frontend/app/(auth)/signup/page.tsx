@@ -98,7 +98,7 @@ export default function SignupPage() {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-11 text-white shadow-sm outline-none transition-all duration-200 placeholder:text-slate-500 focus:border-blue-400 focus:bg-white/10 focus:ring-4 focus:ring-blue-500/20 focus:shadow-lg hover:border-white/20";
+    "input focus-ring hover:border-white/20 !bg-white/5 !py-3 !pl-11 !pr-11 disabled:pointer-events-none";
 
   const labelClass = "block text-sm font-medium text-slate-300";
 
@@ -108,10 +108,10 @@ export default function SignupPage() {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0e17] px-4 py-10">
       {/* Animated gradient mesh backdrop */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10"
-      >
+<div
+              aria-hidden="true"
+              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-brand shadow-glow-indigo"
+            >
         <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-blue-600/30 blur-3xl animate-float-slow" />
         <div className="absolute -bottom-40 -right-24 h-[30rem] w-[30rem] rounded-full bg-indigo-600/25 blur-3xl animate-float-slower" />
         <div className="absolute top-1/3 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl animate-float-slow" />
@@ -125,7 +125,7 @@ export default function SignupPage() {
         {/* layered 3D elevation */}
         <div
           aria-hidden="true"
-          className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-cyan-500/30 blur-2xl opacity-70"
+          className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-brand-500/40 via-indigo-500/30 to-cyan-500/30 blur-2xl opacity-70"
         />
         <form
           onSubmit={handleSubmit}
@@ -148,9 +148,9 @@ export default function SignupPage() {
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur"
+              className="alert alert-error animate-fade-in"
             >
-              <span aria-hidden="true" className="mt-0.5 text-red-400">!</span>
+              <span aria-hidden="true" className="mt-0.5">!</span>
               <span>
                 {error}
                 {error.includes("already exists") && (
@@ -253,7 +253,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/50 hover:brightness-110 active:translate-y-0 active:scale-[0.98] active:shadow-md disabled:pointer-events-none disabled:opacity-70"
+            className="btn-primary focus-ring w-full !py-3 disabled:pointer-events-none disabled:opacity-70"
           >
             {loading ? (
               <>

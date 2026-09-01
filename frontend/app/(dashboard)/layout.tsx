@@ -8,7 +8,6 @@ import {
   Code2,
   MessagesSquare,
   User,
-  GraduationCap,
   LogOut,
 } from "lucide-react";
 import { clearTokens } from "@/lib/auth";
@@ -36,14 +35,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] text-white">
+    <div className="min-h-screen bg-surface text-white">
       {/* Desktop: left sidebar nav (DESIGN §5) */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/10 bg-white/[0.02] backdrop-blur-xl md:flex">
-        <div className="flex items-center gap-2 border-b border-white/10 px-5 py-4">
-          <GraduationCap className="h-6 w-6 text-blue-400" />
-          <p className="text-sm font-bold leading-tight">Career Platform</p>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/10 bg-surface-800/60 backdrop-blur-xl md:flex">
+        <div className="flex items-center gap-2.5 px-5 py-5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-sm font-black text-white shadow-glow-indigo">
+            CP
+          </span>
+          <p className="text-sm font-bold leading-tight text-white">Career Platform</p>
         </div>
-        <nav className="flex-1 space-y-1 p-3" aria-label="Student navigation">
+        <nav className="flex-1 space-y-1 px-3" aria-label="Student navigation">
           {sideItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(pathname, item);
@@ -51,13 +52,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`focus-ring relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-blue-600/20 text-blue-300"
+                    ? "bg-brand-500/15 text-brand-100"
                     : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <Icon className="h-[18px] w-[18px]" />
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-brand"
+                  />
+                )}
+                <Icon className={`h-[18px] w-[18px] ${active ? "text-brand-300" : ""}`} />
                 {item.label}
               </Link>
             );
@@ -66,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="space-y-1 border-t border-white/10 p-3">
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+            className="focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
           >
             <LogOut className="h-[18px] w-[18px]" />
             Log out
