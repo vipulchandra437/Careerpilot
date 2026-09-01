@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
  * Shared shell for public legal/documentation pages (Privacy, Terms).
  * Keeps a consistent dark-glass look with the auth pages and centers the prose.
+ * `"use client"` because the `<style jsx>` block (styled-jsx) is client-only —
+ * Next forbids importing styled-jsx from a Server Component and the build fails
+ * without this directive.
  */
 export default function LegalLayout({
   title,
