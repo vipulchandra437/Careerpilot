@@ -1,24 +1,24 @@
 # Graph Report - major project  (2026-09-01)
 
 ## Corpus Check
-- 146 files · ~94,839 words
+- 147 files · ~95,950 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1374 nodes · 2998 edges · 102 communities (82 shown, 20 thin omitted)
+- 1383 nodes · 3008 edges · 103 communities (80 shown, 23 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 187 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `da317b5d`
+- Built from commit: `e2200ef7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - test_interviews.py
-- api/roadmap.py
-- gap_engine.py
-- executor.py
+- Base
+- deterministic_pass
+- get_settings
 - test_payments.py
 - compute_merge
 - devDependencies
@@ -29,19 +29,19 @@
 - test_credit.py
 - architecture.md — system architecture doc
 - test_coding_challenges.py
-- Base
+- coding_challenges.py
 - challenges.py
-- SandboxRunError
+- gap_engine.py
 - compilerOptions
-- connect_github_account
+- services/github.py
 - file_storage.py
 - test_admin.py
 - User
-- _get_cached_data
+- test_github_cache.py
 - admin_topics.py
 - main.py
 - parse_resume
-- services/github.py
+- get_github_data
 - resume_parser.py
 - Graphify Skill
 - resume_ai.py
@@ -50,11 +50,11 @@
 - api/profile.py
 - Judge0 Server Container
 - encrypt_token
-- coding_challenges.py
+- test_roadmap_eval.py
 - profile/page.tsx
 - roadmap/page.tsx
-- RunResult
-- _parse_llm_json
+- api/gap.py
+- test_resume_ai.py
 - TestParseResumeWithAI
 - gap-report/page.tsx
 - Credit Metering System
@@ -67,7 +67,7 @@
 - LLM-Per-Turn Interview Engine
 - app/page.tsx
 - Phase 5 — Admin Console & Polish
-- test_github_caching_raw.py
+- generate_roadmap
 - runner.py
 - Self-Hosted Judge0 Migration
 - mock-interview/page.tsx
@@ -78,6 +78,7 @@
 - Extraction Subagent Prompt
 - Save Result Feedback Loop
 - app/layout.tsx
+- ui.tsx
 - next.config.js
 - next-env.d.ts
 - Adaptive Difficulty Logic
@@ -87,17 +88,19 @@
 - MCP Server Export
 - Cross-Repo Graph Merge
 - Whisper Transcription
-- health_check
+- checkout
 - grant_credits
-- env.py
+- test_resume_parser.py
+- tailwind.config.js
 - Phase 1 Ambiguity Register and Assumptions
 - Conflict Resolution UI Principle
 - GitHub OAuth State Parameter Gap
 - Merged Skills Display Transparency
 - GitHub Token Encryption Assumption
 - Oversized Resume Fixture
-- exchange_code_for_token
-- test_resume_audit.py
+- admin_usage.py
+- _parse_llm_json
+- CreditOrder
 
 ## God Nodes (most connected - your core abstractions)
 1. `Base` - 51 edges
@@ -114,14 +117,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `GitHub Actions CI workflow (backend+frontend)` --implements--> `RULES.md — standing development rules`  [INFERRED]
   .github/workflows/ci.yml → RULES.md
-- `test_storage_isolation()` --calls--> `get_presigned_url()`  [EXTRACTED]
-  tests/test_security.py → backend/services/file_storage.py
-- `test_token_sanitization()` --calls--> `encrypt_token()`  [EXTRACTED]
-  tests/test_security.py → backend/services/github.py
-- `test_token_sanitization()` --calls--> `decrypt_token()`  [EXTRACTED]
-  tests/test_security.py → backend/services/github.py
-- `test_caching()` --calls--> `get_github_data()`  [EXTRACTED]
-  tests/test_github_caching_raw.py → backend/services/github.py
+- `test_caching_behavior()` --calls--> `get_github_data()`  [EXTRACTED]
+  tests/test_github_caching.py → backend/services/github.py
+- `test_expired_cache()` --calls--> `get_github_data()`  [EXTRACTED]
+  tests/test_github_caching.py → backend/services/github.py
+- `OpenRouter orchestrator single choke point (call_llm)` --rationale_for--> `Rule: all LLM calls via orchestrator, never direct SDK`  [INFERRED]
+  architecture.md → RULES.md
+- `Skill gap analysis prompt, feature=gap_analysis` --conceptually_related_to--> `Skill Gap Engine (deterministic + LLM merge)`  [INFERRED]
+  backend/ai/prompts/gap_analysis.txt → architecture.md
 
 ## Import Cycles
 - None detected.
@@ -135,31 +138,31 @@
 - **LLM Orchestration, Metering & Cost Pipeline** — memory_llm_orchestrator, memory_per_feature_max_tokens, memory_versioned_prompts, memory_llm_usage_log, memory_cost_metering, memory_cost_reconciliation, memory_credit_packs [EXTRACTED 1.00]
 - **Core student pipeline: profile -> gap -> roadmap -> practice** — architecture_profilemerge, architecture_gap_engine, architecture_roadmap_generator, architecture_sandbox [INFERRED 0.85]
 
-## Communities (102 total, 20 thin omitted)
+## Communities (103 total, 23 thin omitted)
 
 ### Community 0 - "test_interviews.py"
 Cohesion: 0.05
 Nodes (107): answer_question(), AnswerRequest, create_feedback(), create_session(), end_interview(), AsyncSession, BaseModel, get (+99 more)
 
-### Community 1 - "api/roadmap.py"
-Cohesion: 0.08
-Nodes (53): generate_roadmap(), _generate_roadmap_background(), get_roadmap(), AsyncSession, get, patch, post, Roadmap API endpoints. (+45 more)
+### Community 1 - "Base"
+Cohesion: 0.13
+Nodes (25): patch, Roadmap API endpoints., Update a milestone's status and re-order the roadmap. Body: {"status":…, update_milestone(), Base, Roadmap models (architecture.md §3.5)., Roadmap, RoadmapMilestone (+17 more)
 
-### Community 2 - "gap_engine.py"
-Cohesion: 0.07
-Nodes (38): LLMResponse, build_gap_prompt(), _default_reason(), deterministic_pass(), _empty_resource(), load_gap_prompt(), merge_passes(), _norm() (+30 more)
+### Community 2 - "deterministic_pass"
+Cohesion: 0.11
+Nodes (20): _default_reason(), deterministic_pass(), _empty_resource(), merge_passes(), _phrase_in_text(), _present_skill_reason(), Word-boundary substring check for a normalized alias phrase in normalized text.…, Pure deterministic pass. Returns {skill: {matched, severity, weight}}. A… (+12 more)
 
-### Community 3 - "executor.py"
-Cohesion: 0.14
-Nodes (20): _auth_headers(), _b64(), _build_payload(), _create_batch(), _decode(), _language_id(), _map_status(), _poll_results() (+12 more)
+### Community 3 - "get_settings"
+Cohesion: 0.06
+Nodes (47): do_run_migrations(), run_async_migrations(), run_migrations_online(), health_check(), HealthResponse, Judge0Health, AsyncSession, BaseModel (+39 more)
 
 ### Community 4 - "test_payments.py"
-Cohesion: 0.08
-Nodes (57): list_packs(), Available credit packs (PLACEHOLDER pricing — re-priced before sign-off)., AsyncSession, post, webhook(), CreditOrder, Credit order / purchase-fulfillment audit table (Phase 6 Task 3). Records every…, create_checkout_session() (+49 more)
+Cohesion: 0.09
+Nodes (55): list_packs(), Available credit packs (PLACEHOLDER pricing — re-priced before sign-off)., AsyncSession, post, webhook(), create_checkout_session(), event_session_id(), fulfill_order() (+47 more)
 
 ### Community 5 - "compute_merge"
 Cohesion: 0.06
-Nodes (58): _csv_rows(), _is_keyvalue_dump(), LinkedInProfile, _parse_columnar(), _parse_csv_export(), _parse_json_export(), _parse_keyvalue_dump(), parse_linkedin_import() (+50 more)
+Nodes (57): _csv_rows(), _is_keyvalue_dump(), LinkedInProfile, _parse_columnar(), _parse_csv_export(), _parse_json_export(), _parse_keyvalue_dump(), parse_linkedin_import() (+49 more)
 
 ### Community 6 - "devDependencies"
 Cohesion: 0.04
@@ -170,8 +173,8 @@ Cohesion: 0.08
 Nodes (23): Orchestrator, UUID, Max output tokens per feature (cost guard). Defaults to a small cap unless a…, Temperature per feature. Skill-gap reasoning is judged/reasoned text that…, Single entry point for all LLM calls. No feature module should import…, Call LLM through OpenRouter. Logs to llm_usage_log via the caller., Approximate the USD cost of a call from per-model token prices. Uses…, Default model per feature. Configurable — revisit with real usage data. (+15 more)
 
 ### Community 8 - "TargetRoleProfile"
-Cohesion: 0.11
-Nodes (32): analyze(), AnalyzeRequest, GapResponse, get_report(), list_target_roles(), AsyncSession, BaseModel, get (+24 more)
+Cohesion: 0.17
+Nodes (21): create_role(), delete_role(), get_role(), list_roles(), AsyncSession, BaseModel, delete, get (+13 more)
 
 ### Community 9 - "test_admin_users_usage.py"
 Cohesion: 0.14
@@ -182,8 +185,8 @@ Cohesion: 0.10
 Nodes (27): AdminLayout(), navItems, AdminRolesPage(), depthOptions, RequiredSkill, TargetRole, AdminTopicsPage(), Topic (+19 more)
 
 ### Community 11 - "test_credit.py"
-Cohesion: 0.16
-Nodes (37): create_access_token(), CreditTransaction, authorize_use(), free_uses_so_far(), InsufficientCredits, AsyncSession, Exception, Reverse the most recent ledger row for a paid feature use (rollback). Used when… (+29 more)
+Cohesion: 0.14
+Nodes (40): create_access_token(), CreditTransaction, Credit ledger model (Phase 6, PROMPT.md hybrid pricing). `credit_transactions`…, authorize_use(), free_uses_so_far(), get_balance(), InsufficientCredits, AsyncSession (+32 more)
 
 ### Community 12 - "architecture.md — system architecture doc"
 Cohesion: 0.12
@@ -193,57 +196,57 @@ Nodes (31): AGENTS.md — repo entry point doc, architecture.md — system archi
 Cohesion: 0.13
 Nodes (27): apply_adaptive_result(), next_difficulty(), Validate a generated challenge and return a normalized dict, or None., Step one level in `direction` (+1 = harder, -1 = easier), clamped to the…, Return (new_difficulty, consecutive_correct, consecutive_wrong). Rules (PRD…, _validate_challenge(), _expr_test_case_challenge(), FakeProgress (+19 more)
 
-### Community 14 - "Base"
-Cohesion: 0.16
-Nodes (15): Base, Challenge, ChallengeAttempt, ChallengeProgress, Coding challenge models (architecture.md §3, PRD §6.3). The `Challenge` holds a…, A practice challenge scoped to {gap_skill, difficulty, target_role}., One submission of a challenge, plus the adaptive-difficulty streak state.…, Per-(user, skill) adaptive-difficulty state (PRD §6.3). `consecutive_correct`… (+7 more)
+### Community 14 - "coding_challenges.py"
+Cohesion: 0.13
+Nodes (25): LLMResponse, Challenge, ChallengeAttempt, ChallengeProgress, Coding challenge models (architecture.md §3, PRD §6.3). The `Challenge` holds a…, A practice challenge scoped to {gap_skill, difficulty, target_role}., One submission of a challenge, plus the adaptive-difficulty streak state.…, Per-(user, skill) adaptive-difficulty state (PRD §6.3). `consecutive_correct`… (+17 more)
 
 ### Community 15 - "challenges.py"
-Cohesion: 0.13
-Nodes (27): ChallengeOut, create_challenge(), GenerateRequest, list_difficulties(), AsyncSession, BaseModel, get, post (+19 more)
+Cohesion: 0.18
+Nodes (19): ChallengeOut, create_challenge(), GenerateRequest, list_difficulties(), AsyncSession, BaseModel, get, post (+11 more)
 
-### Community 16 - "SandboxRunError"
-Cohesion: 0.24
-Nodes (13): check_health(), Raised for sandbox infrastructure failures (service unreachable, HTTP error,…, Probe the configured Judge0 instance and report its reachability + version.…, SandboxRunError, _make_resp(), _patch_client(), Tests for the config-driven Judge0 health check (RULES.md §4). Network-…, _Resp (+5 more)
+### Community 16 - "gap_engine.py"
+Cohesion: 0.14
+Nodes (22): GapReport, Result of a skill-gap analysis (architecture.md §3.4). Upsert semantics: one…, _build_evidence_text(), build_gap_prompt(), load_gap_prompt(), _norm(), _profile_evidence(), AsyncSession (+14 more)
 
 ### Community 17 - "compilerOptions"
 Cohesion: 0.07
 Nodes (26): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+18 more)
 
-### Community 18 - "connect_github_account"
-Cohesion: 0.17
-Nodes (12): GitHubToken, connect_github_account(), _fetch_user_info(), Connect a GitHub account via OAuth code., Fetch GitHub user info., Security verification tests for storage isolation and token sanitization., Verify User B cannot access User A's files., Verify GitHub tokens never appear in logs. (+4 more)
+### Community 18 - "services/github.py"
+Cohesion: 0.13
+Nodes (17): GitHubToken, connect_github_account(), _encrypt_fernet(), exchange_code_for_token(), _fernet_key(), _fetch_commit_activity(), _fetch_languages(), _fetch_user_info() (+9 more)
 
 ### Community 19 - "file_storage.py"
-Cohesion: 0.15
-Nodes (21): delete_file(), _get_content_type(), get_presigned_url(), get_s3_client(), UUID, Upload a file to private S3 bucket. Returns the object key (never a direct URL)., Generate a presigned URL for authenticated access. Validates ownership., Delete a file. Validates ownership. (+13 more)
+Cohesion: 0.13
+Nodes (24): delete_file(), _get_content_type(), get_presigned_url(), get_s3_client(), UUID, Upload a file to private S3 bucket. Returns the object key (never a direct URL)., Generate a presigned URL for authenticated access. Validates ownership., Delete a file. Validates ownership. (+16 more)
 
 ### Community 20 - "test_admin.py"
 Cohesion: 0.21
 Nodes (21): client(), _make_user(), _override_get_db(), asyncio, fixture, Phase 5 admin tests (RULES §2, PHASE.md Phase 5, PRD §6.7). Runs against an…, The pre-existing target-role CRUD must be gated too (RULES §2)., Sanity: an admin is allowed through the same gate (not blanket-403). (+13 more)
 
 ### Community 21 - "User"
-Cohesion: 0.15
-Nodes (21): Admin credit grant endpoint (Phase 6). Lets an administrator grant credits to a…, FeatureUsage, AsyncSession, BaseModel, get, Admin read-only usage dashboards (PRD §6.7, DESIGN §2.9). Server-side role-…, SignupPoint, usage_summary() (+13 more)
+Cohesion: 0.22
+Nodes (14): Admin credit grant endpoint (Phase 6). Lets an administrator grant credits to a…, Credit balance + ledger endpoints (Phase 6). Students read their own running…, get_current_user(), AsyncSession, Get current authenticated user from JWT token., require_admin(), get_db(), AsyncSession (+6 more)
 
-### Community 22 - "_get_cached_data"
-Cohesion: 0.20
-Nodes (19): _get_cached_data(), Get cached GitHub data if within TTL., _mock_db(), asyncio, Build a MagicMock that mimics a ProfileSnapshot row., A mocked AsyncSession whose execute returns a result with scalar_one_or_none., Cache returns None when no snapshot exists., Cache returns None when snapshot has no github_data. (+11 more)
+### Community 22 - "test_github_cache.py"
+Cohesion: 0.21
+Nodes (17): _mock_db(), asyncio, Build a MagicMock that mimics a ProfileSnapshot row., A mocked AsyncSession whose execute returns a result with scalar_one_or_none., Cache returns None when no snapshot exists., Cache returns None when snapshot has no github_data., Cache returns data within the 24h TTL without re-fetching., Cache returns None when the fetched_at is older than 24h. (+9 more)
 
 ### Community 23 - "admin_topics.py"
-Cohesion: 0.19
-Nodes (19): create_topic(), delete_topic(), list_topics(), _name_exists(), AsyncSession, BaseModel, delete, get (+11 more)
+Cohesion: 0.20
+Nodes (17): create_topic(), delete_topic(), list_topics(), _name_exists(), AsyncSession, BaseModel, delete, get (+9 more)
 
 ### Community 24 - "main.py"
-Cohesion: 0.09
-Nodes (24): checkout(), CheckoutRequest, my_balance(), my_ledger(), AsyncSession, BaseModel, get, post (+16 more)
+Cohesion: 0.17
+Nodes (10): Stripe webhook receiver (Phase 6 Task 3). This endpoint has NO auth header —…, _apply_lightweight_migrations(), lifespan(), Redact sensitive query-string values (OAuth auth codes, state, tokens) from…, Idempotent, non-destructive column migrations for pre-existing dev DBs. The…, RedactSensitiveQueryParams, asyncio, test_health() (+2 more)
 
 ### Community 25 - "parse_resume"
-Cohesion: 0.13
-Nodes (20): _extract_education(), parse_resume(), Best-effort regex fallback for education (LLM is the primary path). Groups…, Parse a resume file (PDF, DOCX, or TXT) into structured data., test_extract_education(), test_extract_experience(), test_parse_resume_empty_content(), test_parse_resume_invalid_format() (+12 more)
+Cohesion: 0.14
+Nodes (17): parse_resume(), Parse a resume file (PDF, DOCX, or TXT) into structured data., test_parse_resume_invalid_format(), Error boundary tests for resume parsing pipeline., Test zero-byte file upload., Test scanned/image-only PDF lacking text layer., Test corrupted/container-mismatched file., Test unsupported file format. (+9 more)
 
-### Community 26 - "services/github.py"
-Cohesion: 0.19
-Nodes (16): _cache_data(), decrypt_token(), _encrypt_fernet(), _fernet_key(), _fetch_commit_activity(), _fetch_languages(), _fetch_repos(), get_github_data() (+8 more)
+### Community 26 - "get_github_data"
+Cohesion: 0.20
+Nodes (15): _cache_data(), _fetch_repos(), _get_cached_data(), get_github_data(), AsyncSession, UUID, Get GitHub data for a user, using cache if available., Get cached GitHub data if within TTL. (+7 more)
 
 ### Community 27 - "resume_parser.py"
 Cohesion: 0.21
@@ -254,8 +257,8 @@ Cohesion: 0.12
 Nodes (17): Project CLAUDE.md, Graphify Trigger Instruction, Add URL and Watch Reference, Extra Exports Reference, Extraction Spec Reference, GitHub Clone and Cross-Repo Merge Reference, Commit Hook and CLAUDE.md Integration Reference, Native CLAUDE.md Integration (+9 more)
 
 ### Community 29 - "resume_ai.py"
-Cohesion: 0.15
-Nodes (18): _extract_text(), _log_usage(), parse_resume_with_ai(), AsyncSession, LLM-based structured resume extraction. Primary extractor for the brittle…, Persist llm_usage_log rows (Phase 6 requires this for every feature)., Parse a resume, preferring LLM extraction, falling back to regex. Returns a…, Delegates text extraction to the same helpers as the regex parser. (+10 more)
+Cohesion: 0.18
+Nodes (15): _extract_text(), _log_usage(), parse_resume_with_ai(), AsyncSession, LLM-based structured resume extraction. Primary extractor for the brittle…, Persist llm_usage_log rows (Phase 6 requires this for every feature)., Parse a resume, preferring LLM extraction, falling back to regex. Returns a…, Delegates text extraction to the same helpers as the regex parser. (+7 more)
 
 ### Community 30 - "concurrent_test.py"
 Cohesion: 0.24
@@ -274,12 +277,12 @@ Cohesion: 0.24
 Nodes (12): PostgreSQL 16.2 Container, Container Health Checks, JSON-File Logging Rotation, Redis 7.2.4 Container, Judge0 Server Container, Persistent Data Volumes, Judge0 Worker Container, AUTHN_TOKEN Authentication (+4 more)
 
 ### Community 34 - "encrypt_token"
-Cohesion: 0.18
-Nodes (12): encrypt_token(), Encrypt GitHub token at rest (Fernet authenticated encryption)., RULES.md §2 — GitHub OAuth token encryption at rest. Pins that tokens are…, test_ciphertext_differs_from_input_shape(), test_encrypt_does_not_leak_plaintext_prefix(), test_roundtrip(), test_tampered_ciphertext_rejected(), GitHub caching verification test. Run directly: python… (+4 more)
+Cohesion: 0.15
+Nodes (16): decrypt_token(), encrypt_token(), Encrypt GitHub token at rest (Fernet authenticated encryption)., Decrypt a Fernet-encrypted GitHub token. Raises ValueError on tamper/old data…, RULES.md §2 — GitHub OAuth token encryption at rest. Pins that tokens are…, test_ciphertext_differs_from_input_shape(), test_encrypt_does_not_leak_plaintext_prefix(), test_roundtrip() (+8 more)
 
-### Community 35 - "coding_challenges.py"
-Cohesion: 0.26
-Nodes (9): get_settings(), Settings, build_challenge_prompt(), generate_challenge(), load_challenge_prompt(), _parse_challenge_json(), Coding challenge service (architecture.md §5, PRD §6.3). Responsibilities: -…, Generate a challenge for a skill/difficulty/role and persist it. Returns the… (+1 more)
+### Community 35 - "test_roadmap_eval.py"
+Cohesion: 0.19
+Nodes (15): _build_gap_summary(), _fallback_milestones(), Generate basic milestones without LLM when unavailable., Format gaps into a concise summary for the prompt., Validate milestones against gap skills, discard invalid ones., _validate_milestones(), RULES.md §4 eval set — roadmap generation deterministic guards. The full…, test_build_gap_summary_lists_all_with_severity() (+7 more)
 
 ### Community 36 - "profile/page.tsx"
 Cohesion: 0.18
@@ -289,13 +292,17 @@ Nodes (5): Conflict, pillColors, ProfileContent(), ProfileSnapshot, Skill
 Cohesion: 0.20
 Nodes (7): actionIcons, GapReport, Milestone, pillColors, Roadmap, severityColors, statusColors
 
-### Community 38 - "RunResult"
-Cohesion: 0.20
-Nodes (4): Normalized result of a sandboxed execution, safe to return to API/UI., RunResult, check_solution(), Run code through the sandbox and grade it WITHOUT persisting anything. Used by…
+### Community 38 - "api/gap.py"
+Cohesion: 0.24
+Nodes (13): analyze(), AnalyzeRequest, GapResponse, get_report(), list_target_roles(), AsyncSession, BaseModel, get (+5 more)
 
-### Community 39 - "_parse_llm_json"
-Cohesion: 0.43
+### Community 39 - "test_resume_ai.py"
+Cohesion: 0.33
 Nodes (3): _parse_llm_json(), Parse and normalize the LLM's JSON, tolerating markdown fences., TestParseLlmJson
+
+### Community 40 - "TestParseResumeWithAI"
+Cohesion: 0.44
+Nodes (3): _dummy_resp(), asyncio, TestParseResumeWithAI
 
 ### Community 41 - "gap-report/page.tsx"
 Cohesion: 0.22
@@ -331,15 +338,15 @@ Nodes (7): LLM-Per-Turn Interview Engine, Turn-Anchored Communication Feedback, 
 
 ### Community 50 - "app/page.tsx"
 Cohesion: 0.33
-Nodes (3): codeTexture, features, navLinks
+Nodes (4): features, logos, navLinks, steps
 
 ### Community 51 - "Phase 5 — Admin Console & Polish"
 Cohesion: 0.33
 Nodes (6): Server-Side Admin Role Gating, JWT Auth Token, is_active User Model Column, User Enable/Disable (is_active), Phase 5 — Admin Console & Polish, Phase 6 — Monetization & Metering
 
-### Community 52 - "test_github_caching_raw.py"
-Cohesion: 0.53
-Nodes (5): mock_fetch_languages(), mock_fetch_repos(), mock_fetch_user_info(), GitHub caching test with explicit API call counting., test_caching()
+### Community 52 - "generate_roadmap"
+Cohesion: 0.21
+Nodes (12): generate_roadmap(), _generate_roadmap_background(), get_roadmap(), AsyncSession, get, post, Background task to generate roadmap. `refund_feature` is the metered feature to…, Get the roadmap and milestones for a gap report. (+4 more)
 
 ### Community 53 - "runner.py"
 Cohesion: 0.50
@@ -369,40 +376,36 @@ Nodes (3): Confidence Score Rubric, Node ID Formatting Rule, Extraction Subagent
 Cohesion: 0.67
 Nodes (3): Save Result Feedback Loop, Constrained Query Vocabulary Expansion, Work Memory Self-Improving Loop
 
-### Community 83 - "health_check"
-Cohesion: 0.40
-Nodes (6): health_check(), HealthResponse, Judge0Health, AsyncSession, BaseModel, get
+### Community 83 - "checkout"
+Cohesion: 0.20
+Nodes (11): checkout(), CheckoutRequest, my_balance(), my_ledger(), AsyncSession, BaseModel, get, post (+3 more)
 
 ### Community 84 - "grant_credits"
 Cohesion: 0.33
 Nodes (6): grant_credits(), GrantRequest, AsyncSession, BaseModel, post, Grant (or, with negative amount, revoke) credits for a student.
 
-### Community 85 - "env.py"
-Cohesion: 0.60
-Nodes (3): do_run_migrations(), run_async_migrations(), run_migrations_online()
+### Community 85 - "test_resume_parser.py"
+Cohesion: 0.24
+Nodes (9): _extract_education(), _extract_skills(), Best-effort regex fallback for education (LLM is the primary path). Groups…, Extract skills using keyword matching., test_extract_education(), test_extract_experience(), test_extract_skills(), test_parse_resume_empty_content() (+1 more)
 
-### Community 100 - "exchange_code_for_token"
-Cohesion: 0.50
-Nodes (4): exchange_code_for_token(), Exchange OAuth code for access token., forced_error_token_check(), Force an error in GitHub OAuth and verify token doesn't appear.
-
-### Community 101 - "test_resume_audit.py"
-Cohesion: 0.50
-Nodes (3): Test script to run resume parser on test fixtures and output JSON results., Parse a resume and return structured data., test_resume()
+### Community 100 - "admin_usage.py"
+Cohesion: 0.36
+Nodes (8): FeatureUsage, AsyncSession, BaseModel, get, Admin read-only usage dashboards (PRD §6.7, DESIGN §2.9). Server-side role-…, SignupPoint, usage_summary(), UsageSummary
 
 ## Knowledge Gaps
-- **138 isolated node(s):** `_FakeUsage`, `_M`, `_Usage`, `Gap`, `GapReport` (+133 more)
+- **141 isolated node(s):** `_FakeUsage`, `_M`, `_Usage`, `Gap`, `GapReport` (+136 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `get_settings()` connect `coding_challenges.py` to `api/roadmap.py`, `gap_engine.py`, `executor.py`, `test_payments.py`, `test_cost_metering.py`, `test_admin_users_usage.py`, `Base`, `file_storage.py`, `env.py`, `services/github.py`, `resume_ai.py`?**
-  _High betweenness centrality (0.061) - this node is a cross-community bridge._
-- **Why does `User` connect `User` to `api/profile.py`, `test_payments.py`, `TargetRoleProfile`, `test_admin_users_usage.py`, `test_credit.py`, `Base`, `grant_credits`, `test_admin.py`, `main.py`, `admin_users.py`?**
+- **Why does `get_settings()` connect `get_settings` to `test_payments.py`, `test_cost_metering.py`, `test_admin_users_usage.py`, `coding_challenges.py`, `gap_engine.py`, `services/github.py`, `file_storage.py`, `User`, `resume_ai.py`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **Why does `User` connect `User` to `api/profile.py`, `Base`, `admin_usage.py`, `test_payments.py`, `api/gap.py`, `test_admin_users_usage.py`, `test_credit.py`, `coding_challenges.py`, `checkout`, `grant_credits`, `test_admin.py`, `admin_users.py`?**
   _High betweenness centrality (0.052) - this node is a cross-community bridge._
-- **Why does `Base` connect `Base` to `test_interviews.py`, `api/profile.py`, `api/roadmap.py`, `test_payments.py`, `TargetRoleProfile`, `test_admin_users_usage.py`, `test_credit.py`, `connect_github_account`, `test_admin.py`, `env.py`, `User`, `admin_topics.py`, `main.py`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+- **Why does `Base` connect `Base` to `test_interviews.py`, `api/profile.py`, `get_settings`, `test_payments.py`, `CreditOrder`, `TargetRoleProfile`, `test_admin_users_usage.py`, `test_credit.py`, `coding_challenges.py`, `gap_engine.py`, `services/github.py`, `test_admin.py`, `User`, `main.py`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `Base` (e.g. with `lifespan()` and `main()`) actually correct?**
   _`Base` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 30 inferred relationships involving `User` (e.g. with `grant_credits()` and `usage_summary()`) actually correct?**
