@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     github_client_id: str = ""
     github_client_secret: str = ""
     github_redirect_uri: str = "http://localhost:3000/api/auth/github/callback"
+    # Dedicated key for encrypting GitHub OAuth tokens at rest (Fernet). Set to a
+    # long random string in .env (GITHUB_TOKEN_ENCRYPTION_KEY). If unset we fall
+    # back to a SHA-256 derivation of jwt_secret_key for local/dev convenience —
+    # production must set an explicit dedicated key (RULES.md §2 "tokens encrypted
+    # at rest").
+    github_token_encryption_key: str = ""
     s3_bucket: str = "career-platform-uploads"
     s3_endpoint_url: str = "http://localhost:9000"
     s3_access_key: str = "minioadmin"

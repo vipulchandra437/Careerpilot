@@ -5,6 +5,7 @@ import base64
 from datetime import datetime, timezone, timedelta
 
 import httpx
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,24 +14,42 @@ from backend.models.github import GitHubToken
 
 settings = get_settings()
 
-# Simple encryption using SHA-256 for token masking
-# In production, use Fernet or similar with proper key management
-_ENCRYPTION_KEY = hashlib.sha256(settings.jwt_secret_key.encode()).digest()
+# Encrypt GitHub OAuth tokens at rest with Fernet (authenticated AEAD cipher) —
+# RULES.md §2 "tokens are encrypted at rest". The key is derived from the dedicated
+# GITHUB_TOKEN_ENCRYPTION_KEY setting (SHA-256 -> url-safe b64 32 bytes, the exact
+# format Fernet requires). A dedicated key is preferred; if absent we fall back to a
+# derivation of jwt_secret_key for local/dev only (see config.py).
+def _fernet_key() -> bytes:
+    source = settings.github_token_encryption_key or settings.jwt_secret_key
+    return base64.urlsafe_b64encode(hashlib.sha256(source.encode()).digest())
+
+
+_fernet = Fernet(_fernet_key())
+
+
+def _encrypt_fernet(token: str) -> str:
+    try:
+        return _fernet.encrypt(token.encode()).decode()
+    except Exception:
+        # Re-derive on settings change so a rotated key still works.
+        return Fernet(_fernet_key()).encrypt(token.encode()).decode()
 
 
 def encrypt_token(token: str) -> str:
-    """Encrypt GitHub token for storage. Uses XOR with derived key."""
-    key_bytes = _ENCRYPTION_KEY * (len(token) // len(_ENCRYPTION_KEY) + 1)
-    encrypted = bytes(a ^ b for a, b in zip(token.encode(), key_bytes))
-    return base64.b64encode(encrypted).decode()
+    """Encrypt GitHub token at rest (Fernet authenticated encryption)."""
+    return _encrypt_fernet(token)
 
 
 def decrypt_token(encrypted_token: str) -> str:
-    """Decrypt GitHub token. Uses XOR with derived key."""
-    encrypted = base64.b64decode(encrypted_token)
-    key_bytes = _ENCRYPTION_KEY * (len(encrypted) // len(_ENCRYPTION_KEY) + 1)
-    decrypted = bytes(a ^ b for a, b in zip(encrypted, key_bytes))
-    return decrypted.decode()
+    """Decrypt a Fernet-encrypted GitHub token. Raises ValueError on tamper/old
+    data so a corrupted value can never silently produce a wrong token."""
+    try:
+        return _fernet.decrypt(encrypted_token.encode()).decode()
+    except InvalidToken:
+        try:
+            return Fernet(_fernet_key()).decrypt(encrypted_token.encode()).decode()
+        except InvalidToken as e:
+            raise ValueError("GitHub token could not be decrypted (key rotated or data tampered)") from e
 
 
 def get_github_auth_url(state: str) -> str:
