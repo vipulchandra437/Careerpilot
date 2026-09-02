@@ -268,7 +268,7 @@ function MockInterviewContent() {
                 ) : (
                   <div key={t.id} className="max-w-[85%] self-end">
                     <p className="mb-1 text-right text-xs font-semibold uppercase tracking-wide text-indigo-400">You</p>
-                    <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-600 to-indigo-600 px-4 py-3 text-sm leading-relaxed text-white shadow-lg shadow-blue-600/20">
+                    <div className="rounded-2xl rounded-tr-sm bg-gradient-brand px-4 py-3 text-sm leading-relaxed text-white shadow-glow-indigo">
                       {t.content}
                     </div>
                   </div>
@@ -313,7 +313,7 @@ function MockInterviewContent() {
               <button
                 type="submit"
                 disabled={waiting || ending || !input.trim()}
-                className="inline-flex h-[3.5rem] items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:brightness-110 disabled:pointer-events-none disabled:opacity-50"
+                className="btn-primary focus-ring h-[3.5rem] !px-5 !py-0 disabled:pointer-events-none disabled:opacity-50"
               >
                 {waiting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Send

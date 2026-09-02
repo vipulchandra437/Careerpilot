@@ -94,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={item.href}
               href={item.href}
               className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
-                active ? "text-blue-300" : "text-slate-500 hover:text-white"
+                active ? "text-brand-300" : "text-slate-500 hover:text-white"
               }`}
             >
               <Icon className="h-5 w-5" />

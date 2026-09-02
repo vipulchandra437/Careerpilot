@@ -53,7 +53,7 @@ interface GapReport {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-colors";
+  "card p-6 transition-colors";
 
 const cardTitleClass = "text-lg font-semibold text-white mb-1 flex items-center gap-2";
 
@@ -64,23 +64,23 @@ const pillBase = "px-2 py-1 text-xs rounded-full font-medium";
 const pillColors: Record<string, string> = {
   critical: "bg-red-500/15 text-red-300 border border-red-500/20",
   important: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
-  nice_to_have: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
-  none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
-  gray: "bg-slate-500/15 text-slate-300 border border-slate-500/20",
+  nice_to_have: "bg-brand-500/15 text-brand-200 border border-brand-500/25",
+  none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25",
+  gray: "bg-slate-500/15 text-slate-300 border border-slate-600/30",
 };
 
 const primaryBtn =
-  "inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/40 hover:brightness-110 disabled:pointer-events-none disabled:opacity-50";
+  "btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50";
 
 const darkBtn =
-  "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white";
+  "btn-secondary focus-ring !px-4 !py-2 !text-sm";
 
-const linkClass = "text-sm text-blue-400 hover:text-blue-300 transition-colors underline-offset-2 hover:underline";
+const linkClass = "text-sm text-brand-300 hover:text-brand-200 transition-colors underline-offset-2 hover:underline";
 
 const statusColors: Record<string, string> = {
-  done: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
-  in_progress: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
-  not_started: "bg-slate-500/15 text-slate-300 border border-slate-500/20",
+  done: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25",
+  in_progress: "bg-brand-500/15 text-brand-200 border border-brand-500/25",
+  not_started: "bg-slate-500/15 text-slate-300 border border-slate-600/30",
 };
 
 const actionIcons: Record<string, React.ReactNode> = {

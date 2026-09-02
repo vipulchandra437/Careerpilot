@@ -261,7 +261,7 @@ function InterviewFeedbackContent() {
               </p>
               <button
                 onClick={() => router.push("/roadmap")}
-                className="mt-1 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:brightness-110"
+                className="btn-primary focus-ring mt-1 !px-5 !py-2 h-auto"
               >
                 See my roadmap
               </button>

@@ -60,7 +60,7 @@ interface ProfileSnapshot {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition-colors";
+  "card p-6 transition-colors";
 
 const cardTitleClass = "text-lg font-semibold text-white mb-1 flex items-center gap-2";
 
@@ -70,21 +70,21 @@ const pillBase =
   "px-2 py-1 text-xs rounded-full font-medium";
 
 const pillColors: Record<string, string> = {
-  blue: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
-  green: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
-  purple: "bg-purple-500/15 text-purple-300 border border-purple-500/20",
-  yellow: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
-  gray: "bg-slate-500/15 text-slate-300 border border-slate-500/20",
+  blue: "bg-brand-500/15 text-brand-200 border border-brand-500/25",
+  green: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25",
+  purple: "bg-purple-500/15 text-purple-300 border border-purple-500/25",
+  yellow: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25",
+  gray: "bg-slate-500/15 text-slate-300 border border-slate-600/30",
 };
 
 const primaryBtn =
-  "inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/40 hover:brightness-110 disabled:pointer-events-none disabled:opacity-50";
+  "btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50";
 
 const darkBtn =
-  "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white";
+  "btn-secondary focus-ring !px-4 !py-2 !text-sm";
 
 const inputFileClass =
-  "block w-full text-sm text-slate-400 file:mr-4 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-blue-600 file:to-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:brightness-110";
+  "block w-full text-sm text-slate-400 file:mr-4 file:rounded-lg file:border-0 file:bg-gradient-brand file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:brightness-110";
 
 const linkClass = "text-sm text-slate-400 hover:text-white transition-colors";
 
@@ -335,8 +335,8 @@ function ProfileContent() {
         </div>
 
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur">
-            <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 text-red-400" />
+          <div className="alert alert-error mb-6 animate-fade-in">
+            <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
         )}
@@ -451,7 +451,7 @@ function ProfileContent() {
                       setError("Failed to start GitHub connection");
                     }
                   }}
-                  className={`${darkBtn} justify-center bg-gradient-to-r from-blue-600 to-indigo-600 border-0 text-white shadow-lg shadow-blue-600/30 hover:brightness-110`}
+                  className="btn-primary focus-ring w-full !py-2.5"
                 >
                   Connect GitHub
                 </button>
@@ -506,7 +506,7 @@ function ProfileContent() {
         {/* LinkedIn Paste Modal */}
         {showLinkedinPaste && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d1524] p-6 shadow-2xl">
+            <div className="w-full max-w-lg card animate-scale-in p-6 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Import LinkedIn Data</h3>
                 <button
@@ -527,7 +527,7 @@ function ProfileContent() {
                 value={linkedinPaste}
                 onChange={(e) => setLinkedinPaste(e.target.value)}
                 placeholder="Paste your LinkedIn profile information here..."
-                className="mb-4 h-48 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+                className="input mb-4 h-48 !overflow-y-auto p-3 focus-ring"
               />
               <label className="block mb-4">
                 <span className={`${mutedText} mb-1 block`}>
