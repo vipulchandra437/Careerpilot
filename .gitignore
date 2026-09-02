@@ -16,6 +16,8 @@ node_modules/
 graphify-out/.graphify_*
 graphify-out/.graphify_root
 graphify-out/cache/
+# dated backup dirs graphify writes (internal artifact, not deliverables)
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 reticle/
 
 # local runtime/scratch artifacts
