@@ -92,7 +92,7 @@ const actionIcons: Record<string, React.ReactNode> = {
 const severityColors: Record<string, string> = {
   critical: "text-red-400",
   important: "text-yellow-400",
-  nice_to_have: "text-blue-400",
+  nice_to_have: "text-brand-400",
   none: "text-emerald-400",
 };
 
@@ -250,7 +250,7 @@ function RoadmapContent() {
 
   if (loading) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading roadmap...</p>
@@ -260,9 +260,9 @@ function RoadmapContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0e17] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-surface text-white">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-blue-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
 
@@ -288,7 +288,7 @@ function RoadmapContent() {
               window.history.replaceState({}, "", `/roadmap?role=${roleId}`);
               fetchRoadmap(roleId);
             }}
-            className="max-w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="input focus-ring max-w-full"
           >
             {targetRoles.map((role) => (
               <option key={role.id} value={role.id}>
@@ -311,7 +311,7 @@ function RoadmapContent() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className={cardTitleClass}>
-                    <Target aria-hidden="true" className="h-5 w-5 text-blue-400" />
+                    <Target aria-hidden="true" className="h-5 w-5 text-brand-400" />
                     {gapReport?.target_role_name || "Target Role"}
                   </h2>
                   <p className={mutedText}>
@@ -490,7 +490,7 @@ function RoadmapContent() {
 export default function RoadmapPage() {
   return (
     <Suspense fallback={
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>

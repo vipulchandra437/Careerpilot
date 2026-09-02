@@ -9,7 +9,7 @@ export default function AdminIndexPage() {
     router.replace("/admin/roles");
   }, [router]);
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+    <main className="flex min-h-screen items-center justify-center bg-surface">
       <p className="text-slate-400">Admin Console…</p>
     </main>
   );

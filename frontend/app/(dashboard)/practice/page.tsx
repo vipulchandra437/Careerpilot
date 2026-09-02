@@ -26,17 +26,16 @@ interface TestResult {
   elapsed_ms: number;
 }
 
-const cardClass =
-  "rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl";
+const cardClass = "card";
 
 const primaryBtn =
   "btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50";
 
 const runBtn =
-  "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-50";
+  "btn-secondary focus-ring !px-4 !py-2 !text-sm disabled:pointer-events-none disabled:opacity-50";
 
 const codeEditorClass =
-  "w-full min-h-[26rem] flex-1 resize-y rounded-xl border border-white/10 bg-[#0d1220] p-4 font-mono text-sm text-emerald-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 placeholder:text-slate-600";
+  "w-full min-h-[26rem] flex-1 resize-y rounded-xl border border-white/10 bg-[#0d1220] p-4 font-mono text-sm text-emerald-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 placeholder:text-slate-600";
 
 function PracticeContent() {
   const router = useRouter();
@@ -167,9 +166,9 @@ function PracticeContent() {
   const passedCount = results?.filter((t) => t.passed).length || 0;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0e17] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-surface text-white">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-blue-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/15 blur-[100px]" />
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
 
@@ -227,8 +226,8 @@ function PracticeContent() {
         </div>
 
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur">
-            <AlertTriangle className="mt-0.5 h-4 w-4 text-red-400" />
+          <div className="alert alert-error mb-6 animate-fade-in">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
         )}
@@ -255,7 +254,7 @@ function PracticeContent() {
             <div className="flex flex-col gap-6">
               <section className={cardClass}>
                 <div className="mb-4 flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-blue-400" />
+                  <Layers className="h-5 w-5 text-brand-400" />
                   <h2 className="text-lg font-semibold">Problem</h2>
                 </div>
                 <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-200">
@@ -361,7 +360,7 @@ export default function PracticePage() {
   return (
     <Suspense
       fallback={
-        <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+        <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
           <div className="flex items-center gap-3 text-slate-400">
             <Loader2 className="h-5 w-5 animate-spin" />
             <p>Loading practice...</p>

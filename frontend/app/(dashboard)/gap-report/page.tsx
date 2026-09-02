@@ -53,9 +53,9 @@ const pillBase = "px-2 py-1 text-xs rounded-full font-medium";
 const pillColors: Record<string, string> = {
   critical: "bg-red-500/15 text-red-300 border border-red-500/20",
   important: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
-  nice_to_have: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
+  nice_to_have: "bg-brand-500/15 text-brand-300 border border-brand-500/25",
   none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
-  blue: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
+  blue: "bg-brand-500/15 text-brand-300 border border-brand-500/25",
 };
 
 const primaryBtn =
@@ -64,12 +64,12 @@ const primaryBtn =
 const darkBtn =
   "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white";
 
-const linkClass = "text-sm text-blue-400 hover:text-blue-300 transition-colors underline-offset-2 hover:underline";
+const linkClass = "text-sm text-brand-300 hover:text-brand-200 transition-colors underline-offset-2 hover:underline";
 
 const severityIcons: Record<string, React.ReactNode> = {
   critical: <Zap className="h-4 w-4 text-red-400" />,
   important: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
-  nice_to_have: <Sparkles className="h-4 w-4 text-blue-400" />,
+  nice_to_have: <Sparkles className="h-4 w-4 text-brand-400" />,
   none: <Shield className="h-4 w-4 text-emerald-400" />,
 };
 
@@ -187,7 +187,7 @@ function GapReportContent() {
 
   if (loading && !gapReport) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>
@@ -197,9 +197,9 @@ function GapReportContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0e17] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-surface text-white">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-blue-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
 
@@ -225,7 +225,7 @@ function GapReportContent() {
               window.history.replaceState({}, "", `/gap-report?role=${roleId}`);
               fetchGapReport(roleId);
             }}
-            className="max-w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="input focus-ring max-w-full"
           >
             {targetRoles.map((role) => (
               <option key={role.id} value={role.id}>
@@ -247,7 +247,7 @@ function GapReportContent() {
             <div className={`${cardClass} mb-6`}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className={cardTitleClass}>
-                  <Target aria-hidden="true" className="h-5 w-5 text-blue-400" />
+                  <Target aria-hidden="true" className="h-5 w-5 text-brand-400" />
                   Target: {gapReport.target_role_name}
                 </h2>
                 <button
@@ -367,7 +367,7 @@ function GapReportContent() {
 export default function GapReportPage() {
   return (
     <Suspense fallback={
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>

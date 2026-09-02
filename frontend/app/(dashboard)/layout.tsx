@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile: bottom tab nav for the 4 primary sections + profile (DESIGN §5) */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-white/10 bg-[#0a0e17]/95 backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-white/10 bg-surface/95 backdrop-blur-xl md:hidden"
         aria-label="Student mobile navigation"
       >
         {sideItems.map((item) => {

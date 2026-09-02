@@ -33,11 +33,11 @@ interface Feedback {
   feedback_items: FeedbackItem[];
 }
 
-const cardClass =
-  "rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl";
+
+const cardClass = "card p-6";
 
 const categoryColor: Record<string, { chip: string; dot: string }> = {
-  clarity: { chip: "border-blue-500/40 bg-blue-950/40 text-blue-300", dot: "bg-blue-400" },
+  clarity: { chip: "border-brand-500/40 bg-brand-500/15 text-brand-200", dot: "bg-brand-400" },
   structure: { chip: "border-emerald-500/40 bg-emerald-950/40 text-emerald-300", dot: "bg-emerald-400" },
   conciseness: { chip: "border-amber-500/40 bg-amber-950/40 text-amber-300", dot: "bg-amber-400" },
 };
@@ -131,7 +131,7 @@ function InterviewFeedbackContent() {
 
   if (loading || generating) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 className="h-5 w-5 animate-spin" />
           <p>{generating ? "Analyzing your answers…" : "Loading feedback…"}</p>
@@ -141,9 +141,9 @@ function InterviewFeedbackContent() {
   }
 
   return (
-    <main className="relative min-h-screen bg-[#0a0e17] text-white">
+    <main className="relative min-h-screen bg-surface text-white">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-blue-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
 
@@ -164,7 +164,7 @@ function InterviewFeedbackContent() {
           </div>
           {feedback && (
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2">
-              <Sparkles className="h-4 w-4 text-blue-400" />
+              <Sparkles className="h-4 w-4 text-brand-400" />
               <span className="text-sm text-slate-300">Clarity</span>
               <span className="text-lg font-bold text-white">{feedback.clarity_score}</span>
               <span className="text-xs text-slate-500">/5</span>
@@ -181,7 +181,7 @@ function InterviewFeedbackContent() {
         {/* Transcript — above (DESIGN §2.7) */}
         <section className={`${cardClass} mb-6`}>
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <ChevronDown className="h-5 w-5 text-blue-400" />
+            <ChevronDown className="h-5 w-5 text-brand-400" />
             Transcript
           </h2>
           <div className="flex flex-col gap-4">
@@ -193,12 +193,12 @@ function InterviewFeedbackContent() {
                 }}
                 className={`rounded-xl border p-4 transition-colors duration-300 ${
                   activeTurnId === t.id
-                    ? "border-blue-500/60 bg-blue-950/30 ring-2 ring-blue-500/20"
+                    ? "border-brand-500/60 bg-brand-500/15 ring-2 ring-brand-500/20"
                     : "border-white/10 bg-white/[0.02]"
                 } ${t.role === "interviewer" ? "" : "border-indigo-500/20"}`}
                 id={`turn-${t.id}`}
               >
-                <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${t.role === "interviewer" ? "text-blue-400" : "text-indigo-400"}`}>
+                <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${t.role === "interviewer" ? "text-brand-400" : "text-indigo-400"}`}>
                   {t.role === "interviewer" ? "Interviewer" : "You"}
                 </p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{t.content}</p>
@@ -234,7 +234,7 @@ function InterviewFeedbackContent() {
                 <li key={i}>
                   <button
                     onClick={() => jumpToTurn(item.turn_id)}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.02] p-4 text-left transition-colors hover:border-blue-500/40 hover:bg-white/[0.04]"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.02] p-4 text-left transition-colors hover:border-brand-500/40 hover:bg-brand-500/5"
                   >
                     <div className="mb-2 flex items-center gap-2">
                       <span className={`${categoryColor[item.category].dot} h-2 w-2 rounded-full`} />
@@ -255,7 +255,7 @@ function InterviewFeedbackContent() {
 
             {/* CTA — roadmap hook (DESIGN §2.7) */}
             <div className="mt-8 flex flex-col items-center gap-2 rounded-xl border border-dashed border-white/15 p-5 text-center">
-              <Route className="h-6 w-6 text-blue-400" />
+              <Route className="h-6 w-6 text-brand-400" />
               <p className="text-sm text-slate-300">
                 Want to close this gap? Add related items to your roadmap.
               </p>
@@ -277,7 +277,7 @@ export default function InterviewFeedbackPage() {
   return (
     <Suspense
       fallback={
-        <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+        <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
           <div className="flex items-center gap-3 text-slate-400">
             <Loader2 className="h-5 w-5 animate-spin" />
             <p>Loading feedback...</p>

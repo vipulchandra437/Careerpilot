@@ -302,7 +302,7 @@ function ProfileContent() {
 
   if (loading) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading profile...</p>
@@ -317,10 +317,10 @@ function ProfileContent() {
   const conflicts = snapshot?.merged?.conflicts || [];
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0e17] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-surface text-white">
       {/* Ambient glow */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-blue-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
 
@@ -346,7 +346,7 @@ function ProfileContent() {
           <div className={cardClass}>
             <div className="flex items-center justify-between">
               <h2 className={cardTitleClass}>
-                <FileText aria-hidden="true" className="h-5 w-5 text-blue-400" />
+                <FileText aria-hidden="true" className="h-5 w-5 text-brand-400" />
                 Resume
               </h2>
               {hasResume && (
@@ -629,7 +629,7 @@ function ProfileContent() {
 export default function ProfilePage() {
   return (
     <Suspense fallback={
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
         <div className="flex items-center gap-3 text-slate-400">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading profile...</p>

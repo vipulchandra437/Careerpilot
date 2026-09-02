@@ -20,7 +20,7 @@ export default function LegalLayout({
   children: ReactNode;
 }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0e17] px-4 py-12">
+    <main className="relative min-h-screen overflow-hidden bg-surface px-4 py-12">
       {/* Animated gradient mesh backdrop */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-blue-600/30 blur-3xl animate-float-slow" />

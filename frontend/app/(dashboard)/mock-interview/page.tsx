@@ -165,9 +165,9 @@ function MockInterviewContent() {
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-[#0a0e17] text-white">
+    <main className="relative flex min-h-screen flex-col bg-surface text-white">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-blue-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
 
@@ -194,7 +194,7 @@ function MockInterviewContent() {
                   onClick={() => setShowTimer((v) => !v)}
                   className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
                     showTimer
-                      ? "border-blue-500/40 bg-blue-950/40 text-blue-300"
+                      ? "border-brand-500/40 bg-brand-500/15 text-brand-200"
                       : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                   }`}
                 >
@@ -306,7 +306,7 @@ function MockInterviewContent() {
                 }}
                 disabled={waiting || ending}
                 rows={2}
-                className="min-h-[3.5rem] flex-1 resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                className="min-h-[3.5rem] flex-1 resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-50"
                 placeholder="Type your answer… (Enter to send, Shift+Enter for newline)"
                 aria-label="Your answer"
               />
@@ -330,7 +330,7 @@ export default function MockInterviewPage() {
   return (
     <Suspense
       fallback={
-        <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] p-8">
+        <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
           <div className="flex items-center gap-3 text-slate-400">
             <Loader2 className="h-5 w-5 animate-spin" />
             <p>Loading interview...</p>
