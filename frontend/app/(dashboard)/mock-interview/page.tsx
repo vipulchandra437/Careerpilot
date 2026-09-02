@@ -20,7 +20,7 @@ interface Turn {
 }
 
 const cardClass =
-  "rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl";
+  "card p-5";
 
 const typeMeta: Record<string, { icon: typeof Code2; title: string; desc: string }> = {
   technical: {
@@ -229,12 +229,12 @@ function MockInterviewContent() {
                   key={key}
                   onClick={() => startInterview(key)}
                   disabled={waiting}
-                  className="group rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-50"
+                  className="group card card-hover focus-ring animate-fade-up p-6 text-left disabled:pointer-events-none disabled:opacity-50"
                 >
-                  <Icon className="mb-4 h-8 w-8 text-blue-400 transition-colors group-hover:text-blue-300" />
+                  <Icon className="mb-4 h-8 w-8 text-brand-300 transition-colors group-hover:text-brand-200" />
                   <h2 className="mb-1 text-lg font-semibold">{meta.title}</h2>
                   <p className="text-sm text-slate-400">{meta.desc}</p>
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-300">
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-300">
                     {waiting ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" /> Starting...
@@ -260,7 +260,7 @@ function MockInterviewContent() {
               {transcript.map((t) =>
                 t.role === "interviewer" ? (
                   <div key={t.id} className="max-w-[85%] self-start">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-400">Interviewer</p>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Interviewer</p>
                     <div className="rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.05] px-4 py-3 text-sm leading-relaxed text-slate-200">
                       {t.content}
                     </div>
@@ -276,7 +276,7 @@ function MockInterviewContent() {
               )}
               {waiting && (
                 <div className="max-w-[85%] self-start">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-400">Interviewer</p>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Interviewer</p>
                   <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.05] px-4 py-3">
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:120ms]" />

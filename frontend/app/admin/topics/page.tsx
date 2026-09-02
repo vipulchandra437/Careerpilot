@@ -227,7 +227,7 @@ export default function AdminTopicsPage() {
       )}
 
       {/* Add-topic form */}
-      <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl">
+      <div className="card mb-6 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <div className="flex-1">
             <label className="mb-1 block text-xs font-medium text-slate-400">Topic name</label>
@@ -235,7 +235,7 @@ export default function AdminTopicsPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. SQL"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+              className="input focus-ring"
             />
           </div>
           <div className="flex-[2]">
@@ -244,13 +244,13 @@ export default function AdminTopicsPage() {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Optional short description"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+              className="input focus-ring"
             />
           </div>
           <button
             onClick={createTopic}
             disabled={creating}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-50"
+            className="btn-primary focus-ring disabled:opacity-50"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Add topic
@@ -264,11 +264,11 @@ export default function AdminTopicsPage() {
           <p>Loading topics…</p>
         </div>
       ) : topics.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-center text-slate-400">
+        <div className="card py-16 text-center text-slate-400">
           No topics yet. Add your first topic above.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
+        <div className="card overflow-x-auto !p-0">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
@@ -281,19 +281,19 @@ export default function AdminTopicsPage() {
             <tbody className="divide-y divide-white/5">
               {topics.map((topic) =>
                 editingId === topic.id ? (
-                  <tr key={topic.id} className="bg-blue-950/20">
+                  <tr key={topic.id} className="bg-brand-500/10">
                     <td className="px-4 py-3">
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        className="input focus-ring w-full !py-1.5 "
                       />
                     </td>
                     <td className="px-4 py-3">
                       <input
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        className="input focus-ring w-full !py-1.5 "
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -302,7 +302,7 @@ export default function AdminTopicsPage() {
                           type="checkbox"
                           checked={editEnabled}
                           onChange={(e) => setEditEnabled(e.target.checked)}
-                          className="h-4 w-4 accent-blue-500"
+                          className="h-4 w-4 accent-brand-400"
                         />
                         <span className="text-xs text-slate-400">{editEnabled ? "On" : "Off"}</span>
                       </label>

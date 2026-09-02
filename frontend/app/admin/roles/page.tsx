@@ -219,14 +219,14 @@ export default function AdminRolesPage() {
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 text-red-400" />
+        <div className="alert alert-error mb-4 animate-fade-in">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{error}</p>
         </div>
       )}
 
       {/* Add-role form */}
-      <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl">
+      <div className="card mb-6 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <div className="flex-1">
             <label className="mb-1 block text-xs font-medium text-slate-400">Role name</label>
@@ -234,7 +234,7 @@ export default function AdminRolesPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. DevOps Engineer"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+              className="input focus-ring"
             />
           </div>
           <div className="flex flex-col gap-2 md:w-72">
@@ -246,11 +246,11 @@ export default function AdminRolesPage() {
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addNewSkill())}
                 placeholder="e.g. kubernetes"
-                className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20"
+                className="input focus-ring"
               />
               <button
                 onClick={addNewSkill}
-                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
+                className="btn-secondary focus-ring !px-3 !py-2"
                 aria-label="Add skill"
               >
                 <Plus className="h-4 w-4" />
@@ -261,12 +261,12 @@ export default function AdminRolesPage() {
                 {newSkills.map((s, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1 rounded-full border border-blue-500/30 bg-blue-950/40 px-2 py-0.5 text-xs text-blue-300"
+                    className="inline-flex items-center gap-1 rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-xs text-brand-200"
                   >
                     {s.skill}
                     <button
                       onClick={() => setNewSkills((p) => p.filter((_, j) => j !== i))}
-                      className="text-blue-400 hover:text-white"
+                      className="text-brand-300 hover:text-white"
                       aria-label={`Remove ${s.skill}`}
                     >
                       <X className="h-3 w-3" />
@@ -279,7 +279,7 @@ export default function AdminRolesPage() {
           <button
             onClick={createRole}
             disabled={creating}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:brightness-110 disabled:pointer-events-none disabled:opacity-50"
+            className="btn-primary focus-ring !px-4 !py-2.5 disabled:opacity-50"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Create role
@@ -294,11 +294,11 @@ export default function AdminRolesPage() {
           <p>Loading target roles…</p>
         </div>
       ) : roles.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-center text-slate-400">
+        <div className="card py-16 text-center text-slate-400">
           No target roles yet. Create your first role above.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
+        <div className="card overflow-x-auto !p-0">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
@@ -310,12 +310,12 @@ export default function AdminRolesPage() {
             <tbody className="divide-y divide-white/5">
               {roles.map((role) =>
                 editingId === role.id ? (
-                  <tr key={role.id} className="bg-blue-950/20">
+                  <tr key={role.id} className="bg-brand-500/10">
                     <td className="px-4 py-3">
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        className="input focus-ring w-full !py-1.5"
                       />
                     </td>
                     <td className="px-4 py-3">

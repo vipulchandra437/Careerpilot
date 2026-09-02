@@ -56,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!ready) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+      <main className="flex min-h-screen items-center justify-center bg-surface">
         <p className="text-slate-400">Loading console…</p>
       </main>
     );
@@ -68,17 +68,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] text-white">
+    <div className="min-h-screen bg-surface text-white">
       {/* Left sidebar nav (DESIGN §2.9 — separate layout from student app) */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/10 bg-white/[0.02] backdrop-blur-xl md:flex">
-        <div className="flex items-center gap-2 border-b border-white/10 px-5 py-4">
-          <ShieldCheck className="h-6 w-6 text-blue-400" />
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/10 bg-surface-800/60 backdrop-blur-xl md:flex">
+        <div className="flex items-center gap-2.5 px-5 py-5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-sm font-black text-white shadow-glow-indigo">
+            <ShieldCheck className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+          </span>
           <div>
-            <p className="text-sm font-bold leading-tight">Admin Console</p>
+            <p className="text-sm font-bold leading-tight text-white">Admin Console</p>
             <p className="text-xs text-slate-500">Role: {role}</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-1 p-3" aria-label="Admin navigation">
+        <nav className="flex-1 space-y-1 px-3" aria-label="Admin navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -86,13 +88,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`focus-ring relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-blue-600/20 text-blue-300"
+                    ? "bg-brand-500/15 text-brand-100"
                     : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <Icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-brand"
+                  />
+                )}
+                <Icon className={`h-[18px] w-[18px] ${active ? "text-brand-300" : ""}`} />
                 {item.label}
               </Link>
             );
@@ -117,8 +125,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Top bar for small screens (DESIGN §5: admin must stay usable, not broken, on tablet) */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-[#0a0e17]/80 px-4 py-3 backdrop-blur-xl md:hidden">
-        <ShieldCheck className="h-5 w-5 text-blue-400" />
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-surface/80 px-4 py-3 backdrop-blur-xl md:hidden">
+        <ShieldCheck className="h-5 w-5 text-brand-300" />
         <span className="text-sm font-bold">Admin Console</span>
         <span className="ml-auto text-xs text-slate-500">{role}</span>
         <button
@@ -143,7 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               key={item.href}
               href={item.href}
               className={`flex flex-shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
-                active ? "bg-blue-600/20 text-blue-300" : "text-slate-400 hover:bg-white/5"
+                active ? "bg-brand-500/15 text-brand-300" : "text-slate-400 hover:bg-white/5"
               }`}
             >
               <Icon className="h-4 w-4" />

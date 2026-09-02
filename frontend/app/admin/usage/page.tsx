@@ -29,7 +29,7 @@ interface UsageSummary {
   feature_usage: FeatureUsage[];
 }
 
-const cardClass = "rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl";
+const cardClass = "card p-5";
 
 export default function AdminUsagePage() {
   const router = useRouter();
@@ -137,7 +137,7 @@ export default function AdminUsagePage() {
                   <div key={p.period} className="flex flex-1 flex-col items-center gap-1">
                     <span className="text-[10px] text-slate-400">{p.count}</span>
                     <div
-                      className="w-full rounded-t-md bg-gradient-to-t from-blue-600 to-indigo-500"
+                      className="w-full rounded-t-md bg-gradient-brand"
                       style={{ height: `${Math.max(4, (p.count / maxSignups) * 110)}px` }}
                     />
                     <span className="text-[10px] text-slate-500">{p.period}</span>

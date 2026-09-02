@@ -167,11 +167,11 @@ export default function AdminUsersPage() {
           <p>Loading users…</p>
         </div>
       ) : users.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-center text-slate-400">
+        <div className="card py-16 text-center text-slate-400">
           No users yet.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
+        <div className="card overflow-x-auto !p-0">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
@@ -193,7 +193,7 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => toggleUsage(u)}
-                          className="inline-flex items-center gap-1 font-medium hover:text-blue-300"
+                          className="inline-flex items-center gap-1 font-medium hover:text-brand-300"
                         >
                           {usage ? (
                             <ChevronDown className="h-3.5 w-3.5" />
