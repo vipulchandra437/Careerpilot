@@ -1,8 +1,10 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
+    environment: str = "development"
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/career_platform"
     jwt_secret_key: str = "replace-with-a-random-secret"
     jwt_algorithm: str = "HS256"
@@ -41,32 +43,27 @@ class Settings(BaseSettings):
 
     next_public_api_url: str = "http://localhost:3000"
 
-    # --- Stripe (Phase 6 Task 3) ---
-    # Populate via .env to ENABLE live checkout. When unset, stripe_enabled is
-    # False and the checkout endpoint returns a 503 "payments not configured".
-    # Tests exercise the full flow with a mocked Stripe client.
-    stripe_secret_key: str = ""
-    stripe_publishable_key: str = ""
-    stripe_webhook_secret: str = ""
-    stripe_enabled: bool = False
-    # Success/cancel URLs the browser returns to after Checkout.
-    stripe_success_url: str = "http://localhost:3000/credits?status=success"
-    stripe_cancel_url: str = "http://localhost:3000/credits?status=cancelled"
-
-    # --- Credit pack catalog (LOCKED by user, 2026-08-31) ---
-    # Each pack = how many credits a buyer receives for a fixed USD price.
-    # Round, student-reasoned numbers (NOT optimized to a cost ratio — LLM cost
-    # is not the binding constraint; see MEMORY.md P6-9/P6-11/P6-13).
-    # Format: {"pack_id": {"name": str, "credits": int, "price_usd_cents": int}}
-    # Revisit only if real-world cost reconciliation (MEMORY.md P7-0) changes the
-    # economics materially, or for a competitive/promo pricing change.
-    credit_packs: dict[str, dict] = {
-        "pack_starter": {"name": "Starter", "credits": 50, "price_usd_cents": 500},
-        "pack_pro": {"name": "Pro", "credits": 150, "price_usd_cents": 1200},
-        "pack_career": {"name": "Career", "credits": 350, "price_usd_cents": 2000},
-    }
-
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self):
+        if self.environment.lower() == "production":
+            if not self.jwt_secret_key or self.jwt_secret_key == "replace-with-a-random-secret":
+                raise ValueError("JWT_SECRET_KEY must be set to a unique secret in production")
+            if not self.github_token_encryption_key:
+                raise ValueError("GITHUB_TOKEN_ENCRYPTION_KEY must be set in production")
+            if not self.s3_endpoint_url.startswith("https://"):
+                raise ValueError("S3_ENDPOINT_URL must use HTTPS in production")
+            if self.s3_access_key == "minioadmin" or self.s3_secret_key == "minioadmin":
+                raise ValueError("S3 credentials must not use MinIO defaults in production")
+            if self.openrouter_api_key == "":
+                raise ValueError("OPENROUTER_API_KEY must be set in production")
+            if self.judge0_base_url.startswith("https://ce.judge0.com"):
+                raise ValueError("Production must use an authenticated self-hosted Judge0 endpoint")
+            if not self.judge0_auth_headers:
+                raise ValueError("JUDGE0_AUTH_HEADERS must be set in production")
+        return self
+
     # Used by the orchestrator to compute llm_usage_log.cost_usd. These rates are
     # CONFIRMED ACCURATE against real OpenRouter billing (MEMORY.md P7-0 RESOLVED):
     # atomic same-response compare showed our estimate matches OpenRouter's actual

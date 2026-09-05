@@ -14,9 +14,6 @@ from backend.api.gap import router as gap_router
 from backend.api.roadmap import router as roadmap_router
 from backend.api.challenges import router as challenges_router
 from backend.api.interviews import router as interviews_router
-from backend.api.credits import router as credits_router
-from backend.api.admin_credits import router as admin_credits_router
-from backend.api.payments_webhook import router as payments_webhook_router
 from backend.database import engine, Base
 
 logger = logging.getLogger(__name__)
@@ -71,8 +68,12 @@ async def _apply_lightweight_migrations(conn):
       - users.is_active (added for PRD §6.7 enable/disable)
     """
 
-    # SQLite: inspect columns via PRAGMA. Portable enough here because the dev
-    # DB is SQLite (P2-1); Postgres prod will use Alembic when it exists.
+    # This compatibility helper is SQLite-only. PostgreSQL schema changes belong
+    # in Alembic and must not receive SQLite PRAGMA statements.
+    if conn.dialect.name != "sqlite":
+        return
+
+    # SQLite: inspect columns via PRAGMA.
     def _column_exists(conn_sync, table: str, column: str) -> bool:
         rows = conn_sync.exec_driver_sql(f"PRAGMA table_info({table})").fetchall()
         return any(r[1] == column for r in rows)
@@ -131,6 +132,3 @@ app.include_router(gap_router, prefix="/api")
 app.include_router(roadmap_router, prefix="/api")
 app.include_router(challenges_router, prefix="/api")
 app.include_router(interviews_router, prefix="/api")
-app.include_router(credits_router, prefix="/api")
-app.include_router(admin_credits_router, prefix="/api")
-app.include_router(payments_webhook_router, prefix="/api")

@@ -14,7 +14,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
 
-SESSION_TYPES = ("technical", "behavioral")
+SESSION_TYPES = ("technical", "behavioral", "hr")
+INTERVIEW_DOMAINS = ("sde", "web", "ml_ai", "mobile", "data", "systems")
 SESSION_STATUSES = ("in_progress", "ended")
 
 
@@ -26,6 +27,9 @@ class InterviewSession(Base):
     )
     user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     type: Mapped[str] = mapped_column(String(20), nullable=False)
+    target_role_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    target_role_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    domain: Mapped[str | None] = mapped_column(String(30), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="in_progress")
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False

@@ -7,10 +7,9 @@ from backend.models.gap import GapReport
 from backend.models.roadmap import Roadmap, RoadmapMilestone
 from backend.models.challenge import Challenge, ChallengeAttempt, ChallengeProgress
 from backend.models.interview import InterviewSession, InterviewTurn
+from backend.models.weak_topic import InterviewWeakTopic
 from backend.models.feedback import InterviewFeedback
 from backend.models.topic import ChallengeTopic
-from backend.models.credit import CreditTransaction
-from backend.models.credit_order import CreditOrder
 
 __all__ = [
     "User",
@@ -27,6 +26,5 @@ __all__ = [
     "ChallengeProgress",
     "InterviewSession",
     "InterviewTurn",
-    "CreditTransaction",
-    "CreditOrder",
+    "InterviewWeakTopic",
 ]

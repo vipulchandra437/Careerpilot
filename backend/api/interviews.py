@@ -12,8 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import get_current_user
 from backend.database import get_db
-from backend.models.interview import InterviewSession, InterviewTurn, SESSION_TYPES
-from backend.services.credit import authorize_use, refund_last, InsufficientCredits
+from backend.models.interview import InterviewSession, InterviewTurn, SESSION_TYPES, INTERVIEW_DOMAINS
+from backend.models.target_role import TargetRoleProfile
+from backend.models.weak_topic import InterviewWeakTopic
 from backend.services.interviews import (
     start_session,
     submit_answer,
@@ -30,6 +31,8 @@ router = APIRouter(prefix="/interviews", tags=["mock-interviews"])
 
 class StartRequest(BaseModel):
     type: str
+    target_role_id: str | None = None
+    domain: str | None = None
 
 
 class AnswerRequest(BaseModel):
@@ -42,6 +45,7 @@ def transcript_out(session: InterviewSession, turns: list[InterviewTurn]) -> dic
             "id": session.id,
             "type": session.type,
             "status": session.status,
+            "target_role_id": session.target_role_id,
             "started_at": (
                 session.started_at.isoformat() if session.started_at else None
             ),
@@ -67,17 +71,24 @@ async def create_session(
 ):
     """Start a mock interview of the given type; returns the opening question."""
     if req.type not in SESSION_TYPES:
-        raise HTTPException(status_code=400, detail="type must be 'technical' or 'behavioral'")
-    # Metered feature: free allowance (1) then paid (3 credits) — charge per session.
+        raise HTTPException(status_code=400, detail="type must be 'technical', 'behavioral', or 'hr'")
+    if req.domain and req.domain not in INTERVIEW_DOMAINS:
+        raise HTTPException(status_code=400, detail="Unsupported interview domain")
+    role_name = "the user's target role"
+    if req.target_role_id:
+        role = (await db.execute(select(TargetRoleProfile).where(TargetRoleProfile.id == req.target_role_id))).scalar_one_or_none()
+        if not role:
+            raise HTTPException(status_code=404, detail="Target role not found")
+        role_name = role.name
+    history = (await db.execute(
+        select(InterviewWeakTopic.topic)
+        .where(InterviewWeakTopic.user_id == user.id)
+        .order_by(InterviewWeakTopic.created_at.desc())
+        .limit(8)
+    )).scalars().all()
     try:
-        await authorize_use(db, user.id, "mock_interview")
-    except InsufficientCredits as e:
-        raise HTTPException(status_code=402, detail=str(e))
-    try:
-        session = await start_session(db, user.id, req.type)
+        session = await start_session(db, user.id, req.type, req.target_role_id, req.domain, role_name, list(dict.fromkeys(history)))
     except Exception:
-        # Interview failed to start (LLM error) — reverse the deduction/credit marker.
-        await refund_last(db, user.id, "mock_interview")
         raise HTTPException(
             status_code=502,
             detail="Could not start the interview (LLM unavailable).",
@@ -109,6 +120,25 @@ async def answer_question(
         )
     turns = await get_turns(db, session)
     return transcript_out(session, turns)
+
+
+@router.get("/weak-topics")
+async def weak_topics(
+    user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clean integration surface for gap analysis, roadmap, and challenges."""
+    rows = (await db.execute(
+        select(InterviewWeakTopic)
+        .where(InterviewWeakTopic.user_id == user.id)
+        .order_by(InterviewWeakTopic.created_at.desc())
+    )).scalars().all()
+    return {
+        "weak_topics": [
+            {"topic": row.topic, "confidence": row.confidence, "evidence": row.evidence, "session_id": row.session_id}
+            for row in rows
+        ]
+    }
 
 
 @router.get("/{session_id}")
@@ -166,6 +196,8 @@ async def create_feedback(
             detail="Could not generate feedback.",
         )
     return {"feedback": feedback_out(feedback)}
+
+
 
 
 @router.get("/{session_id}/feedback")

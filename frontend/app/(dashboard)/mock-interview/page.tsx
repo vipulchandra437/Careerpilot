@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BrainCircuit,
   Code2,
+  Users,
   Loader2,
   Send,
   Square,
@@ -33,7 +34,21 @@ const typeMeta: Record<string, { icon: typeof Code2; title: string; desc: string
     title: "Behavioral",
     desc: "STAR-style questions about real experiences. The interviewer presses for concrete situations and outcomes.",
   },
+  hr: {
+    icon: Users,
+    title: "HR",
+    desc: "Motivation, collaboration, conflict, ownership, and work-style questions with evidence-based feedback.",
+  },
 };
+
+const domains = [
+  ["sde", "Software engineering"],
+  ["web", "Web / full-stack"],
+  ["ml_ai", "ML / AI"],
+  ["mobile", "Mobile"],
+  ["data", "Data"],
+  ["systems", "Systems"],
+] as const;
 
 function MockInterviewContent() {
   const router = useRouter();
@@ -42,6 +57,9 @@ function MockInterviewContent() {
 
   const [stage, setStage] = useState<"pick" | "chat">(initialType ? "chat" : "pick");
   const [type, setType] = useState<string>(initialType || "");
+  const [targetRoleId, setTargetRoleId] = useState("");
+  const [targetRoles, setTargetRoles] = useState<{ id: string; name: string }[]>([]);
+  const [domain, setDomain] = useState("sde");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<Turn[]>([]);
@@ -65,6 +83,13 @@ function MockInterviewContent() {
   }, []);
 
   useEffect(() => {
+    void fetch("/api/gap/roles", { headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setTargetRoles(Array.isArray(data) ? data : []))
+      .catch(() => setTargetRoles([]));
+  }, []);
+
+  useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [transcript, waiting]);
 
@@ -76,7 +101,7 @@ function MockInterviewContent() {
       const res = await fetch("/api/interviews/sessions", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ type: t }),
+        body: JSON.stringify({ type: t, target_role_id: targetRoleId || null, domain }),
       });
       if (res.status === 401) {
         localStorage.removeItem("access_token");
@@ -221,7 +246,23 @@ function MockInterviewContent() {
         )}
 
         {stage === "pick" ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="card mb-5 grid gap-4 p-5 sm:grid-cols-2">
+              <label className="text-sm text-slate-300">
+                Target role
+                <select value={targetRoleId} onChange={(e) => setTargetRoleId(e.target.value)} className="input mt-2">
+                  <option value="">Choose a role (optional)</option>
+                  {targetRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                </select>
+              </label>
+              <label className="text-sm text-slate-300">
+                CS domain
+                <select value={domain} onChange={(e) => setDomain(e.target.value)} className="input mt-2">
+                  {domains.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
             {Object.entries(typeMeta).map(([key, meta]) => {
               const Icon = meta.icon;
               return (
@@ -246,6 +287,7 @@ function MockInterviewContent() {
                 </button>
               );
             })}
+            </div>
           </div>
         ) : (
           <div className="flex flex-1 flex-col">

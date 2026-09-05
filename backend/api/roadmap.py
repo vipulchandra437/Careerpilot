@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.api.dependencies import get_current_user
 from backend.database import get_db
 from backend.models.gap import GapReport
+from backend.models.profile import ProfileSnapshot
 from backend.models.roadmap import Roadmap, RoadmapMilestone
 from backend.models.target_role import TargetRoleProfile
 from backend.services.profile_merge import MergedProfile
-from backend.services.credit import authorize_use, refund_last, InsufficientCredits
 from backend.services.roadmap import get_roadmap_with_milestones, get_roadmap_by_id_with_milestones, run_roadmap_generation
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,10 @@ async def generate_roadmap(
     """
     # Verify gap report exists and belongs to user
     result = await db.execute(
-        select(GapReport).where(GapReport.id == gap_report_id)
+        select(GapReport)
+        .join(ProfileSnapshot, ProfileSnapshot.id == GapReport.snapshot_id)
+        .where(GapReport.id == gap_report_id)
+        .where(ProfileSnapshot.user_id == current_user.id)
     )
     gap_report = result.scalar_one_or_none()
     if not gap_report:
@@ -62,7 +65,6 @@ async def generate_roadmap(
     # For now, we'll need to pass the merged profile. This is a limitation -
     # we should store the merged profile or reconstruct it.
     # Let's fetch the profile snapshot and reconstruct.
-    from backend.models.profile import ProfileSnapshot
     snapshot_result = await db.execute(
         select(ProfileSnapshot).where(ProfileSnapshot.id == gap_report.snapshot_id)
     )
@@ -96,14 +98,8 @@ async def _generate_roadmap_background(
     user_id: str,
     target_role_name: str,
     merged: MergedProfile,
-    refund_feature: str | None = None,
 ):
-    """Background task to generate roadmap.
-
-    `refund_feature` is the metered feature to credit back if generation fails
-    (used by the paid `regenerate` path so users are never charged for work that
-    didn't happen).
-    """
+    """Background task to generate a roadmap."""
     from backend.database import async_session
     async with async_session() as db:
         try:
@@ -124,11 +120,6 @@ async def _generate_roadmap_background(
         except Exception as exc:
             # Log error but don't crash background task; refund if this was paid.
             logger.exception("Roadmap background generation failed for gap_report=%s: %s", gap_report_id, exc)
-            if refund_feature:
-                try:
-                    await refund_last(db, user_id, refund_feature)
-                except Exception:
-                    pass
             pass
 
 
@@ -139,6 +130,15 @@ async def get_roadmap(
     current_user=Depends(get_current_user),
 ):
     """Get the roadmap and milestones for a gap report."""
+    report_result = await db.execute(
+        select(GapReport)
+        .join(ProfileSnapshot, ProfileSnapshot.id == GapReport.snapshot_id)
+        .where(GapReport.id == gap_report_id)
+        .where(ProfileSnapshot.user_id == current_user.id)
+    )
+    if not report_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Roadmap not found")
+
     result = await get_roadmap_with_milestones(db, gap_report_id)
     if not result:
         raise HTTPException(status_code=404, detail="Roadmap not found")
@@ -180,7 +180,10 @@ async def regenerate_roadmap(
     """Force regenerate roadmap (creates new version)."""
     # Verify gap report exists
     result = await db.execute(
-        select(GapReport).where(GapReport.id == gap_report_id)
+        select(GapReport)
+        .join(ProfileSnapshot, ProfileSnapshot.id == GapReport.snapshot_id)
+        .where(GapReport.id == gap_report_id)
+        .where(ProfileSnapshot.user_id == current_user.id)
     )
     gap_report = result.scalar_one_or_none()
     if not gap_report:
@@ -193,7 +196,6 @@ async def regenerate_roadmap(
     if not target_role:
         raise HTTPException(status_code=404, detail="Target role not found")
 
-    from backend.models.profile import ProfileSnapshot
     snapshot_result = await db.execute(
         select(ProfileSnapshot).where(ProfileSnapshot.id == gap_report.snapshot_id)
     )
@@ -205,19 +207,12 @@ async def regenerate_roadmap(
     if snapshot.github_data:
         merged.languages_used = snapshot.github_data.get("languages", {})
 
-    # Metered feature: free allowance (1) then paid (5 credits) — regeneration only.
-    try:
-        await authorize_use(db, current_user.id, "roadmap")
-    except InsufficientCredits as e:
-        raise HTTPException(status_code=402, detail=str(e))
-
     background_tasks.add_task(
         _generate_roadmap_background,
         gap_report_id=gap_report_id,
         user_id=current_user.id,
         target_role_name=target_role.name,
         merged=merged,
-        refund_feature="roadmap",
     )
 
     return {

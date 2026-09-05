@@ -18,6 +18,23 @@ from backend.services.profile_merge import compute_merge
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+
+async def _read_upload_with_limit(file: UploadFile) -> bytes:
+    """Read an upload in bounded chunks so oversized bodies do not exhaust memory."""
+    chunks = []
+    total = 0
+    while chunk := await file.read(1024 * 1024):
+        total += len(chunk)
+        if total > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File size must be under 10MB",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
 
 class SnapshotResponse(BaseModel):
     id: uuid.UUID
@@ -51,12 +68,7 @@ async def upload_resume(
             detail="Only PDF, DOCX, and TXT files are supported",
         )
 
-    content = await file.read()
-    if len(content) > 10 * 1024 * 1024:  # 10MB limit
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size must be under 10MB",
-        )
+    content = await _read_upload_with_limit(file)
 
     try:
         parsed = await parse_resume_with_ai(
@@ -147,15 +159,15 @@ async def import_linkedin_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     """Import LinkedIn data from file upload (JSON/CSV export)."""
-    content = await file.read()
-    text = content.decode("utf-8")
+    content = await _read_upload_with_limit(file)
 
     try:
+        text = content.decode("utf-8")
         parsed = parse_linkedin_import(text, file.filename or "linkedin.txt")
-    except ValueError as e:
+    except (UnicodeDecodeError, ValueError) as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
+            detail="LinkedIn export must be valid UTF-8 text: " + str(e),
         )
 
     linkedin_data = {

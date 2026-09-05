@@ -30,7 +30,6 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: bool
-    credit_balance: int
     github_connected: bool
     created_at: datetime
 
@@ -53,7 +52,6 @@ def _to_user_response(u: User) -> UserResponse:
         email=u.email,
         role=u.role.value,
         is_active=u.is_active,
-        credit_balance=u.credit_balance,
         github_connected=bool(u.github_id),
         created_at=u.created_at,
     )

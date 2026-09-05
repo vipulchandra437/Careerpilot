@@ -24,6 +24,11 @@ class InterviewFeedback(Base):
         String(36), ForeignKey("interview_sessions.id"), nullable=False, unique=True, index=True
     )
     clarity_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    overall_score: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    strengths: Mapped[list | None] = mapped_column(JSON, nullable=False, default=list)
+    weaknesses: Mapped[list | None] = mapped_column(JSON, nullable=False, default=list)
+    question_scores: Mapped[list | None] = mapped_column(JSON, nullable=False, default=list)
+    weak_topics: Mapped[list | None] = mapped_column(JSON, nullable=False, default=list)
     structure_notes: Mapped[str] = mapped_column(Text, nullable=False)
     conciseness_notes: Mapped[str] = mapped_column(Text, nullable=False)
     # Union of turn ids referenced by feedback_items (overview + DESIGN §2.7 nav).
@@ -31,6 +36,9 @@ class InterviewFeedback(Base):
     # [{turn_id, category, quote, comment}] — quote is always verbatim text from
     # that turn's content.
     feedback_items: Mapped[list | None] = mapped_column(JSON, nullable=False, default=list)
+    # Closed-loop actions docked into the roadmap from this session's weak
+    # topics: [{topic, created, challenge_id, reason?, status?}]
+    remedial_actions: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )

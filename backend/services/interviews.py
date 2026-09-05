@@ -26,12 +26,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.ai.orchestrator import orchestrator
 from backend.models.feedback import InterviewFeedback
+from backend.models.gap import GapReport
 from backend.models.interview import (
     InterviewSession,
     InterviewTurn,
     SESSION_TYPES,
 )
 from backend.models.llm_usage import LLMUsageLog
+from backend.models.roadmap import Roadmap, RoadmapMilestone
+from backend.models.weak_topic import InterviewWeakTopic
+from backend.services.coding_challenges import generate_challenge
 
 _PROMPT_PATH = Path(__file__).resolve().parent.parent / "ai" / "prompts" / "interview.txt"
 _CLOSE_PROMPT_PATH = Path(__file__).resolve().parent.parent / "ai" / "prompts" / "interview_close.txt"
@@ -69,7 +73,13 @@ def clean_question(raw: str) -> str:
     return text
 
 
-async def _next_question(db: AsyncSession, session: InterviewSession, turns: list[InterviewTurn]) -> str:
+async def _next_question(
+    db: AsyncSession,
+    session: InterviewSession,
+    turns: list[InterviewTurn],
+    target_role_name: str = "the user's target role",
+    weak_topics: list[str] | None = None,
+) -> str:
     """Call the LLM with the full running transcript and return ONE question.
 
     Prompt template version (the file name) is recorded in llm_usage_log so any
@@ -78,6 +88,9 @@ async def _next_question(db: AsyncSession, session: InterviewSession, turns: lis
     prompt = (
         _PROMPT_PATH.read_text(encoding="utf-8")
         .replace("{type}", session.type)
+        .replace("{target_role}", target_role_name)
+        .replace("{domain}", session.domain or "the selected CS domain")
+        .replace("{weak_topics}", ", ".join(weak_topics or []) or "none recorded")
         .replace("{transcript}", build_transcript(turns) or "(empty transcript)")
     )
     resp = await orchestrator.call_llm(
@@ -106,15 +119,26 @@ async def start_session(
     db: AsyncSession,
     user_id: str,
     session_type: str,
+    target_role_id: str | None = None,
+    domain: str | None = None,
+    target_role_name: str = "the user's target role",
+    weak_topics: list[str] | None = None,
 ) -> InterviewSession:
     """Create a session and write turn 0 = the LLM opening question."""
     if session_type not in SESSION_TYPES:
         raise ValueError(f"unsupported interview type: {session_type}")
-    session = InterviewSession(user_id=user_id, type=session_type, status="in_progress")
+    session = InterviewSession(
+        user_id=user_id,
+        type=session_type,
+        status="in_progress",
+        target_role_id=target_role_id,
+        target_role_name=target_role_name,
+        domain=domain,
+    )
     db.add(session)
     await db.flush()
 
-    talking = await _next_question(db, session, [])  # empty transcript -> opener
+    talking = await _next_question(db, session, [], target_role_name, weak_topics)
     db.add(
         InterviewTurn(
             session_id=session.id,
@@ -184,7 +208,12 @@ async def submit_answer(
     await db.flush()
 
     try:
-        follow_up = await _next_question(db, session, await get_turns(db, session))
+        follow_up = await _next_question(
+            db,
+            session,
+            await get_turns(db, session),
+            session.target_role_name or "the user's target role",
+        )
     except Exception:
         # Never lose the student's answer: persist what exists, surface the error.
         await db.commit()
@@ -371,9 +400,18 @@ def _deterministic_feedback(
     """LLM-free per-turn feedback, so a failure never yields generic filler."""
     students = [t for t in turns if t.role == "student"]
     items = []
+    question_scores = []
+    weak_topics = []
     for t in students:
         n = len(t.content)
+        score = 2 if n < 60 else (3 if n < 250 else 4)
+        question_scores.append({
+            "turn_id": t.id,
+            "score": score,
+            "justification": "The answer was evaluated conservatively from its specific length and detail: " + _snapshot_quote(t.content, 90),
+        })
         if n < 60:
+            weak_topics.append({"topic": "answer depth", "confidence": 4, "evidence": _snapshot_quote(t.content)})
             items.append(
                 {
                     "turn_id": t.id,
@@ -421,10 +459,130 @@ def _deterministic_feedback(
     conciseness_notes = f"{len([t for t in students if len(t.content) > 700])} answers were long; {len([t for t in students if len(t.content) < 60])} were too brief to judge."
     return {
         "clarity_score": 3,
+        "overall_score": round(sum(x["score"] for x in question_scores) / len(question_scores)) if question_scores else 1,
+        "strengths": ["Completed the interview transcript and provided answer evidence."],
+        "weaknesses": [x["topic"] for x in weak_topics],
+        "question_scores": question_scores,
+        "weak_topics": weak_topics,
         "structure_notes": structure_notes,
         "conciseness_notes": conciseness_notes,
         "items": items,
     }
+
+
+async def _link_weak_topics_to_roadmap(
+    db: AsyncSession,
+    user_id: str,
+    session: InterviewSession,
+    weak_topics: list,
+) -> list[dict]:
+    """Closed-loop wiring (PRD §6.4): turn evolved weak topics into roadmap
+    actions the student can actually do.
+
+    For each DISTINCT weak topic, find the user's latest roadmap and append a
+    RoadmapMilestone whose action is a coding challenge for that topic. The
+    challenge is pre-generated best-effort (never propagates an LLM failure —
+    a failed generation just yields a plain 'practice this skill' action that
+    the practice module regenerates on demand). If the user has no roadmap yet
+    (no gap analysis), nothing is persisted and the topics are returned as
+    un-docked recommendations, so the report still surfaces them.
+
+    Returns the list of created/derived actions for the feedback payload.
+    """
+    if not weak_topics:
+        return []
+
+    seen: set[str] = set()
+    distinct = []
+    for item in weak_topics:
+        if not isinstance(item, dict):
+            continue
+        topic = str(item.get("topic") or "").strip()[:120]
+        if not topic or topic in seen:
+            continue
+        seen.add(topic)
+        distinct.append(topic)
+    if not distinct:
+        return []
+
+    # Latest roadmap owned by this user (across their gap reports).
+    latest = (
+        await db.execute(
+            select(Roadmap)
+            .join(GapReport, Roadmap.gap_report_id == GapReport.id)
+            .where(Roadmap.user_id == user_id)
+            .order_by(Roadmap.created_at.desc())
+            .limit(1)
+        )
+    ).scalars().first()
+
+    # Already-covered topics on that roadmap -> don't stack duplicates.
+    existing: set[str] = set()
+    if latest is not None:
+        rows = (
+            await db.execute(
+                select(RoadmapMilestone).where(
+                    RoadmapMilestone.roadmap_id == latest.id
+                )
+            )
+        ).scalars().all()
+        existing = {
+            (m.linked_gap_skill or "").strip().lower()
+            for m in rows
+            if m.linked_gap_skill
+        }
+
+    actions: list[dict] = []
+    target_role_id = session.target_role_id or None
+
+    for topic in distinct:
+        if topic.lower() in existing:
+            actions.append({"topic": topic, "created": False, "reason": "already on roadmap"})
+            continue
+
+        challenge_id: str | None = None
+        if target_role_id:
+            try:
+                challenge = await generate_challenge(
+                    db,
+                    user_id=user_id,
+                    skill=topic,
+                    difficulty="beginner",
+                    target_role_id=target_role_id,
+                    role_name=session.target_role_name or "the target role",
+                    use_llm=True,
+                )
+                if challenge is not None:
+                    challenge_id = challenge.id
+            except Exception:
+                challenge_id = None  # never block feedback on challenge gen
+
+        if latest is not None:
+            db.add(
+                RoadmapMilestone(
+                    roadmap_id=latest.id,
+                    title=f"Practice {topic} (from mock interview)",
+                    linked_gap_skill=topic,
+                    status="not_started",
+                    linked_action_type="challenge",
+                    linked_action_id=challenge_id or f"practice:{topic}",
+                    order_index=900 + len(existing) + len(actions),
+                    estimated_hours=3,
+                )
+            )
+            existing.add(topic.lower())
+
+        actions.append(
+            {
+                "topic": topic,
+                "created": latest is not None,
+                "challenge_id": challenge_id,
+                "status": None,
+            }
+        )
+
+    await db.commit()
+    return actions
 
 
 async def generate_feedback(
@@ -476,6 +634,11 @@ async def generate_feedback(
                     score = 3
                 data = {
                     "clarity_score": max(1, min(5, score)),
+                    "overall_score": max(1, min(5, int(parsed.get("overall_score", score)))),
+                    "strengths": [str(x) for x in parsed.get("strengths", []) if str(x).strip()][:5],
+                    "weaknesses": [str(x) for x in parsed.get("weaknesses", []) if str(x).strip()][:5],
+                    "question_scores": parsed.get("question_scores", []) if isinstance(parsed.get("question_scores"), list) else [],
+                    "weak_topics": parsed.get("weak_topics", []) if isinstance(parsed.get("weak_topics"), list) else [],
                     "structure_notes": str(parsed.get("structure_notes") or "").strip(),
                     "conciseness_notes": str(parsed.get("conciseness_notes") or "").strip(),
                     "items": items,
@@ -492,13 +655,48 @@ async def generate_feedback(
     feedback = InterviewFeedback(
         session_id=session.id,
         clarity_score=data["clarity_score"],
+        overall_score=data.get("overall_score", data["clarity_score"]),
+        strengths=data.get("strengths", []),
+        weaknesses=data.get("weaknesses", []),
+        question_scores=data.get("question_scores", []),
+        weak_topics=data.get("weak_topics", []),
         structure_notes=data["structure_notes"],
         conciseness_notes=data["conciseness_notes"],
         referenced_turn_ids=sorted({i["turn_id"] for i in data["items"]}),
         feedback_items=data["items"],
     )
     db.add(feedback)
+    weak_topics = data.get("weak_topics", [])
+    for item in weak_topics:
+        if not isinstance(item, dict) or not str(item.get("topic", "")).strip():
+            continue
+        db.add(
+            InterviewWeakTopic(
+                user_id=user_id,
+                session_id=session.id,
+                topic=str(item["topic"])[:120],
+                confidence=max(1, min(5, int(item.get("confidence", 3)))),
+                evidence=str(item.get("evidence", "No specific evidence provided."))[:1000],
+            )
+        )
     await db.commit()
+
+    # Closed-loop (PRD §6.4): after persisting, dock weak topics into the
+    # roadmap as actions. Runs after commit so feedback is saved even if this
+    # extra work fails; the helper itself never raises.
+    remedial_actions = []
+    try:
+        remedial_actions = await _link_weak_topics_to_roadmap(
+            db, user_id, session, weak_topics
+        )
+        if remedial_actions:
+            feedback.remedial_actions = remedial_actions
+            await db.commit()
+    except Exception:
+        # Never fail feedback generation on the closed-loop side-step.
+        remedial_actions = []
+
+    feedback.remedial_actions = remedial_actions
     return feedback
 
 
@@ -519,9 +717,15 @@ def feedback_out(fb: InterviewFeedback) -> dict:
     return {
         "session_id": fb.session_id,
         "clarity_score": fb.clarity_score,
+        "overall_score": fb.overall_score,
+        "strengths": fb.strengths,
+        "weaknesses": fb.weaknesses,
+        "question_scores": fb.question_scores,
+        "weak_topics": fb.weak_topics,
         "structure_notes": fb.structure_notes,
         "conciseness_notes": fb.conciseness_notes,
         "referenced_turn_ids": fb.referenced_turn_ids,
         "feedback_items": fb.feedback_items,
+        "remedial_actions": fb.remedial_actions or [],
         "created_at": fb.created_at.isoformat(),
     }

@@ -19,6 +19,7 @@ def _mock_db(scalar_or_none_value):
     result = MagicMock()
     result.scalar_one_or_none = MagicMock(return_value=scalar_or_none_value)
     db.execute.return_value = result
+    db.add = MagicMock()
     return db
 
 

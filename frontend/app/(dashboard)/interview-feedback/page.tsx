@@ -27,10 +27,21 @@ interface FeedbackItem {
 
 interface Feedback {
   clarity_score: number;
+  overall_score: number;
+  strengths: string[];
+  weaknesses: string[];
+  question_scores: { turn_id: string; score: number; justification: string }[];
+  weak_topics: { topic: string; confidence: number; evidence: string }[];
   structure_notes: string;
   conciseness_notes: string;
   referenced_turn_ids: string[];
   feedback_items: FeedbackItem[];
+  remedial_actions: {
+    topic: string;
+    created: boolean;
+    challenge_id: string | null;
+    status?: string | null;
+  }[];
 }
 
 
@@ -49,6 +60,7 @@ function InterviewFeedbackContent() {
 
   const [transcript, setTranscript] = useState<Turn[]>([]);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [targetRoleId, setTargetRoleId] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -112,6 +124,7 @@ function InterviewFeedbackContent() {
         }
         const data = await res.json();
         setTranscript(data.transcript);
+        setTargetRoleId(data.session?.target_role_id || "");
         await ensureFeedback();
       } catch {
         setError("Network error");
@@ -219,6 +232,10 @@ function InterviewFeedbackContent() {
             </p>
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Overall score</p>
+                <p className="text-3xl font-bold text-white">{feedback.overall_score}<span className="text-sm text-slate-500">/5</span></p>
+              </div>
               <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-400">Structure</p>
                 <p className="text-sm leading-relaxed text-slate-300">{feedback.structure_notes}</p>
@@ -228,6 +245,57 @@ function InterviewFeedbackContent() {
                 <p className="text-sm leading-relaxed text-slate-300">{feedback.conciseness_notes}</p>
               </div>
             </div>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">Strengths</p>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">{feedback.strengths.map((item) => <li key={item}>{item}</li>)}</ul>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400">Weak topics</p>
+                <ul className="space-y-2 text-sm text-slate-300">{feedback.weak_topics.map((item) => <li key={item.topic}><span className="font-medium text-white">{item.topic}</span><span className="ml-2 text-xs text-slate-500">confidence {item.confidence}/5</span><br /><span className="text-xs text-slate-500">{item.evidence}</span></li>)}</ul>
+              </div>
+            </div>
+
+            <div className="mb-6 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Per-question scores</p>
+              {feedback.question_scores.map((item) => <button key={item.turn_id} onClick={() => jumpToTurn(item.turn_id)} className="w-full rounded-lg border border-white/10 bg-white/[0.02] p-3 text-left text-sm text-slate-300 hover:border-brand-500/40"><span className="font-semibold text-white">{item.score}/5</span><span className="ml-3">{item.justification}</span></button>)}
+            </div>
+
+            {feedback.remedial_actions.length > 0 && (
+              <div className="mb-6 rounded-xl border border-brand-500/20 bg-brand-500/[0.04] p-4">
+                <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-300">
+                  <Route className="h-4 w-4" /> Keep practicing these gaps
+                </p>
+                <ul className="space-y-2">
+                  {feedback.remedial_actions.map((item) => {
+                    const canPractice = item.challenge_id && targetRoleId;
+                    return (
+                      <li key={item.topic} className="flex flex-wrap items-center gap-3 text-sm">
+                        <span className="font-medium text-white">{item.topic}</span>
+                        {item.created ? (
+                          <span className="text-xs text-emerald-400">added to roadmap</span>
+                        ) : (
+                          <span className="text-xs text-slate-500">not on roadmap</span>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (canPractice) {
+                              router.push(`/practice?skill=${encodeURIComponent(item.topic)}&targetRoleId=${encodeURIComponent(targetRoleId)}`);
+                            } else {
+                              router.push("/roadmap");
+                            }
+                          }}
+                          className="btn-primary focus-ring ml-auto !h-auto !px-3 !py-1.5 text-xs"
+                        >
+                          {canPractice ? "Practice this" : "See roadmap"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
             <ul className="space-y-3">
               {feedback.feedback_items.map((item, i) => (
@@ -257,7 +325,9 @@ function InterviewFeedbackContent() {
             <div className="mt-8 flex flex-col items-center gap-2 rounded-xl border border-dashed border-white/15 p-5 text-center">
               <Route className="h-6 w-6 text-brand-400" />
               <p className="text-sm text-slate-300">
-                Want to close this gap? Add related items to your roadmap.
+                {feedback.remedial_actions.length > 0
+                  ? "Your weak topics are on the roadmap as practice challenges — see them any time."
+                  : "Want to close this gap? Add related items to your roadmap."}
               </p>
               <button
                 onClick={() => router.push("/roadmap")}

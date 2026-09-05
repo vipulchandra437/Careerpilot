@@ -21,6 +21,8 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     github_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="user_role"), default=UserRole.student, nullable=False)
+    # Legacy database compatibility. Billing was removed, but existing local
+    # databases still require this historical non-null column during signup.
     credit_balance: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     # Account enable/disable (PRD §6.7). Disabled users cannot log in (login and
     # get_current_user both reject inactive accounts) — enforced in api/auth.py

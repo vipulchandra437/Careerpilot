@@ -11,6 +11,15 @@ TASK — analyze the CANDIDATE's performance and return ONLY a JSON object with
 this exact schema:
 {{
   "clarity_score": <int 1-5>,
+  "overall_score": <int 1-5>,
+  "strengths": ["<specific strength tied to an answer>"],
+  "weaknesses": ["<specific weakness tied to an answer>"],
+  "question_scores": [
+    {"turn_id": "<student turn id>", "score": <int 1-5>, "justification": "<specific evidence-based reason>"}
+  ],
+  "weak_topics": [
+    {"topic": "<specific skill or topic>", "confidence": <int 1-5>, "evidence": "<verbatim or tightly grounded answer evidence>"}
+  ],
   "structure_notes": "<short paragraph: did they answer the question asked, order
       ideas logically, use a framework (e.g. STAR for behavioral) where appropriate>",
   "conciseness_notes": "<short paragraph: filler/rambling/unclear phrasing, tied
@@ -33,3 +42,8 @@ RULES:
   rambling answer, a vague answer, a well-structured answer), not filler.
 - Do not write generic advice unconnected to a quote. No markdown, no prose
   outside the JSON object.
+- Score conservatively: 3 means mixed/adequate, 4 requires clear evidence, and
+  5 requires unusually strong, complete evidence. Never give a 5 from confidence
+  or length alone.
+- Only tag a weak topic when an answer shows a concrete gap, misconception, or
+  missing depth. The topic must be actionable by a roadmap or coding challenge.

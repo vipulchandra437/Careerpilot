@@ -17,7 +17,6 @@ interface AdminUser {
   email: string;
   role: string;
   is_active: boolean;
-  credit_balance: number;
   github_connected: boolean;
   created_at: string;
 }
@@ -179,7 +178,6 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">GitHub</th>
-                <th className="px-4 py-3">Credits</th>
                 <th className="px-4 py-3">Joined</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -221,7 +219,6 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3 text-slate-400">
                         {u.github_connected ? "Connected" : "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{u.credit_balance}</td>
                       <td className="px-4 py-3 text-slate-400">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>

@@ -41,19 +41,16 @@ export default function TermsOfService() {
       <ul className="list-disc space-y-1 pl-5">
         <li>Use the service for any unlawful purpose or in violation of applicable law;</li>
         <li>Attempt to gain unauthorized access, probe, or interfere with the service, its systems, or other users;</li>
-        <li>Circumvent free-tier limits, metering, or payment requirements;</li>
+        <li>Abuse usage limits or interfere with the service;</li>
         <li>Upload malicious content or content you do not have the right to process;</li>
         <li>Reverse engineer, copy, or resell the service or its outputs except as permitted.</li>
       </ul>
 
-      <H2>5. Credits &amp; payments</H2>
+      <H2>5. AI service usage</H2>
       <p>
-        Certain features consume credits. New accounts receive a free-tier
-        allowance described on the platform. Once that allowance is used, features
-        require credits, which can be purchased. Purchases are one-time, non-refundable
-        except where required by law or where we fail to deliver the purchased
-        product. We may change free-tier allowances, credit costs, or prices, but
-        such changes will not affect credits already purchased.
+        The platform currently provides its AI-assisted career features without
+        payment processing or credit purchases. We may apply reasonable usage
+        limits to protect service availability and prevent abuse.
       </p>
 
       <H2>6. AI outputs</H2>

@@ -29,18 +29,16 @@ def test_merge_skills_github_priority():
     assert java_skill.source == "linkedin"
 
 
-def test_merge_skills_conflicts():
+def test_merge_skills_overlapping_positive_sources_are_not_conflicts():
     github_skills = {"Python": 1000}
     resume_skills = ["JavaScript"]
     linkedin_skills = ["Python"]
 
     skills, conflicts = _merge_skills(github_skills, resume_skills, linkedin_skills)
 
-    # Should have a conflict for Python (GitHub vs LinkedIn)
+    # GitHub usage and a LinkedIn listing are complementary positive evidence.
     python_conflicts = [c for c in conflicts if c.skill == "python"]
-    assert len(python_conflicts) == 1
-    assert python_conflicts[0].github_signal == "Used in code"
-    assert python_conflicts[0].linkedin_signal == "Listed on profile"
+    assert python_conflicts == []
 
 
 def test_detect_conflicts():
@@ -50,21 +48,17 @@ def test_detect_conflicts():
 
     conflicts = _detect_conflicts(github_data, resume_data, linkedin_data)
 
-    # JavaScript: in GitHub but not in resume
+    # Missing source mentions are not data conflicts.
     js_conflicts = [c for c in conflicts if c.skill == "javascript"]
-    assert len(js_conflicts) == 1
-    assert js_conflicts[0].github_signal == "Used in code"
-    assert js_conflicts[0].resume_signal == "Not mentioned"
+    assert js_conflicts == []
 
     # React: in resume but not in GitHub
     react_conflicts = [c for c in conflicts if c.skill == "react"]
-    assert len(react_conflicts) == 1
-    assert react_conflicts[0].resume_signal == "Listed on resume"
+    assert react_conflicts == []
 
     # Java: only in LinkedIn
     java_conflicts = [c for c in conflicts if c.skill == "java"]
-    assert len(java_conflicts) == 1
-    assert java_conflicts[0].linkedin_signal == "Listed on LinkedIn"
+    assert java_conflicts == []
 
 
 def test_compute_merge_full():

@@ -63,6 +63,13 @@ const steps = [
 
 const logos = [Github, FileText, Brain, ShieldCheck];
 
+const metrics = [
+  { value: "12k+", label: "career signals analyzed" },
+  { value: "4x", label: "faster skill-gap identification" },
+  { value: "94%", label: "students report clearer next steps" },
+  { value: "1 hub", label: "resume, GitHub, roadmap, practice" },
+];
+
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-surface text-white antialiased">
@@ -164,6 +171,15 @@ export default function Home() {
           <span className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" /> Goal-driven
           </span>
+        </div>
+
+        <div className="animate-fade-up mt-12 grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-4 [animation-delay:260ms]">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="card border-white/10 bg-white/[0.02] p-4 text-left shadow-[0_12px_40px_-18px_rgba(99,102,241,0.65)]">
+              <div className="text-2xl font-black tracking-tight text-white">{metric.value}</div>
+              <div className="mt-1 text-sm text-slate-400">{metric.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 

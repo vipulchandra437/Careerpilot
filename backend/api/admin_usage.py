@@ -58,13 +58,19 @@ async def usage_summary(
         await db.execute(select(func.count(User.id)))
     ).scalar_one()
 
-    # Signups over time: last 12 calendar months (SQLite supports strftime).
+    # EXTRACT is compiled to the appropriate equivalent for SQLite/PostgreSQL.
+    signup_year = extract("year", User.created_at)
+    signup_month = extract("month", User.created_at)
     month_stmt = select(
-        func.strftime("%Y-%m", User.created_at).label("period"),
+        signup_year,
+        signup_month,
         func.count(User.id),
-    ).group_by("period").order_by(func.strftime("%Y-%m", User.created_at))
+    ).group_by(signup_year, signup_month).order_by(signup_year, signup_month)
     month_rows = (await db.execute(month_stmt)).all()
-    signups_over_time = [SignupPoint(period=p, count=c) for p, c in month_rows]
+    signups_over_time = [
+        SignupPoint(period=f"{int(year):04d}-{int(month):02d}", count=count)
+        for year, month, count in month_rows
+    ]
 
     # Feature usage aggregated from llm_usage_log.
     feat_stmt = select(

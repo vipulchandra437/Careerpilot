@@ -16,7 +16,6 @@ from backend.models.challenge import Challenge
 from backend.models.target_role import TargetRoleProfile
 from backend.models.roadmap import RoadmapMilestone, Roadmap
 from backend.sandbox.executor import SandboxRunError
-from backend.services.credit import authorize_use, refund_last, InsufficientCredits
 from backend.services.coding_challenges import (
     generate_challenge,
     submit_solution,
@@ -99,12 +98,6 @@ async def create_challenge(
         if owner.scalar_one_or_none() is None:
             raise HTTPException(status_code=404, detail="Milestone not found")
 
-    # Metered feature: free allowance (3) then paid (2 credits) — gate BEFORE the LLM work.
-    try:
-        await authorize_use(db, user.id, "practice_challenge")
-    except InsufficientCredits as e:
-        raise HTTPException(status_code=402, detail=str(e))
-
     challenge = await generate_challenge(
         db,
         user_id=user.id,
@@ -115,8 +108,6 @@ async def create_challenge(
         use_llm=True,
     )
     if challenge is None:
-        # LLM failed to produce a challenge — the (credits) deduction must be reversed.
-        await refund_last(db, user.id, "practice_challenge")
         raise HTTPException(
             status_code=502,
             detail="Challenge generation failed (LLM unavailable or invalid output).",

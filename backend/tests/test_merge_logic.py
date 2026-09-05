@@ -36,15 +36,13 @@ def test_merge_resume_over_linkedin():
 
 
 def test_merge_detects_conflicts():
-    """Test conflict detection between sources."""
+    """Different source coverage is not contradictory evidence."""
     resume_data = {"skills": ["Python"]}
     github_data = {"languages": {"Go": 10000, "Rust": 5000}}
 
     result = compute_merge(github_data, resume_data, None)
 
-    conflict_skills = {c.skill.lower() for c in result.conflicts}
-    assert "go" in conflict_skills
-    assert "rust" in conflict_skills
+    assert result.conflicts == []
 
 
 def test_merge_empty_sources():

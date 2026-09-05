@@ -32,13 +32,7 @@ export default function PrivacyPolicy() {
         </li>
         <li>
           <strong>Usage data</strong> — records of the AI features you use, the
-          models called, and token usage. We use this to meter usage, maintain our
-          free tier, and manage billing.
-        </li>
-        <li>
-          <strong>Payment data</strong> — if you purchase credits, payment
-          processing is handled by our third-party processor (Stripe). We do not
-          store your full card details on our servers.
+          models called, and token usage for reliability and service improvement.
         </li>
       </ul>
 
@@ -47,7 +41,7 @@ export default function PrivacyPolicy() {
       <ul className="list-disc space-y-1 pl-5">
         <li>Provide, operate, and improve the career-development services;</li>
         <li>Generate personalized skill-gap analyses, roadmaps, coding practice, and interview feedback;</li>
-        <li>Enforce free-tier limits, meter usage, and process credit purchases;</li>
+        <li>Operate, secure, and improve the platform;</li>
         <li>Secure your account and prevent fraud or abuse;</li>
         <li>Send service-related notices (we do not sell your personal data).</li>
       </ul>
@@ -57,15 +51,15 @@ export default function PrivacyPolicy() {
         Some features use large-language models via a third-party provider
         (OpenRouter) to produce analyses and feedback. The profile content you
         submit and the features you run may be sent to that provider solely to
-        generate your results. We meter token usage and store the associated cost
-        for billing and free-tier purposes.
+        generate your results. We record limited usage metadata for reliability,
+        debugging, and service improvement.
       </p>
 
       <H2>Data sharing</H2>
       <p>
         We do not sell your personal data. We share data only with service
         providers that help us operate the platform (for example, hosting,
-        storage, secure payment processing, and the AI provider), and only to the
+        storage and the AI provider), and only to the
         extent needed to provide the services. We may disclose information where
         required by law or to protect the rights, safety, and property of our
         users and the public.

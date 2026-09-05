@@ -13,7 +13,6 @@ from backend.models.gap import GapReport
 from backend.api.dependencies import get_current_user
 from backend.services.profile_merge import compute_merge
 from backend.services.gap_engine import run_gap_analysis
-from backend.services.credit import authorize_use, refund_last, InsufficientCredits
 
 router = APIRouter(prefix="/gap", tags=["gap-analysis"])
 
@@ -71,12 +70,6 @@ async def analyze(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target role not found")
 
     merged = compute_merge(snapshot.github_data, snapshot.resume_data, snapshot.linkedin_data)
-
-    # Metered feature: free allowance (1) then paid (5 credits) — gate BEFORE work.
-    try:
-        await authorize_use(db, user.id, "gap_analysis")
-    except InsufficientCredits as e:
-        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(e))
 
     report = await run_gap_analysis(db, snapshot.id, role, merged, str(user.id))
 

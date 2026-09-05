@@ -54,14 +54,9 @@ def _merge_skills(
     for skill in linkedin_skills:
         normalized = skill.lower().strip()
         if normalized in merged:
-            # Already have higher confidence source
-            if merged[normalized].source == "github":
-                conflicts.append(Conflict(
-                    skill=normalized,
-                    github_signal="Used in code",
-                    linkedin_signal="Listed on profile",
-                    resolution="GitHub activity takes priority",
-                ))
+            # Multiple positive sources reinforce one another; they are not a conflict.
+            # Keep the highest-confidence source selected above.
+            pass
         else:
             merged[normalized] = Skill(name=normalized, source="linkedin", confidence="low")
 
@@ -73,42 +68,14 @@ def _detect_conflicts(
     resume_data: dict | None,
     linkedin_data: dict | None,
 ) -> list[Conflict]:
-    """Detect conflicts between data sources."""
-    conflicts = []
+    """Return only explicit contradictions between source records.
 
-    github_skills = {s.lower() for s in github_data.get("languages", {}).keys()} if github_data else set()
-    resume_skills = {s.lower() for s in resume_data.get("skills", [])} if resume_data else set()
-    linkedin_skills = {s.lower() for s in linkedin_data.get("skills", [])} if linkedin_data else set()
-
-    # Skills in GitHub but not in resume
-    for skill in github_skills - resume_skills:
-        conflicts.append(Conflict(
-            skill=skill,
-            github_signal="Used in code",
-            resume_signal="Not mentioned",
-            resolution="GitHub activity indicates real usage",
-        ))
-
-    # Skills in resume but not in GitHub
-    for skill in resume_skills - github_skills:
-        conflicts.append(Conflict(
-            skill=skill,
-            resume_signal="Listed on resume",
-            github_signal="No code activity",
-            resolution="May need verification through practice",
-        ))
-
-    # Skills only on LinkedIn
-    for skill in linkedin_skills - github_skills - resume_skills:
-        conflicts.append(Conflict(
-            skill=skill,
-            linkedin_signal="Listed on LinkedIn",
-            github_signal="No code activity",
-            resume_signal="Not mentioned",
-            resolution="Lowest confidence - may need verification",
-        ))
-
-    return conflicts
+    A missing mention is not contradictory evidence: resumes, GitHub, and LinkedIn
+    have different purposes and naturally cover different skills. The current
+    source schemas contain no explicit negative skill assertions, so there are no
+    skill conflicts to report here.
+    """
+    return []
 
 
 def compute_merge(
@@ -125,13 +92,13 @@ def compute_merge(
     source_conflicts = _detect_conflicts(github_data, resume_data, linkedin_data)
 
     # Merge experience from resume (primary source)
-    experience = resume_data.get("experience", []) if resume_data else []
+    experience = list(resume_data.get("experience", [])) if resume_data else []
 
     # Merge education from resume (primary source)
-    education = resume_data.get("education", []) if resume_data else []
+    education = list(resume_data.get("education", [])) if resume_data else []
 
     # Merge projects from resume
-    projects = resume_data.get("projects", []) if resume_data else []
+    projects = list(resume_data.get("projects", [])) if resume_data else []
 
     # Add GitHub repos as projects
     if github_data and github_data.get("repos"):

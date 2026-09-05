@@ -1,5 +1,6 @@
 import pytest
 import json
+from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 from backend.services.resume_ai import (
@@ -9,8 +10,9 @@ from backend.services.resume_ai import (
 )
 from backend.ai.orchestrator import LLMResponse
 
-_CLEAN = open("tests/fixtures/resume_clean.txt", "rb").read()
-_TABULAR = open("tests/fixtures/resume_tabular.txt", "rb").read()
+_FIXTURES = Path(__file__).resolve().parents[2] / "tests" / "fixtures"
+_CLEAN = (_FIXTURES / "resume_clean.txt").read_bytes()
+_TABULAR = (_FIXTURES / "resume_tabular.txt").read_bytes()
 
 
 def _dummy_resp(content: str):
@@ -52,6 +54,7 @@ class TestParseResumeWithAI:
             else:
                 mock_orch.call_llm = AsyncMock(return_value=_dummy_resp(llm_content or "{}"))
             db = AsyncMock()
+            db.add_all = Mock()
             return await parse_resume_with_ai(filename, content, "user-1", db), mock_orch
 
     @pytest.mark.asyncio
@@ -78,6 +81,7 @@ class TestParseResumeWithAI:
         with patch("backend.services.resume_ai.orchestrator") as mock_orch:
             mock_orch.call_llm = AsyncMock(return_value=_dummy_resp(good_json))
             db = AsyncMock()
+            db.add_all = Mock()
             await parse_resume_with_ai("resume.txt", _CLEAN, "user-1", db)
             db.add_all.assert_called_once()
             db.commit.assert_awaited()
@@ -103,6 +107,7 @@ class TestParseResumeWithAI:
             with patch("backend.services.resume_ai.orchestrator") as mock_orch:
                 mock_orch.call_llm = AsyncMock()
                 db = AsyncMock()
+                db.add_all = Mock()
                 result = await parse_resume_with_ai("resume.txt", _TABULAR, "user-1", db)
                 mock_orch.call_llm.assert_not_awaited()
                 assert result.raw_text
