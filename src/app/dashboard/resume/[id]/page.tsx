@@ -1,36 +1,58 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
 
-export default function ResumeDetailPage({ params }: { params: { id: string } }) {
-  // WHY placeholder: Block 4 builds the full detail view (parsed JSON, analysis,
-  // interview prep). This page exists only so the dashboard's resume links
-  // resolve to a real route — nothing else.
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto max-w-4xl px-6 py-4">
-          <a
-            href="/dashboard"
-            className="font-serif text-xl font-semibold tracking-tight text-foreground"
-          >
-            HireReady
-          </a>
-        </div>
-      </header>
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/server/prisma";
+import { ResumeDetail } from "@/components/dashboard/resume-detail";
 
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Resume #{params.id}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              This page is under construction. The detailed resume view — including
-              parsed text, analysis, and interview preparation — will land in a
-              future block.
-            </p>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  );
+export const metadata = { title: "Resume detail" };
+
+// WHY server component with ownership check: the spec mandates that a non-owner
+// sees a 404-style "not found" — never a "forbidden" that would reveal the
+// resume exists. The check runs server-side so it can't be bypassed by client
+// manipulation.
+export default async function ResumeDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const session = await getServerSession(authOptions);
+
+  // WHY double-check (middleware already protects): defense in depth — a direct
+  // URL visit with no session cookie still bounces correctly.
+  if (!session?.user?.id) {
+    notFound();
+  }
+
+  const resume = await prisma.resume.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true,
+      fileName: true,
+      rawText: true,
+      parsedData: true,
+      userId: true,
+      createdAt: true,
+    },
+  });
+
+  // WHY same response for "no such resume" and "you don't own it": both cases
+  // render a 404 page. Telling a non-owner "this exists but you can't see it"
+  // would let strangers enumerate other users' resume IDs.
+  if (!resume || resume.userId !== session.user.id) {
+    notFound();
+  }
+
+  // WHY strip userId before passing to client: the client component doesn't
+  // need it, and omitting it avoids leaking internal IDs into the React tree
+  // (which React DevTools would show).
+  const clientResume = {
+    id: resume.id,
+    fileName: resume.fileName,
+    rawText: resume.rawText,
+    parsedData: resume.parsedData,
+    createdAt: resume.createdAt.toISOString(),
+  };
+
+  return <ResumeDetail resume={clientResume} />;
 }
