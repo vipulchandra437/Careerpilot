@@ -1,0 +1,35 @@
+// WHY: schema mirrors ARCHITECTURE.md "Data Models" exactly — User + Resume, nothing more.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  hashedPassword String? // null for OAuth-only accounts (credentials users always have one)
+  createdAt      DateTime @default(now())
+  resumes        Resume[]
+
+  // WHY: the one-to-many side of the Resume.userId relation.
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName   String
+  rawText    String
+  parsedData Json? // LLM-extracted structured resume (populated by Phase 1 parse step)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // WHY: dashboard lists a user's resumes; index keeps that lookup cheap as rows grow.
+  @@index([userId])
+}

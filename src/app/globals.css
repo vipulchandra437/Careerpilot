@@ -2,22 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  WHY hsl triplets: Tailwind's shadcn theme maps classes like bg-background to
+  `hsl(var(--background) / <alpha-value>)`, so every token must be "H S% L%".
+
+  Palette (per build spec §4, which overrides DESIGN.md's violet):
+  - warm paper surfaces  #faf6ef range
+  - ink/navy typography   #1a2332 range
+  - restrained amber      #d97706 range — the ONLY accent
+  Semantic red/green exist for standard success/error states (DESIGN.md).
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 38 52% 96%; /* #faf6ef warm paper */
+  --foreground: 218 32% 15%; /* #1a2332 ink navy */
+  --card: 38 45% 94%;
+  --card-foreground: 218 32% 15%;
+  --popover: 38 45% 94%;
+  --popover-foreground: 218 32% 15%;
+  --primary: 32 95% 44%; /* #d97706 amber — used sparingly, never as a backdrop */
+  --primary-foreground: 38 52% 96%;
+  --secondary: 218 15% 90%;
+  --secondary-foreground: 218 32% 15%;
+  --muted: 38 30% 92%;
+  --muted-foreground: 218 12% 45%;
+  --accent: 218 22% 24%;
+  --accent-foreground: 38 52% 96%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  --border: 38 20% 80%;
+  --input: 38 20% 80%;
+  --ring: 32 95% 44%;
+  --chart-1: 32 95% 44%;
+  --chart-2: 218 32% 15%;
+  --chart-3: 38 52% 70%;
+  --chart-4: 218 20% 45%;
+  --chart-5: 32 60% 60%;
+  --radius: 0.5rem;
+  --sidebar: 38 45% 94%;
+  --sidebar-foreground: 218 32% 15%;
+  --sidebar-primary: 32 95% 44%;
+  --sidebar-primary-foreground: 38 52% 96%;
+  --sidebar-accent: 218 22% 24%;
+  --sidebar-accent-foreground: 38 52% 96%;
+  --sidebar-border: 38 20% 80%;
+  --sidebar-ring: 32 95% 44%;
+
+  /* WHY system-ui only (no Google/Inter download): next/font fetches at build
+     time and breaks offline; DESIGN.md explicitly allows the system stack. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", "Liberation Mono",
+    Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark surfaces — same two-families palette, surfaces inverted (DESIGN.md). */
+.dark {
+  --background: 218 30% 6%;
+  --foreground: 38 52% 96%;
+  --card: 218 25% 10%;
+  --card-foreground: 38 52% 96%;
+  --popover: 218 25% 10%;
+  --popover-foreground: 38 52% 96%;
+  --primary: 32 95% 44%;
+  --primary-foreground: 38 52% 96%;
+  --secondary: 218 20% 16%;
+  --secondary-foreground: 38 52% 96%;
+  --muted: 218 20% 14%;
+  --muted-foreground: 38 25% 75%;
+  --accent: 218 22% 24%;
+  --accent-foreground: 38 52% 96%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 38 15% 20%;
+  --input: 38 15% 20%;
+  --ring: 32 95% 44%;
+  --chart-1: 32 95% 44%;
+  --chart-2: 38 52% 96%;
+  --chart-3: 218 15% 60%;
+  --chart-4: 32 60% 60%;
+  --chart-5: 218 12% 45%;
+  --sidebar: 218 25% 10%;
+  --sidebar-foreground: 38 52% 96%;
+  --sidebar-primary: 32 95% 44%;
+  --sidebar-primary-foreground: 38 52% 96%;
+  --sidebar-accent: 218 22% 24%;
+  --sidebar-accent-foreground: 38 52% 96%;
+  --sidebar-border: 38 15% 20%;
+  --sidebar-ring: 32 95% 44%;
+}
+
+html {
+  /* WHY 16px base: DESIGN.md accessibility requires a 16px minimum. */
+  font-size: 16px;
+  font-family: var(--font-sans);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  /* WHY 1.65 line-height: DESIGN.md asks for generous body leading. */
+  line-height: 1.65;
+}
+
+* {
+  border-color: hsl(var(--border));
 }
 
 @layer utilities {
