@@ -21,14 +21,15 @@ model User {
 }
 
 model Resume {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileName   String
-  rawText    String
-  parsedData Json? // LLM-extracted structured resume (populated by Phase 1 parse step)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName       String
+  rawText        String
+  parsedData     Json? // LLM-extracted structured resume (populated by Phase 1 parse step)
+  analysisResult Json? // AI analysis: score, strengths, weaknesses, action items (Phase 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // WHY: dashboard lists a user's resumes; index keeps that lookup cheap as rows grow.
   @@index([userId])

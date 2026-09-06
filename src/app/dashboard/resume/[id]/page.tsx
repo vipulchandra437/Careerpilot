@@ -31,6 +31,7 @@ export default async function ResumeDetailPage({
       fileName: true,
       rawText: true,
       parsedData: true,
+      analysisResult: true,
       userId: true,
       createdAt: true,
     },
@@ -51,6 +52,7 @@ export default async function ResumeDetailPage({
     fileName: resume.fileName,
     rawText: resume.rawText,
     parsedData: resume.parsedData,
+    analysisResult: resume.analysisResult,
     createdAt: resume.createdAt.toISOString(),
   };
 
