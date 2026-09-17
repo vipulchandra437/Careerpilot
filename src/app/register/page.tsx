@@ -15,7 +15,7 @@ export default function RegisterPage() {
           href="/"
           className="font-serif text-xl font-semibold tracking-tight text-foreground"
         >
-          HireReady
+          CareerPilot
         </Link>
         <h1 className="mt-10 font-serif text-3xl font-semibold tracking-tight text-foreground">
           Create your account

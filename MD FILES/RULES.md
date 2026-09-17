@@ -1,4 +1,4 @@
-# RULES.md — Coding & Process Rules for HireReady
+# RULES.md — Coding & Process Rules for CareerPilot
 
 ## Scope Discipline
 1. Build ONLY the current phase. No future-phase features.

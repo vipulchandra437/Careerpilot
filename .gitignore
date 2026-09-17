@@ -34,7 +34,7 @@ yarn-error.log*
 # vercel
 .vercel
 
-# sqlite database (dev.db lives under prisma/ because the URL is relative to schema.prisma)
+# legacy local database files (kept in case a dev.db from the SQLite era lingers)
 **/dev.db
 **/dev.db-journal
 **/dev.db-*
@@ -42,3 +42,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

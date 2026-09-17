@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 
 import { AuthBanner } from "@/components/auth/auth-banner";
 import { GoogleButton } from "@/components/auth/google-button";
+import { LOCKOUT_PREFIX } from "@/lib/auth-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,7 +80,18 @@ export function LoginForm({
         return;
       }
       if (result.error) {
-        setBanner("Email or password is incorrect.");
+        // WHY three cases: "CredentialsSignin" is Auth.js's value for a failed
+        // password check; our sentinel prefix is the throttle's user-facing
+        // lockout notice shipped through the ?error= channel; anything else is
+        // an unexpected server error and must NOT be rendered raw (RULES.md —
+        // users never see internals).
+        if (result.error === "CredentialsSignin") {
+          setBanner("Email or password is incorrect.");
+        } else if (result.error.startsWith(LOCKOUT_PREFIX)) {
+          setBanner(result.error.slice(LOCKOUT_PREFIX.length));
+        } else {
+          setBanner("Could not sign you in. Please try again.");
+        }
         setSubmitting(false);
         return;
       }
@@ -157,7 +169,7 @@ export function LoginForm({
       <GoogleButton callbackUrl={target} />
 
       <p className="text-center text-sm text-muted-foreground">
-        New to HireReady?{" "}
+        New to CareerPilot?{" "}
         <Link
           href="/register"
           className="font-medium text-foreground underline underline-offset-4 hover:text-primary"

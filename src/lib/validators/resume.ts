@@ -5,6 +5,15 @@ import { z } from "zod";
 // A loose schema with defaults means "partial success" still saves something useful
 // rather than discarding the entire parse. The UI handles empty arrays gracefully.
 
+// WHY a null-tolerant array builder (not just .default([])): LLMs frequently emit null
+// for optional arrays (e.g. "skills": null) — but z.array().default([]) only rescues
+// *undefined* (a missing key), null would fail the whole parse. Mapping null -> [] keeps
+// partial LLM success valid, which is exactly the loose-schema intent this file documents.
+
+
+const maybeArray = <T extends z.ZodType>(item: T) =>
+  z.preprocess((v: unknown) => (v == null ? [] : v), z.array(item).default([]));
+
 const educationSchema = z
   .object({
     institution: z.string().default(""),
@@ -35,11 +44,11 @@ export const parsedResumeSchema = z
     name: z.string().default(""),
     email: z.string().default(""),
     phone: z.string().default(""),
-    education: z.array(educationSchema).default([]),
-    skills: z.array(z.string()).default([]),
-    projects: z.array(projectSchema).default([]),
-    experience: z.array(experienceSchema).default([]),
-    weaknesses: z.array(z.string()).default([]),
+    education: maybeArray(educationSchema),
+    skills: maybeArray(z.string()),
+    projects: maybeArray(projectSchema),
+    experience: maybeArray(experienceSchema),
+    weaknesses: maybeArray(z.string()),
   })
   .passthrough();
 
@@ -47,6 +56,10 @@ export type ParsedResume = z.infer<typeof parsedResumeSchema>;
 
 // WHY a separate schema for route params: validates the [id] segment before any
 // DB query, preventing injection-style issues and giving a clean 400 on bad input.
+ 
 export const parseRequestSchema = z.object({
-  id: z.string().min(1, "Resume ID is required"),
+  // WHY cuid: resume IDs are Prisma cuids. A stricter shape check catches junk
+  // path segments (e.g. "abc") BEFORE a DB query, so clients get a clean
+  // structured error instead of a raw Prisma 500.
+  id: z.string().cuid("Resume ID is invalid"),
 });

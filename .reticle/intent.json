@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "intents": {
+    "inline:a-new-student-can-create-an-account-and-land-on-049e07cd": {
+      "id": "inline:a-new-student-can-create-an-account-and-land-on-049e07cd",
+      "statement": "A new student can create an account and land on their dashboard without an auth error.",
+      "state": "proved",
+      "declaredAt": 1788960246536,
+      "binding": {
+        "kind": "route",
+        "pathname": "/dashboard"
+      },
+      "surface": {
+        "route": "/dashboard",
+        "files": [
+          "src/components/ui/button.tsx"
+        ]
+      },
+      "provenBy": {
+        "verdictId": "reticle_act_and_wait:1788960253185",
+        "grade": "presence",
+        "at": 1788960253185
+      }
+    },
+    "inline:a-student-who-already-registered-can-sign-in-wit-3a63e67f": {
+      "id": "inline:a-student-who-already-registered-can-sign-in-wit-3a63e67f",
+      "statement": "A student who already registered can sign in with their email and password and reach their dashboard.",
+      "state": "bound",
+      "declaredAt": 1788960336056,
+      "binding": {
+        "kind": "route",
+        "pathname": "/dashboard"
+      }
+    }
+  }
+}

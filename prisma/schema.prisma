@@ -1,23 +1,56 @@
-// WHY: schema mirrors ARCHITECTURE.md "Data Models" exactly — User + Resume, nothing more.
+// PRODUCTION MODE (Postgres via Neon) — connected to the live Neon project.
+// Runtime queries use the POOLED DATABASE_URL; db push / migrations use the
+// DIRECT_URL. Both come from Neon:
+//   - DATABASE_URL: the -pooler host string (serverless multiplexing)
+//   - DIRECT_URL:   the direct, non-pooler host string (DDL/sessions)
+// If DIRECT_URL is unset, Prisma falls back to DATABASE_URL with a warning.
+// Every model here is portable — no SQLite-only types, no Prisma enums.
+//
+// TO RUN LOCALLY OFFLINE (restore SQLite):
+//   1. provider = "sqlite"  (and comment out the directUrl line below)
+//   2. point .env DATABASE_URL at "file:./dev.db"
+//   3. run `npx prisma db push`
+// (Rationale for Neon in production: ARCHITECTURE.md "Database" — Vercel
+// serverless can't share one SQLite file across function instances.)
 
 generator client {
   provider = "prisma-client-js"
+  // WHY binaryTargets: the client is generated on the BUILD machine. Locally
+  // that's Windows; on Vercel it's Linux (AWS Lambda). Without these targets a
+  // Windows-only engine gets traced into the serverless function and every DB
+  // call fails with "unable to run query engine" (HTTP 503 on /api/health).
+  // "native" covers local dev; the linux targets cover Vercel's Lambda runtime.
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // WHY directUrl: behind a serverless connection pooler (Neon) DDL/sessions
+  // must bypass the pool; Prisma uses this host for `db push` and migrations.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   id             String   @id @default(cuid())
   name           String
   email          String   @unique
-  hashedPassword String? // null for OAuth-only accounts (credentials users always have one)
+  hashedPassword String?
+  // WHY versioned: sessions are stateless 30-day JWTs (no adapter, no session
+  // table), so this counter is the only revocation kill switch — the session
+  // callback compares the token's stored ver against it, and a bump (via
+  // revokeAllSessions) instantly invalidates every token minted so far.
+  tokenVersion   Int      @default(0)
   createdAt      DateTime @default(now())
   resumes        Resume[]
+  builderResumes BuilderResume[]
+  interviewSessions InterviewSession[]
+  targets        TargetCompany[]
+  practiceAttempts PracticeAttempt[]
+  roadmaps       Roadmap[]
+  mentorConversations MentorConversation[]
 
-  // WHY: the one-to-many side of the Resume.userId relation.
+  // WHY: the one-to-many side of every user-scoped relation.
 }
 
 model Resume {
@@ -26,11 +59,143 @@ model Resume {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   fileName       String
   rawText        String
-  parsedData     Json? // LLM-extracted structured resume (populated by Phase 1 parse step)
-  analysisResult Json? // AI analysis: score, strengths, weaknesses, action items (Phase 2)
+  parsedData     Json?
+  analysisResult Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  // WHY: dashboard lists a user's resumes; index keeps that lookup cheap as rows grow.
+  interviewSessions InterviewSession[]
+
   @@index([userId])
 }
+
+model BuilderResume {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model InterviewSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId    String?
+  resume      Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  mode        String   // "behavioral" | "technical"
+  status      String   @default("active") // "active" | "completed" | "abandoned"
+  transcript  Json     // array of {question, focus, answer, evaluation, followUp, followUpAnswer, followUpEvaluation}
+  finalScore  Int?
+  summary     String?
+  questionCount Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([resumeId])
+}
+
+// WHY a dedicated model (not a column on User): the target is a first-class
+// selectable entity a student can set, change, or clear, and future phases may
+// want per-target history. The `active` boolean means "one live target per user
+// for v1" without deleting past targets — clearing flips it off rather than
+// destroying the row. RULES.md one-file-one-responsibility: the target lives as
+// its own Prisma model, not a JSON blob.
+model TargetCompany {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  role        String
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, active])
+}
+
+// WHY a dedicated PracticeAttempt model (not a Json blob on User): challenge
+// history is a per-user collection that grows unbounded and must be queried
+// (recent list, pass-rate aggregation) — that's what rows are for. Fields stay
+// deliberately small: a challenge identity + one pass/fail boolean + timestamp
+// is all the index page needs. Full code/transcripts are intentionally NOT
+// stored (RULES.md: never persist raw user content unnecessarily).
+model PracticeAttempt {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeTitle String
+  passed        Boolean
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// WHY one row per user (not history): PHASES.md regenerating replaces the plan
+// wholesale (RULES: no partial merging), so old plans have no value. content is
+// the LLM's 12-week plan JSON; completedIdx is the flat list of task indices the
+// student checked off — Json because both are opaque structures that only this
+// feature reads and both must change atomically on one row.
+model Roadmap {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content      Json
+  completedIdx Json      @default("[]")
+
+  // WHY status + attemptStartedAt + failedAttempts (serverless-friendly async
+  // generation): Vercel Hobby lets a function run at most 60s, but roadmap
+  // generation can take up to ~90s across the provider chain. So POST only marks
+  // the row "pending" and returns immediately; a later GET acts as a lazily-run
+  // worker behind attemptStartedAt — one in-flight generation is claimed and
+  // retried by the client's poll, and failedAttempts caps retries so a dead
+  // provider chain can't spin forever. Default "ready" keeps pre-existing rows
+  // (which already hold valid content) valid after this column appears.
+  status           String    @default("ready") // "pending" | "ready" | "failed"
+  attemptStartedAt DateTime?
+  failedAttempts   Int       @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// WHY a single Conversation row with a Json messages array instead of one row
+// per message: the chat is one continuous stream the student scrolls, not a
+// queryable table — a Json array avoids N rows per exchange and one read loads
+// the whole thing. Messages are appended server-side and capped (prompt
+// economy): the oldest messages are dropped, so context stays bounded.
+model MentorConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// WHY a shared row per attempted email (not in-memory counters): the app runs on
+// Vercel serverless, where each function instance has its own memory — two
+// requests often land on two instances, so local counters never add up. One
+// Postgres row is the shared truth every instance agrees on.
+model LoginThrottle {
+  email       String    @id
+  failedCount Int       @default(0)
+  windowStart DateTime  @default(now())
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  // WHY keyed by email alone (not email+IP): the attack that matters is a
+  // stranger hammering one account from many addresses; counting per email
+  // catches that, while per-IP counting would lock out whole campus NATs.
+}
+

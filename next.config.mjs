@@ -1,5 +1,15 @@
+import { withReticle } from '@reticlehq/next';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // WHY serverComponentsExternalPackages: on Vercel the pdf-parse route handler
+  // is bundled by the RSC/server compiler, not the legacy webpack externals path
+  // alone. Opting it out of bundling forces Node's require() at runtime, where
+  // pdf-parse's native @napi-rs/canvas dependency resolves correctly instead of
+  // breaking the serverless build. The webpack externals below remain as a belt-
+  // and-suspenders for any code path webpack still compiles.
+  experimental: {
+    serverComponentsExternalPackages: ["pdf-parse", "@prisma/client", "prisma"],
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // WHY externals: pdf-parse v2 pulls in @napi-rs/canvas (a native module) plus
@@ -11,6 +21,9 @@ const nextConfig = {
     }
     return config;
   },
+  // WHY poweredByHeader off: a production-safe trim — removes the framework tag
+  // from response headers (a minor, free attack-surface reduction).
+  poweredByHeader: false,
 };
 
-export default nextConfig;
+export default withReticle(nextConfig);

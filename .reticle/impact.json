@@ -1,0 +1,72 @@
+{
+  "counts": {
+    "calls": 31,
+    "verdicts": 3,
+    "passed": 2,
+    "failed": 1,
+    "unknown": 0,
+    "refusals": 2,
+    "marks": 0,
+    "sessions": 5,
+    "tokensReturned": 5554,
+    "drivingMs": 92241
+  },
+  "days": [
+    {
+      "date": "2026-09-09",
+      "counts": {
+        "calls": 31,
+        "verdicts": 3,
+        "passed": 2,
+        "failed": 1,
+        "unknown": 0,
+        "refusals": 2,
+        "marks": 0,
+        "sessions": 2,
+        "tokensReturned": 5554,
+        "drivingMs": 92241
+      }
+    },
+    {
+      "date": "2026-09-16",
+      "counts": {
+        "calls": 0,
+        "verdicts": 0,
+        "passed": 0,
+        "failed": 0,
+        "unknown": 0,
+        "refusals": 0,
+        "marks": 0,
+        "sessions": 3,
+        "tokensReturned": 0,
+        "drivingMs": 0
+      }
+    }
+  ],
+  "records": {
+    "longestRunMs": 0,
+    "bestVerdictDay": 3,
+    "bestDefectDay": 1,
+    "streakDays": 1,
+    "bestStreakDays": 1
+  },
+  "savings": {
+    "tokens": {
+      "value": 0,
+      "basis": "vs an agent reading the app through screenshots"
+    },
+    "minutes": {
+      "value": 5.5,
+      "basis": "vs checking each consequence by hand, plus one re-prompt cycle per defect caught"
+    }
+  },
+  "since": 1788960000706,
+  "defects": [
+    {
+      "at": 1788960296357,
+      "title": "Sign out",
+      "detail": "current route (no route change in the window) '/register', expected '/'",
+      "source": "src/components/dashboard/dashboard-navbar.tsx:120"
+    }
+  ]
+}

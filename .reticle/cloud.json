@@ -1,0 +1,13 @@
+{
+  "projectId": "hireready",
+  "projectName": "hireready",
+  "orgId": "org_0377456be4ea4b1faaca6732a7caa1f9",
+  "url": "https://app.reticle.sh",
+  "dashboardUrl": "https://app.reticle.sh/issues?project=hireready",
+  "sync": {
+    "runs": true,
+    "memory": true,
+    "flows": true
+  },
+  "verify": "local"
+}

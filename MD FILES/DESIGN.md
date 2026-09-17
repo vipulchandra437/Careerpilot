@@ -1,4 +1,4 @@
-# DESIGN.md — HireReady Visual & UX Direction
+# DESIGN.md — CareerPilot Visual & UX Direction
 
 ## Design Philosophy
 Clean, focused, encouraging. This is a tool for anxious students — the UI must

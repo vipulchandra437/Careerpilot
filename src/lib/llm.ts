@@ -19,22 +19,30 @@ const PROVIDERS: Provider[] = [
     baseUrl: "https://api.groq.com/openai/v1",
     apiKey: process.env.GROQ_API_KEY,
     // WHY first in chain: ARCHITECTURE.md wants Groq for fast interview replies.
-    model: "llama-3.3-70b-versatile",
+    // WHY this slug: llama-3.3-70b-versatile was retired by Groq (404 model_not_found,
+    // verified against GET /models with a live key on 2026-09-08); gpt-oss-120b is the
+    // strongest current chat model on Groq's LPU and still very fast.
+    model: "openai/gpt-oss-120b",
   },
   {
     name: "gemini",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     apiKey: process.env.GEMINI_API_KEY,
     // WHY second: Gemini keeps long resume documents in context (ARCHITECTURE.md).
-    model: "gemini-2.0-flash",
+    // WHY this slug: gemini-2.0-flash was retired (404 from Google's API itself,
+    // which recommended gemini-3.6-flash — verified against GET /models 2026-09-08).
+    model: "gemini-3.6-flash",
   },
   {
     name: "openrouter",
     baseUrl: "https://openrouter.ai/api/v1",
     apiKey: process.env.OPENROUTER_API_KEY,
-    // WHY last: emergency backup only. `:free` models rotate on OpenRouter —
-    // if this slug 404s, replace it with a current ":free" slug from openrouter.ai/models.
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+    // WHY last: emergency backup only. Free slugs rotate on OpenRouter — the old
+    // meta-llama/llama-3.3-70b-instruct:free now 404s, and specific free upstreams
+    // (e.g. nvidia/nemotron-3-super-120b-a12b:free) can 502 when their provider is
+    // overloaded. "openrouter/free" auto-routes to whichever free model is up, so
+    // it is the most resilient last-resort choice (verified live 2026-09-08).
+    model: "openrouter/free",
   },
 ];
 

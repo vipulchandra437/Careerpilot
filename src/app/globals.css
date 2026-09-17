@@ -115,4 +115,72 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ==================================================================
+   Navbar animations
+   WHY custom keyframes: Tailwind ships no slide/scale/underline utilities
+   that read well in both light and dark themes, so we define theme-aware
+   animations here and consume them from the Navbar component.
+   ================================================================== */
+
+@keyframes nav-fade-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nav-slide-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes nav-underline-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes nav-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); }
+  70%  { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+}
+
+@keyframes nav-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+.animate-nav-fade-down  { animation: nav-fade-down 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-nav-slide-in   { animation: nav-slide-in 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-nav-bob        { animation: nav-bob 3s ease-in-out infinite; }
+
+}
+
+/* WHY print styles live here (not in a per-page CSS module): window.print() is a
+   browser-level action that ignores React component boundaries. These rules must
+   be global to work, and they only fire when the user explicitly clicks Export PDF. */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* WHY hide app chrome: the printed resume must have zero branding, zero nav,
+     zero web UI artifacts (RULES.md). Only the resume content itself prints. */
+  header, nav, footer, .fixed, [role="alert"] {
+    display: none !important;
+  }
+  /* WHY A4-friendly margins: browsers default to ~0.75in which is acceptable,
+     but we tighten to 0.5in for maximum content area on a single page. */
+  @page {
+    size: auto;
+    margin: 0.5in;
+  }
 }

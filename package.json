@@ -1,15 +1,18 @@
 {
-  "name": "hireready",
+  "name": "careerpilot",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "graphify": "node scripts/graphify-scan.mjs",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
+    "@types/three": "^0.185.4",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -22,9 +25,12 @@
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.185.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@reticlehq/next": "^2.13.1",
+    "@reticlehq/react": "^2.13.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

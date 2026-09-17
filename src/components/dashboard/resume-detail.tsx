@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -12,8 +12,13 @@ import { type AnalysisResult } from "@/lib/validators/analysis";
 
 type ParseStatus = "parsed" | "unparsed" | "failed";
 
-function getParseStatus(parsedData: unknown): ParseStatus {
+function getParseStatus(parsedData: unknown, rawText: string): ParseStatus {
   if (parsedData != null) return "parsed";
+  // WHY a failed parse: the parse route leaves rawText empty when it extracts
+  // nothing (MALFORMED_OUTPUT). An uploaded-but-unparseable file is "Failed",
+  // not merely "Unparsed" — the latter would silently keep the Analyze button
+  // disabled with no red state to explain why. Mirrors resume-list-item.tsx.
+  if (rawText.trim() === "") return "failed";
   return "unparsed";
 }
 
@@ -52,7 +57,18 @@ export function ResumeDetail({
   const [analysisStage, setAnalysisStage] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
-  const status = getParseStatus(resume.parsedData);
+  // WHY an unmount guard: parse/analyze await a slow LLM round-trip; if the user
+  // navigates away mid-request we must not populate state on a torn-down
+  // component, and any running stage-interval must be stopped.
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
+  const status = getParseStatus(resume.parsedData, resume.rawText);
   const parsed = resume.parsedData as ParsedResume | null;
   const analysis = resume.analysisResult as AnalysisResult | null;
 
@@ -70,6 +86,8 @@ export function ResumeDetail({
         method: "POST",
       });
 
+      if (!aliveRef.current) return;
+
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         setError(data.error ?? "Something went wrong. Please try again.");
@@ -78,6 +96,7 @@ export function ResumeDetail({
 
       router.refresh();
     } catch {
+      if (!aliveRef.current) return;
       setError("Could not reach the server. Please try again.");
     } finally {
       clearInterval(stageInterval);
@@ -99,6 +118,8 @@ export function ResumeDetail({
         method: "POST",
       });
 
+      if (!aliveRef.current) return;
+
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         setAnalysisError(data.error ?? "Something went wrong. Please try again.");
@@ -107,6 +128,7 @@ export function ResumeDetail({
 
       router.refresh();
     } catch {
+      if (!aliveRef.current) return;
       setAnalysisError("Could not reach the server. Please try again.");
     } finally {
       clearInterval(stageInterval);
@@ -119,7 +141,7 @@ export function ResumeDetail({
       <header className="border-b border-border">
         <div className="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="font-serif text-xl font-semibold tracking-tight text-foreground">
-            HireReady
+            CareerPilot
           </Link>
           <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
             &larr; Back to dashboard

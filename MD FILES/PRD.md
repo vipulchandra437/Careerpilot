@@ -1,7 +1,7 @@
 # PRD.md — Product Requirements Document
 
 ## Product Name
-HireReady — AI Career Preparation Platform for CS Students
+CareerPilot — AI Career Preparation Platform for CS Students
 
 ## One-Liner
 Helps CS students go from their resume → AI mock interview → readiness score, so they know exactly what to fix before the real interview.

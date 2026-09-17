@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-import { registerSchema } from "@/lib/validators/auth";
+import { registerApiSchema } from "@/lib/validators/auth";
 import { prisma } from "@/server/prisma";
 
 // WHY /api/register (not under /api/auth/): Auth.js's [...nextauth] catch-all
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = registerSchema.safeParse(body);
+  const parsed = registerApiSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Please check the highlighted fields and try again.", code: "VALIDATION_ERROR" },

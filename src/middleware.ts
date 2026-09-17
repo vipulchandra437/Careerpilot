@@ -8,8 +8,8 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(request: NextRequest) {
   const secret = process.env.NEXTAUTH_SECRET;
 
-  // WHY dev fallback: lets `npm run dev` boot on a brand-new checkout before the
-  // user has created .env.local. Production is never opened up — it redirects.
+  const token = await getToken({ req: request, secret });
+
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
       console.error("[auth] NEXTAUTH_SECRET missing — dashboard denied.");
@@ -19,7 +19,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req: request, secret });
   if (!token) {
     const loginUrl = new URL("/login", request.url);
     // WHY callbackUrl: Block 2's login page can bounce the user back here instead

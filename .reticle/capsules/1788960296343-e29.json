@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "1788960296343-e29",
+  "createdAt": 1788960296343,
+  "origin": "failed-assert",
+  "expected": "declared consequence",
+  "observed": "current route (no route change in the window) '/register', expected '/'",
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "testid",
+        "value": "e29",
+        "source": {
+          "file": "src/components/dashboard/dashboard-navbar.tsx",
+          "line": 120,
+          "column": 18
+        }
+      },
+      "action": "click"
+    }
+  ]
+}
