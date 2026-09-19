@@ -16,6 +16,51 @@ import { interviewStartSchema, questionsResponseSchema } from "@/lib/validators/
 // WHY all questions generated upfront: one LLM call is cheaper than N calls spread
 // across the session, and it lets us cap length server-side before any answers land.
 
+// WHY a read-only GET: the SPA's dashboard/profile render recent interview
+// history without server components. Ownership-scoped, latest first.
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Please log in to continue.", code: "UNAUTHORIZED" },
+      { status: 401 }
+    );
+  }
+
+  let sessions;
+  try {
+    sessions = await prisma.interviewSession.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        mode: true,
+        status: true,
+        finalScore: true,
+        questionCount: true,
+        createdAt: true,
+      },
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Couldn't load your interviews. Please try again.", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(
+    sessions.map((s) => ({
+      id: s.id,
+      mode: s.mode,
+      status: s.status,
+      finalScore: s.finalScore,
+      questionCount: s.questionCount,
+      createdAt: s.createdAt.toISOString(),
+    }))
+  );
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

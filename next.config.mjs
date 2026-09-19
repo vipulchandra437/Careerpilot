@@ -1,4 +1,11 @@
 import { withReticle } from '@reticlehq/next';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // WHY serverComponentsExternalPackages: on Vercel the pdf-parse route handler
@@ -24,6 +31,53 @@ const nextConfig = {
   // WHY poweredByHeader off: a production-safe trim — removes the framework tag
   // from response headers (a minor, free attack-surface reduction).
   poweredByHeader: false,
+  
+  // Rewrites to serve the new TanStack Start frontend
+  // In development: frontend runs on port 8080, API on port 3000
+  // In production: frontend is built and served from /dist
+  async rewrites() {
+    // API routes should always be handled by Next.js
+    // All other routes should be served by the frontend
+    
+    // Check if frontend build exists
+    const frontendDist = resolve(__dirname, 'frontend', 'dist');
+    const indexHtmlPath = resolve(frontendDist, 'index.html');
+    
+    let frontendIndexHtml = null;
+    try {
+      frontendIndexHtml = readFileSync(indexHtmlPath, 'utf-8');
+    } catch {
+      // Frontend not built yet
+    }
+    
+    return [
+      // API routes - handle with Next.js
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+      // Static assets from frontend
+      {
+        source: '/assets/:path*',
+        destination: '/frontend/dist/assets/:path*',
+      },
+      // PWA chrome bundled into the frontend build (icon, install assets)
+      {
+        source: '/__grok/:path*',
+        destination: '/frontend/dist/__grok/:path*',
+      },
+      // Favicon and other static files
+      {
+        source: '/favicon.svg',
+        destination: '/frontend/dist/favicon.svg',
+      },
+      // Catch-all: serve frontend index.html for SPA routing
+      {
+        source: '/:path((?!api).*)',
+        destination: '/frontend/dist/index.html',
+      },
+    ];
+  },
 };
 
 export default withReticle(nextConfig);

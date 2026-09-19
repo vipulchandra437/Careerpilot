@@ -24,6 +24,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# local server output captured by this repo's dev/test scripts
+*.log
+!frontend/scripts/**/*.log
 
 # local env files (keep .env.example tracked)
 .env
@@ -33,6 +36,15 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# frontend (TanStack Start SPA) — keep source tracked, ignore build artifacts
+/frontend/node_modules
+/frontend/dist
+/frontend/.vercel
+/frontend/.output
+/frontend/.next
+# synced copy of the SPA served by Next.js at /frontend/dist/*
+/public/frontend
 
 # legacy local database files (kept in case a dev.db from the SQLite era lingers)
 **/dev.db

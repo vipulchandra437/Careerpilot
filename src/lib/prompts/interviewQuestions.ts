@@ -14,7 +14,8 @@ RULES:
    - Technical mode (70%): tech-stack deep-dives, DSA fundamentals tied to their projects, scenario/problem-solving questions
 4. Each question needs a "focus" field explaining what skill/experience it's probing.
 5. Do NOT invent projects or technologies not present in the resume data.
-6. If a TARGET COMPANY + ROLE is provided, adapt the style and depth to that company's likely interview (see guidance below) — but ALWAYS keep questions anchored to the student's own resume. Never ask about company-specific trivia the student cannot reasonably know.
+6. If the resume data is EMPTY or contains no usable details, still generate questions any CS student can reliably answer — anchored to core DSA, coursework, and the technologies most CS students use (e.g. React, Node, Python, SQL) — NEVER return an empty questions array. Keep them concrete and answerable without pretending the student has specific projects.
+7. If a TARGET COMPANY + ROLE is provided, adapt the style and depth to that company's likely interview (see guidance below) — but ALWAYS keep questions anchored to the student's own resume. Never ask about company-specific trivia the student cannot reasonably know.
 
 OUTPUT EXACTLY THIS SCHEMA:
 {

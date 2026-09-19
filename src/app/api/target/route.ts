@@ -11,6 +11,46 @@ import { guidanceForCompany } from "@/lib/company-type";
 // checks. Two actions on one POST keeps the client simple and the semantics
 // explicit via the `action` field, rather than splintering into two endpoints.
 
+// WHY a GET here too: the SPA (no server components) needs the active target to
+// render the dashboard/companies/profile states. Read-only, ownership-scoped.
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Please log in to continue.", code: "UNAUTHORIZED" },
+      { status: 401 }
+    );
+  }
+
+  let target;
+  try {
+    target = await prisma.targetCompany.findFirst({
+      where: { userId: session.user.id, active: true },
+      orderBy: { createdAt: "desc" },
+      select: { companyName: true, role: true, notes: true },
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Couldn't load your target. Please try again.", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+
+  if (!target) {
+    return NextResponse.json({ target: null });
+  }
+
+  const style = guidanceForCompany(target.companyName);
+  return NextResponse.json({
+    target: {
+      companyName: target.companyName,
+      role: target.role,
+      notes: target.notes,
+      style,
+    },
+  });
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
