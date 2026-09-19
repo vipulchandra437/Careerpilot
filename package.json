@@ -7,7 +7,7 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev:all": "concurrently \"npm run dev\" \"cd frontend && npm run dev\"",
     "build": "npm run build:all",
-    "build:frontend": "cd frontend && npm install --no-audit --no-fund && npm run build",
+    "build:frontend": "cd frontend && npm install --no-audit --no-fund --include=dev && npm run build",
     "build:sync-frontend": "node scripts/sync-frontend.mjs",
     "build:all": "npm run build:frontend && npm run build:sync-frontend && next build",
     "start": "next start",
