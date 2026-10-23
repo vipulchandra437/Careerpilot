@@ -27,6 +27,23 @@ DONE WHEN: a 10-question interview completes with per-answer feedback.
 COMBINE: resume score + interview performance → one Hire Readiness Score (0-100)
 with breakdown per area and top-3 action items.
 
+### Readiness refinements — DONE (2026-10-23)
+- Feature status is now three-valued (`not_started` | `strong` | `weak`); a null
+  score reads as `not_started` (0 contribution), never a failing grade, so a
+  half-finished profile can't look "bad".
+- Target-company score is count-driven (0→null / 1→50 / 2+→100) on both the
+  backend (`src/server/readiness-data.ts`, `findMany` over `TargetCompany.active`)
+  and the frontend helper `computeTargetCompaniesScore`; consistent with the Prisma
+  `active` boolean (there is no `status` field on `TargetCompany`).
+- Weights unchanged (resume 30 / mock_interview 30 / coding_test 20 / roadmap 15 /
+  target_companies 5), now documented in MEMORY.md and a code comment on
+  `FEATURE_WEIGHTS`. Today's Focus (`lowestContributor`) skips `not_started`
+  features, falling back to `resume` only when every feature is unmeasured.
+- Verified: 14/14 readiness unit tests pass; root `npx tsc --noEmit` is clean
+  (0 errors). Frontend `tsc` is blocked by an uninstalled `frontend/node_modules`
+  (missing `vite/client`, @tanstack, better-auth, etc.) — pre-existing, unrelated
+  to these changes.
+
 ## PHASE 5 — Target Company + Profile Extras
 - Target company picker → interview style adapts to that company
 - GitHub analysis (public API — repo quality, activity)

@@ -20,6 +20,15 @@ export interface ReadinessDataset {
   // Latest cumulative inputs for the hero number.
   resumeScore: number | null; // blended (overall+ATS) of the newest analysis
   interviewScore: number | null; // avg of last 1-3 completed session scores
+  // Per-feature scores for the frontend's 5-feature readiness engine. null =
+  // no data yet, which the frontend treats as 0 contribution, not a failing grade.
+  features: {
+    resume: number | null;
+    mock_interview: number | null;
+    coding_test: number | null;
+    roadmap: number | null;
+    target_companies: number | null;
+  };
   // Stats row.
   resumesParsed: number;
   interviewsCompleted: number;
@@ -69,7 +78,7 @@ function toAnalyzedResume(row: { analysisResult: unknown; updatedAt: Date }): An
 // carrying forward "latest resume" + "interview window so far" reproduces what
 // the score was at every moment.
 export async function getReadinessDataset(userId: string): Promise<ReadinessDataset> {
-  const [resumeRows, sessionRows] = await Promise.all([
+  const [resumeRows, sessionRows, practiceAttemptRows, roadmapRow, targetRows] = await Promise.all([
     prisma.resume.findMany({
       where: { userId },
       select: {
@@ -83,6 +92,21 @@ export async function getReadinessDataset(userId: string): Promise<ReadinessData
       where: { userId, status: "completed" },
       select: { finalScore: true, summary: true, updatedAt: true },
       orderBy: { updatedAt: "asc" },
+    }),
+    // Coding test score: % of passed PracticeAttempts (null if never attempted).
+    prisma.practiceAttempt.findMany({
+      where: { userId },
+      select: { passed: true },
+    }),
+    // Roadmap score: % of planned milestones the student has checked off (null if no plan).
+    prisma.roadmap.findFirst({
+      where: { userId },
+      select: { content: true, completedIdx: true },
+    }),
+    // Target-company score: graded by count of active targets (0→null, 1→50, 2+→100).
+    prisma.targetCompany.findMany({
+      where: { userId, active: true },
+      select: { id: true },
     }),
   ]);
 
@@ -112,6 +136,12 @@ export async function getReadinessDataset(userId: string): Promise<ReadinessData
   const resumeScore = latestAnalysis?.resumeScore ?? null;
   const interviewScore = averageScore(interviews.map((i) => i.score));
 
+  // ── Per-feature scores (frontend 5-feature engine consumes these) ──
+  const codingTestScore = computeCodingTestScore(practiceAttemptRows);
+  const roadmapScore = computeRoadmapScore(roadmapRow);
+  const activeTargets = targetRows.length;
+  const targetCompaniesScore = activeTargets === 0 ? null : activeTargets >= 2 ? 100 : 50;
+
   // Events → chronological snapshots.
   const events: ReadinessEvent[] = [
     ...analyses.map((a) => ({ kind: "resume" as const, at: a.at, resumeScore: a.resumeScore })),
@@ -135,6 +165,13 @@ export async function getReadinessDataset(userId: string): Promise<ReadinessData
     latestInterviewScore: interviews.length > 0 ? Math.round(interviews[interviews.length - 1].score / INTERVIEW_SCORE_SCALE) : null,
     actions: buildTopActions(latestAnalysis, interviews),
     history,
+    features: {
+      resume: resumeScore,
+      mock_interview: interviewScore,
+      coding_test: codingTestScore,
+      roadmap: roadmapScore,
+      target_companies: targetCompaniesScore,
+    },
   };
 }
 
@@ -186,4 +223,29 @@ function buildTopActions(
   }
 
   return actions;
+}
+
+// WHY coding-test is a pass-rate, not an absolute: PracticeAttempt rows only
+// exist once the student runs a test, so "no rows" means "not measured" → null
+// (0 contribution), while the % of passed attempts is the real signal from the
+// ones that did run.
+function computeCodingTestScore(attempts: { passed: boolean }[]): number | null {
+  if (attempts.length === 0) return null;
+  const passed = attempts.filter((a) => a.passed).length;
+  return Math.round((passed / attempts.length) * 100);
+}
+
+// WHY roadmap uses milestone-completion %: the plan JSON is regenerated and
+// replaced wholesale (one row per user), so the only durable progress signal is
+// completedIdx over the current plan's milestones. Missing plan → null.
+function computeRoadmapScore(
+  row: { content: unknown; completedIdx: unknown } | null,
+): number | null {
+  if (!row) return null;
+  const content = (row.content ?? {}) as { milestones?: unknown };
+  const completedIdx = Array.isArray(row.completedIdx) ? (row.completedIdx as number[]) : null;
+  const milestones = Array.isArray(content?.milestones) ? (content.milestones as unknown[]) : [];
+  if (milestones.length === 0) return null;
+  const done = completedIdx ? completedIdx.length : 0;
+  return Math.round((done / milestones.length) * 100);
 }

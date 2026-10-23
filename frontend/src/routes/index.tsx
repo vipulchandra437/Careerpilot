@@ -1,11 +1,33 @@
 import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Mic, Code2, FileSearch, Loader2 } from "lucide-react";
+import { Mic, Code2, FileSearch, Map, Target, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoreRing } from "@/components/score-ring";
 import { useNextSession } from "@/lib/session-context";
 import { readinessApi, resumeApi, roadmapApi, interviewApi, targetApi } from "@/lib/api";
+import {
+  buildFeatureScores,
+  computeReadiness,
+  lowestContributor,
+  FEATURE_ACTIONS,
+  FEATURE_LABELS,
+  FEATURE_ROUTES,
+  STATUS_LABELS,
+  STATUS_COLORS,
+  type FeatureContribution,
+  type FeatureKey,
+} from "@/lib/readiness";
 import { useEffect, useState } from "react";
+
+// WHY local (not in readiness.ts): readiness.ts is a pure module imported by
+// the node test runner, so it must not import lucide-react. Icons are a UI concern.
+const FEATURE_ICONS: Record<FeatureKey, ReactNode> = {
+  resume: <FileSearch className="size-5" />,
+  mock_interview: <Mic className="size-5" />,
+  coding_test: <Code2 className="size-5" />,
+  roadmap: <Map className="size-5" />,
+  target_companies: <Target className="size-5" />,
+};
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
@@ -79,46 +101,31 @@ function Dashboard() {
     );
   }
 
+  // Today's headline = the frontend's 5-feature engine applied to the raw
+  // per-feature scores the backend ships as `features`. Null → 0 contribution,
+  // never a failing grade, so an incomplete profile reads as "building up",
+  // not "bad".
+  const featureScores = buildFeatureScores(readiness?.features ?? null);
+  const computed = computeReadiness(featureScores);
+  const breakdownByKey = Object.fromEntries(
+    computed.breakdown.map((b) => [b.key, b]),
+  ) as Record<FeatureKey, FeatureContribution>;
+
   const scores = {
-    overall: readiness?.readiness ?? 0,
-    resume: readiness?.resumeScore,
-    interview: readiness?.interviewScore,
+    overall: computed.overall,
+    resume: breakdownByKey.resume?.score ?? 0,
+    interview: breakdownByKey.mock_interview?.score ?? 0,
   };
 
-  const readyFor = {
-    resume: scores.resume !== null && scores.resume !== undefined,
-    interview: scores.interview !== null && scores.interview !== undefined,
+  // Today's Focus = the single feature dragging the headline down the most.
+  const focus = lowestContributor(computed.breakdown);
+  const focusItem = {
+    icon: FEATURE_ICONS[focus.key],
+    title: FEATURE_LABELS[focus.key],
+    body: `${FEATURE_LABELS[focus.key]} is your lowest contributor (${focus.contribution} pts toward your overall score). Raising this area moves the needle fastest.`,
+    to: FEATURE_ROUTES[focus.key],
+    action: FEATURE_ACTIONS[focus.key],
   };
-
-  const focusItems: { icon: ReactNode; title: string; body: string; to: string; action: string }[] = [];
-  if (readyFor.interview) {
-    focusItems.push({
-      icon: <Mic className="size-5" />,
-      title: "Practice one interview",
-      body: `Your interview readiness is ${scores.interview}/100. A focused mock can move it fastest.`,
-      to: "/interview",
-      action: "Start Interview",
-    });
-  }
-  if (readyFor.resume) {
-    focusItems.push({
-      icon: <FileSearch className="size-5" />,
-      title: resumeCount === 0 ? "Upload your resume" : "Review your resume",
-      body:
-        resumeCount === 0
-          ? "No resume uploaded yet — upload one to get a real readiness score."
-          : `Resume readiness is ${scores.resume}/100. Analyze it for next steps.`,
-      to: "/resume",
-      action: resumeCount === 0 ? "Upload Resume" : "Analyze Resume",
-    });
-  }
-  focusItems.push({
-    icon: <Code2 className="size-5" />,
-    title: "Take a coding challenge",
-    body: "A quick arrays or hashmaps problem keeps your DSA sharp.",
-    to: "/coding",
-    action: "Take Test",
-  });
 
   return (
     <div className="space-y-8">
@@ -155,8 +162,8 @@ function Dashboard() {
           ) : null}
         </div>
         <div className="mt-8 flex flex-wrap gap-6">
-          <ScoreRing value={readyFor.resume ? (scores.resume ?? 0) : 0} label="Resume" />
-          <ScoreRing value={readyFor.interview ? (scores.interview ?? 0) : 0} label="Interview" />
+          <ScoreRing value={scores.resume ?? 0} label="Resume" />
+          <ScoreRing value={scores.interview ?? 0} label="Interview" />
           <div className="flex items-center gap-2 text-xs text-muted">
             {resumeCount > 0 ? `${resumeCount} resume${resumeCount === 1 ? "" : "s"} on file` : "No resume yet"} ·
             {interviewCount > 0 ? ` ${interviewCount} interview${interviewCount === 1 ? "" : "s"}` : " no interviews"} ·
@@ -165,12 +172,37 @@ function Dashboard() {
         </div>
       </section>
 
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-soft md:p-8">
+        <h2 className="mb-4 text-lg font-medium">Readiness Breakdown</h2>
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5">
+          {computed.breakdown.map((b) => (
+            <div
+              key={b.key}
+              className="flex items-center justify-between rounded-md bg-elevated px-3 py-3"
+            >
+              <div>
+                <p className="text-sm font-medium">{FEATURE_LABELS[b.key]}</p>
+                <p className="text-xs text-muted">
+                  weight {b.weight}% · {b.contribution} pts
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium tabular-nums">
+                  {b.score ?? 0}/100
+                </p>
+                <span className={STATUS_COLORS[b.status]}>
+                  • {STATUS_LABELS[b.status]}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section>
         <h2 className="mb-4 text-lg font-medium">Today’s Focus</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {focusItems.map((item) => (
-            <FocusCard key={item.to + item.title} {...item} />
-          ))}
+        <div className="grid gap-4">
+          <FocusCard key={focusItem.to} {...focusItem} />
         </div>
       </section>
 

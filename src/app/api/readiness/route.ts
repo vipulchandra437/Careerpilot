@@ -36,6 +36,8 @@ export async function GET() {
     level: result.level,
     label: result.label,
     breakdown: result.breakdown,
+    // Raw 5-feature scores so the SPA can compute the headline from all 5 areas.
+    features: dataset.features,
     resumeScore: dataset.resumeScore,
     interviewScore: dataset.interviewScore,
     resumesParsed: dataset.resumesParsed,

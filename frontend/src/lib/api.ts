@@ -8,6 +8,8 @@
  * CORS just work.
  */
 
+import type { FeatureScores } from "./readiness";
+
 export class ApiError extends Error {
   code: string;
   status: number;
@@ -144,6 +146,9 @@ export type Readiness = {
   level: "needs-work" | "getting-there" | "interview-ready";
   label: string | null;
   breakdown: ReadinessBreakdown;
+  // Raw 0–100 per-feature scores for the frontend's 5-feature readiness engine.
+  // null = the feature has produced no score yet (0 contribution, not a 0 grade).
+  features: FeatureScores | null;
   resumeScore: number | null;
   interviewScore: number | null;
   resumesParsed: number;
