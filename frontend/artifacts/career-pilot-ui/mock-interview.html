@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Career Pilot — Mock Interview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #FBF9F6;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #FDFCFA;
+      --bg-sidebar: #F7F4EF;
+      --primary: #1F4D3A;
+      --primary-hover: #163A2C;
+      --primary-light: #E8F0EC;
+      --sage: #A3B18A;
+      --sage-light: #E9EDE4;
+      --soft-beige: #F0EBE3;
+      --text-primary: #1A1814;
+      --text-secondary: #5C564E;
+      --text-muted: #8C857B;
+      --border: #E8E2D9;
+      --border-light: #F0EBE3;
+      --radius-sm: 8px;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.04);
+      --shadow: 0 2px 8px rgba(26, 24, 20, 0.06);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 24px 16px; position: fixed; top: 0; left: 0; bottom: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; padding: 0 12px 32px; }
+    .logo-mark {
+      width: 36px; height: 36px; background: var(--primary); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;
+    }
+    .logo-text { font-size: 18px; font-weight: 600; }
+    .nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px;
+      color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500;
+    }
+    .nav-item:hover { background: var(--soft-beige); color: var(--text-primary); }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); }
+    .nav-item svg { width: 20px; height: 20px; }
+    .sidebar-footer { padding-top: 16px; border-top: 1px solid var(--border); margin-top: auto; }
+    .user-chip { display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white;
+      display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;
+    }
+    .user-name { font-size: 14px; font-weight: 550; }
+    .user-role { font-size: 12px; color: var(--text-muted); }
+    .main { flex: 1; margin-left: 260px; padding: 32px 40px; max-width: 900px; }
+
+    .page-header { margin-bottom: 32px; }
+    .page-title { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 4px; }
+    .page-sub { font-size: 15px; color: var(--text-secondary); }
+
+    /* Setup Card */
+    .setup-card {
+      background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 32px; box-shadow: var(--shadow-sm);
+    }
+    .setup-title { font-size: 18px; font-weight: 600; margin-bottom: 24px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    .form-select, .form-input {
+      padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 14px; font-family: inherit; background: var(--bg-elevated); color: var(--text-primary);
+      appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238C857B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .form-select:focus, .form-input:focus {
+      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .meta-row {
+      display: flex; gap: 24px; padding: 16px 0; border-top: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--border-light); margin-bottom: 28px;
+    }
+    .meta-item { font-size: 13px; color: var(--text-secondary); }
+    .meta-item strong { color: var(--text-primary); font-weight: 550; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 24px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 550;
+      border: none; cursor: pointer; font-family: inherit; text-decoration: none; transition: all 0.15s;
+    }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    /* Interview in progress (hidden by default, toggle for demo) */
+    .interview-view { display: none; }
+    .interview-view.active { display: block; }
+    .setup-view.hidden { display: none; }
+
+    .progress-bar-wrap {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+    }
+    .progress-text { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
+    .progress-track {
+      flex: 1; height: 6px; background: var(--border-light); border-radius: 3px; margin: 0 16px; overflow: hidden;
+    }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 3px; width: 40%; }
+
+    .question-card {
+      background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 28px; margin-bottom: 20px; box-shadow: var(--shadow-sm);
+    }
+    .question-label { font-size: 12px; font-weight: 550; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+    .question-text { font-size: 18px; font-weight: 500; line-height: 1.5; color: var(--text-primary); }
+
+    .response-area {
+      background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; margin-bottom: 20px;
+    }
+    .response-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; }
+    .response-textarea {
+      width: 100%; min-height: 140px; padding: 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; resize: vertical;
+      background: var(--bg-elevated); color: var(--text-primary);
+    }
+    .response-textarea:focus {
+      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .interview-actions { display: flex; gap: 12px; }
+    .btn-secondary {
+      background: transparent; color: var(--text-secondary); border: 1px solid var(--border); padding: 10px 18px;
+    }
+    .btn-secondary:hover { background: var(--soft-beige); }
+
+    @media (max-width: 900px) {
+      .sidebar { width: 72px; padding: 16px 8px; }
+      .logo-text, .nav-item span, .user-info { display: none; }
+      .logo { justify-content: center; padding: 0 0 24px; }
+      .nav-item { justify-content: center; padding: 12px; }
+      .main { margin-left: 72px; padding: 24px; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark">CP</div>
+        <span class="logo-text">Career Pilot</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="mock-interview.html" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+          <span>Mock Interview</span>
+        </a>
+        <a href="coding-test.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span>Coding Test</span>
+        </a>
+        <a href="resume-analyzer.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Resume Analyzer</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span>Resume Builder</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Career Roadmap</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>AI Mentor</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Target Companies</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">V</div>
+          <div class="user-info">
+            <div class="user-name">Vipul</div>
+            <div class="user-role">CSE Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- SETUP VIEW -->
+      <div class="setup-view" id="setupView">
+        <header class="page-header">
+          <h1 class="page-title">Mock Interview</h1>
+          <p class="page-sub">Practice in a focused environment that feels like the real thing.</p>
+        </header>
+
+        <div class="setup-card">
+          <h2 class="setup-title">Interview Setup</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Target Role</label>
+              <select class="form-select">
+                <option>Software Engineer Intern</option>
+                <option>Full Stack Developer</option>
+                <option>Backend Engineer</option>
+                <option>Frontend Engineer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Interview Type</label>
+              <select class="form-select">
+                <option>Technical</option>
+                <option>HR / Behavioral</option>
+                <option>System Design</option>
+                <option>Mixed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Difficulty</label>
+              <select class="form-select">
+                <option>Intermediate</option>
+                <option>Beginner</option>
+                <option>Advanced</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Number of Questions</label>
+              <select class="form-select">
+                <option>8 questions</option>
+                <option>5 questions</option>
+                <option>10 questions</option>
+              </select>
+            </div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item">Estimated duration: <strong>~25 minutes</strong></div>
+            <div class="meta-item">Stage: <strong>Technical</strong></div>
+          </div>
+          <button class="btn btn-primary" onclick="startInterview()">Start Interview</button>
+        </div>
+      </div>
+
+      <!-- INTERVIEW VIEW -->
+      <div class="interview-view" id="interviewView">
+        <header class="page-header">
+          <h1 class="page-title">Technical Interview</h1>
+          <p class="page-sub">Stay focused. Answer clearly and think out loud.</p>
+        </header>
+
+        <div class="progress-bar-wrap">
+          <span class="progress-text">Question 4 of 10</span>
+          <div class="progress-track"><div class="progress-fill"></div></div>
+          <span class="progress-text">12:40 left</span>
+        </div>
+
+        <div class="question-card">
+          <div class="question-label">Technical · Data Structures</div>
+          <p class="question-text">
+            How would you implement an LRU Cache? Walk me through the data structures you would use and the time complexity of get and put operations.
+          </p>
+        </div>
+
+        <div class="response-area">
+          <div class="response-label">Your answer</div>
+          <textarea class="response-textarea" placeholder="Type your response here. You can also speak if recording is enabled..."></textarea>
+        </div>
+
+        <div class="interview-actions">
+          <button class="btn btn-secondary">Skip</button>
+          <button class="btn btn-primary" style="flex:1">Submit Answer →</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function startInterview() {
+      document.getElementById('setupView').classList.add('hidden');
+      document.getElementById('interviewView').classList.add('active');
+    }
+  </script>
+</body>
+</html>

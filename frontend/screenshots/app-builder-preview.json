@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Career Pilot",
+      "hasCanvas": false,
+      "bodyTextLen": 1152,
+      "bodyTextHash": "6f8a3fd4079095e205b718e94732801a94b867a7cb97c5c9a63cfc6b332e2082",
+      "bodyTextPrefix": "CP Career Pilot COMPANION Dashboard Mock Interview Coding Test R",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Career Pilot",
+      "hasCanvas": false,
+      "bodyTextLen": 1024,
+      "bodyTextHash": "9c2a7e300be9fb96132127f5f0668bc659bdebeeb5c88444fcfabe39a8c2f338",
+      "bodyTextPrefix": "Good afternoon, Vipul Let’s continue building your career. Overa",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Career Pilot — Coding Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #FBF9F6;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #FDFCFA;
+      --bg-sidebar: #F7F4EF;
+      --bg-editor: #1A1814;
+      --primary: #1F4D3A;
+      --primary-hover: #163A2C;
+      --primary-light: #E8F0EC;
+      --sage: #A3B18A;
+      --soft-beige: #F0EBE3;
+      --text-primary: #1A1814;
+      --text-secondary: #5C564E;
+      --text-muted: #8C857B;
+      --border: #E8E2D9;
+      --border-light: #F0EBE3;
+      --radius-sm: 8px;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.04);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app { display: flex; height: 100vh; }
+    .sidebar {
+      width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 24px 16px; flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; padding: 0 12px 32px; }
+    .logo-mark {
+      width: 36px; height: 36px; background: var(--primary); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;
+    }
+    .logo-text { font-size: 18px; font-weight: 600; }
+    .nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px;
+      color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500;
+    }
+    .nav-item:hover { background: var(--soft-beige); color: var(--text-primary); }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); }
+    .nav-item svg { width: 20px; height: 20px; }
+    .sidebar-footer { padding-top: 16px; border-top: 1px solid var(--border); margin-top: auto; }
+    .user-chip { display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white;
+      display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;
+    }
+    .user-name { font-size: 14px; font-weight: 550; }
+    .user-role { font-size: 12px; color: var(--text-muted); }
+
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    /* Top bar */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .problem-title { font-size: 16px; font-weight: 600; }
+    .badge {
+      font-size: 12px; font-weight: 550; padding: 3px 10px; border-radius: 20px;
+      background: var(--primary-light); color: var(--primary);
+    }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .timer { font-size: 14px; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .progress-text { font-size: 13px; color: var(--text-muted); }
+
+    /* Split */
+    .split { display: flex; flex: 1; min-height: 0; }
+    .problem-panel {
+      width: 42%; border-right: 1px solid var(--border); background: var(--bg-surface);
+      overflow-y: auto; padding: 24px;
+    }
+    .editor-panel {
+      flex: 1; display: flex; flex-direction: column; background: var(--bg-editor); min-width: 0;
+    }
+
+    .problem-meta { display: flex; gap: 12px; margin-bottom: 16px; }
+    .difficulty {
+      font-size: 12px; font-weight: 550; padding: 2px 8px; border-radius: 4px;
+      background: #FEF3C7; color: #92400E;
+    }
+    .problem-h1 { font-size: 20px; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.02em; }
+    .problem-section { margin-bottom: 20px; }
+    .problem-section h3 {
+      font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;
+      letter-spacing: 0.03em; margin-bottom: 8px;
+    }
+    .problem-section p, .problem-section li {
+      font-size: 14px; color: var(--text-secondary); line-height: 1.55;
+    }
+    .problem-section ul { padding-left: 18px; }
+    .example-box {
+      background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 14px; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    }
+    .example-box .label { color: var(--text-muted); font-size: 11px; margin-bottom: 4px; font-family: Inter, sans-serif; }
+
+    /* Editor */
+    .editor-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px; background: #252220; border-bottom: 1px solid #333;
+    }
+    .lang-select {
+      background: #333; color: #E8E2D9; border: none; padding: 6px 12px; border-radius: 6px;
+      font-size: 13px; font-family: inherit;
+    }
+    .editor-actions { display: flex; gap: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px;
+      font-size: 13px; font-weight: 550; border: none; cursor: pointer; font-family: inherit;
+    }
+    .btn-run { background: #333; color: #E8E2D9; }
+    .btn-run:hover { background: #444; }
+    .btn-submit { background: var(--primary); color: white; }
+    .btn-submit:hover { background: var(--primary-hover); }
+
+    .code-area {
+      flex: 1; padding: 16px 20px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px;
+      color: #E8E2D9; background: var(--bg-editor); border: none; outline: none; resize: none;
+      line-height: 1.6; tab-size: 2;
+    }
+    .code-area::placeholder { color: #6B6560; }
+
+    .console {
+      height: 140px; background: #151310; border-top: 1px solid #333; padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #A3B18A; overflow-y: auto;
+    }
+    .console-line { margin-bottom: 4px; }
+    .console-pass { color: #6BBE7A; }
+    .console-fail { color: #E07A6E; }
+
+    @media (max-width: 1000px) {
+      .sidebar { width: 72px; padding: 16px 8px; }
+      .logo-text, .nav-item span, .user-info { display: none; }
+      .logo { justify-content: center; padding: 0 0 24px; }
+      .nav-item { justify-content: center; padding: 12px; }
+      .problem-panel { width: 38%; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .split { flex-direction: column; }
+      .problem-panel { width: 100%; height: 40%; border-right: none; border-bottom: 1px solid var(--border); }
+      .editor-panel { height: 60%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark">CP</div>
+        <span class="logo-text">Career Pilot</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="mock-interview.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+          <span>Mock Interview</span>
+        </a>
+        <a href="coding-test.html" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span>Coding Test</span>
+        </a>
+        <a href="resume-analyzer.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Resume Analyzer</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span>Resume Builder</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Career Roadmap</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>AI Mentor</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Target Companies</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">V</div>
+          <div class="user-info">
+            <div class="user-name">Vipul</div>
+            <div class="user-role">CSE Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="problem-title">Two Sum</span>
+          <span class="badge">Arrays & Hashing</span>
+        </div>
+        <div class="topbar-right">
+          <span class="progress-text">Question 2 of 5</span>
+          <span class="timer">⏱ 18:42</span>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="problem-panel">
+          <div class="problem-meta">
+            <span class="difficulty">Medium</span>
+          </div>
+          <h1 class="problem-h1">Two Sum</h1>
+
+          <div class="problem-section">
+            <h3>Description</h3>
+            <p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return indices of the two numbers such that they add up to <code>target</code>.</p>
+            <p style="margin-top:8px">You may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order.</p>
+          </div>
+
+          <div class="problem-section">
+            <h3>Example 1</h3>
+            <div class="example-box">
+              <div class="label">Input</div>
+              nums = [2,7,11,15], target = 9<br>
+              <div class="label" style="margin-top:8px">Output</div>
+              [0,1]
+            </div>
+          </div>
+
+          <div class="problem-section">
+            <h3>Example 2</h3>
+            <div class="example-box">
+              <div class="label">Input</div>
+              nums = [3,2,4], target = 6<br>
+              <div class="label" style="margin-top:8px">Output</div>
+              [1,2]
+            </div>
+          </div>
+
+          <div class="problem-section">
+            <h3>Constraints</h3>
+            <ul>
+              <li>2 ≤ nums.length ≤ 10⁴</li>
+              <li>-10⁹ ≤ nums[i] ≤ 10⁹</li>
+              <li>-10⁹ ≤ target ≤ 10⁹</li>
+              <li>Only one valid answer exists</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="editor-panel">
+          <div class="editor-toolbar">
+            <select class="lang-select">
+              <option>JavaScript</option>
+              <option>Python</option>
+              <option>Java</option>
+              <option>C++</option>
+            </select>
+            <div class="editor-actions">
+              <button class="btn btn-run">Run</button>
+              <button class="btn btn-submit">Submit</button>
+            </div>
+          </div>
+          <textarea class="code-area" spellcheck="false">/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+    const map = new Map();
+    
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        if (map.has(complement)) {
+            return [map.get(complement), i];
+        }
+        map.set(nums[i], i);
+    }
+    
+    return [];
+};</textarea>
+          <div class="console">
+            <div class="console-line console-pass">✓ Test case 1 passed</div>
+            <div class="console-line console-pass">✓ Test case 2 passed</div>
+            <div class="console-line">Runtime: 68 ms · Memory: 42.1 MB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

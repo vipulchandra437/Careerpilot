@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Career Pilot — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Backgrounds */
+      --bg-base: #FBF9F6;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #FDFCFA;
+      --bg-sidebar: #F7F4EF;
+      
+      /* Primary - Deep Forest Green */
+      --primary: #1F4D3A;
+      --primary-hover: #163A2C;
+      --primary-light: #E8F0EC;
+      --primary-muted: #2D6A4F;
+      
+      /* Supporting */
+      --sage: #A3B18A;
+      --sage-light: #E9EDE4;
+      --warm-gray: #8C857B;
+      --soft-beige: #F0EBE3;
+      --neutral-gray: #6B6560;
+      
+      /* Text */
+      --text-primary: #1A1814;
+      --text-secondary: #5C564E;
+      --text-muted: #8C857B;
+      --text-inverse: #FFFFFF;
+      
+      /* Borders & States */
+      --border: #E8E2D9;
+      --border-light: #F0EBE3;
+      --success: #2D6A4F;
+      --warning: #C9A227;
+      --error: #B54A3F;
+      
+      /* Radius & Spacing */
+      --radius-sm: 8px;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.04);
+      --shadow: 0 2px 8px rgba(26, 24, 20, 0.06);
+      --shadow-md: 0 4px 16px rgba(26, 24, 20, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========== APP SHELL ========== */
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-6) var(--space-4);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: 0 var(--space-3) var(--space-8);
+      margin-bottom: var(--space-2);
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item:hover {
+      background: var(--soft-beige);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
+    .nav-item.active svg {
+      opacity: 1;
+    }
+
+    .sidebar-footer {
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .user-chip:hover {
+      background: var(--soft-beige);
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 550;
+      color: var(--text-primary);
+    }
+
+    .user-role {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      margin-left: 260px;
+      padding: var(--space-8) var(--space-10);
+      max-width: 1200px;
+    }
+
+    /* ========== HEADER ========== */
+    .page-header {
+      margin-bottom: var(--space-8);
+    }
+
+    .greeting {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .greeting-sub {
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+
+    /* ========== SCORE CARD ========== */
+    .score-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6) var(--space-8);
+      margin-bottom: var(--space-6);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .score-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-6);
+    }
+
+    .score-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .score-value {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .score-value span {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .score-insight {
+      font-size: 14px;
+      color: var(--text-secondary);
+      max-width: 280px;
+      text-align: right;
+      line-height: 1.45;
+    }
+
+    .score-categories {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--space-4);
+    }
+
+    .category {
+      text-align: center;
+    }
+
+    .category-ring {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 8px;
+      position: relative;
+    }
+
+    .category-ring svg {
+      width: 64px;
+      height: 64px;
+      transform: rotate(-90deg);
+    }
+
+    .category-ring circle {
+      fill: none;
+      stroke-width: 5;
+    }
+
+    .category-ring .bg {
+      stroke: var(--border-light);
+    }
+
+    .category-ring .progress {
+      stroke: var(--primary);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s ease;
+    }
+
+    .category-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .category-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ========== TODAY'S FOCUS ========== */
+    .section {
+      margin-bottom: var(--space-6);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .section-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .section-link:hover {
+      text-decoration: underline;
+    }
+
+    .focus-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+    }
+
+    .focus-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-5);
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .focus-card:hover {
+      border-color: var(--sage);
+      box-shadow: var(--shadow);
+    }
+
+    .focus-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .focus-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .focus-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .focus-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+      flex: 1;
+      line-height: 1.45;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 550;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--primary);
+      padding: 8px 0;
+    }
+
+    .btn-ghost:hover {
+      text-decoration: underline;
+    }
+
+    /* ========== CONTINUE + RECENT ========== */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-6);
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-5);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-4);
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-light);
+      transition: background 0.15s;
+    }
+
+    .activity-item:hover {
+      background: var(--soft-beige);
+    }
+
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--sage-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .activity-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .activity-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .activity-action {
+      font-size: 12px;
+      font-weight: 550;
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .recent-item:last-child {
+      border-bottom: none;
+    }
+
+    .recent-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      flex-shrink: 0;
+    }
+
+    .recent-text {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .recent-time {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1100px) {
+      .score-categories {
+        grid-template-columns: repeat(5, 1fr);
+      }
+      .focus-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 72px;
+        padding: var(--space-4) var(--space-2);
+      }
+      .logo-text, .nav-item span, .user-info {
+        display: none;
+      }
+      .logo {
+        justify-content: center;
+        padding: 0 0 var(--space-6);
+      }
+      .nav-item {
+        justify-content: center;
+        padding: 12px;
+      }
+      .main {
+        margin-left: 72px;
+        padding: var(--space-6);
+      }
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .sidebar {
+        display: none;
+      }
+      .main {
+        margin-left: 0;
+        padding: var(--space-4);
+      }
+      .score-categories {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-3);
+      }
+      .focus-grid {
+        grid-template-columns: 1fr;
+      }
+      .greeting {
+        font-size: 22px;
+      }
+      .score-value {
+        font-size: 36px;
+      }
+      .score-header {
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+      .score-insight {
+        text-align: left;
+      }
+    }
+
+    /* Mobile bottom nav (shown only on small screens) */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      padding: 8px 12px;
+      z-index: 100;
+      justify-content: space-around;
+    }
+
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .mobile-nav-item.active {
+      color: var(--primary);
+    }
+
+    .mobile-nav-item svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    @media (max-width: 640px) {
+      .mobile-nav {
+        display: flex;
+      }
+      .main {
+        padding-bottom: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark">CP</div>
+        <span class="logo-text">Career Pilot</span>
+      </div>
+
+      <nav class="nav">
+        <a href="#" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
+          </svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="mock-interview.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          <span>Mock Interview</span>
+        </a>
+        <a href="coding-test.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          <span>Coding Test</span>
+        </a>
+        <a href="resume-analyzer.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span>Resume Analyzer</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span>Resume Builder</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>Career Roadmap</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>AI Mentor</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Target Companies</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">V</div>
+          <div class="user-info">
+            <div class="user-name">Vipul</div>
+            <div class="user-role">CSE Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="page-header">
+        <h1 class="greeting">Good evening, Vipul</h1>
+        <p class="greeting-sub">Let's continue building your career.</p>
+      </header>
+
+      <!-- Overall Score -->
+      <section class="score-section">
+        <div class="score-header">
+          <div>
+            <div class="score-title">Overall Career Readiness</div>
+            <div class="score-value">76 <span>/ 100</span></div>
+          </div>
+          <p class="score-insight">
+            Your strongest area is Resume. Focus on Coding this week to raise your overall score.
+          </p>
+        </div>
+
+        <div class="score-categories">
+          <div class="category">
+            <div class="category-ring">
+              <svg viewBox="0 0 64 64">
+                <circle class="bg" cx="32" cy="32" r="28"/>
+                <circle class="progress" cx="32" cy="32" r="28"
+                  stroke-dasharray="176" stroke-dashoffset="31.7"/>
+              </svg>
+              <div class="category-value">82</div>
+            </div>
+            <div class="category-label">Resume</div>
+          </div>
+          <div class="category">
+            <div class="category-ring">
+              <svg viewBox="0 0 64 64">
+                <circle class="bg" cx="32" cy="32" r="28"/>
+                <circle class="progress" cx="32" cy="32" r="28"
+                  stroke-dasharray="176" stroke-dashoffset="51"/>
+              </svg>
+              <div class="category-value">71</div>
+            </div>
+            <div class="category-label">Coding</div>
+          </div>
+          <div class="category">
+            <div class="category-ring">
+              <svg viewBox="0 0 64 64">
+                <circle class="bg" cx="32" cy="32" r="28"/>
+                <circle class="progress" cx="32" cy="32" r="28"
+                  stroke-dasharray="176" stroke-dashoffset="45.8"/>
+              </svg>
+              <div class="category-value">74</div>
+            </div>
+            <div class="category-label">Interview</div>
+          </div>
+          <div class="category">
+            <div class="category-ring">
+              <svg viewBox="0 0 64 64">
+                <circle class="bg" cx="32" cy="32" r="28"/>
+                <circle class="progress" cx="32" cy="32" r="28"
+                  stroke-dasharray="176" stroke-dashoffset="38.7"/>
+              </svg>
+              <div class="category-value">78</div>
+            </div>
+            <div class="category-label">Profile</div>
+          </div>
+          <div class="category">
+            <div class="category-ring">
+              <svg viewBox="0 0 64 64">
+                <circle class="bg" cx="32" cy="32" r="28"/>
+                <circle class="progress" cx="32" cy="32" r="28"
+                  stroke-dasharray="176" stroke-dashoffset="42.2"/>
+              </svg>
+              <div class="category-value">76</div>
+            </div>
+            <div class="category-label">Skills</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Today's Focus -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Today's Focus</h2>
+        </div>
+        <div class="focus-grid">
+          <div class="focus-card">
+            <div class="focus-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              </svg>
+            </div>
+            <div class="focus-title">Practice one technical interview</div>
+            <p class="focus-desc">Your interview score is 74. A focused session on system design will help the most.</p>
+            <a href="mock-interview.html" class="btn btn-primary">Start Interview →</a>
+          </div>
+          <div class="focus-card">
+            <div class="focus-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </div>
+            <div class="focus-title">Complete today's coding challenge</div>
+            <p class="focus-desc">Arrays & Hashing · Medium · 25 min estimated. Keep your streak going.</p>
+            <a href="coding-test.html" class="btn btn-primary">Take Test →</a>
+          </div>
+          <div class="focus-card">
+            <div class="focus-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="focus-title">Improve resume projects section</div>
+            <p class="focus-desc">Your projects lack quantified impact. Adding metrics can raise your resume score.</p>
+            <a href="resume-analyzer.html" class="btn btn-primary">Improve Resume →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Continue + Recent -->
+      <div class="two-col">
+        <section class="card">
+          <h3 class="card-title">Continue Preparation</h3>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-name">Resume analysis</div>
+                <div class="activity-meta">Last opened 2 days ago</div>
+              </div>
+              <a href="resume-analyzer.html" class="activity-action">Continue →</a>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-name">Technical mock interview</div>
+                <div class="activity-meta">In progress · 3 of 8 questions</div>
+              </div>
+              <a href="mock-interview.html" class="activity-action">Continue →</a>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-name">Roadmap milestone</div>
+                <div class="activity-meta">System Design basics · 60% done</div>
+              </div>
+              <a href="#" class="activity-action">Continue →</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3 class="card-title">Recent Activity</h3>
+          <div class="activity-list">
+            <div class="recent-item">
+              <div class="recent-dot"></div>
+              <div class="recent-text">Completed Arrays coding test · Score 82</div>
+              <div class="recent-time">Today</div>
+            </div>
+            <div class="recent-item">
+              <div class="recent-dot"></div>
+              <div class="recent-text">Resume analyzed · Score updated to 82</div>
+              <div class="recent-time">Yesterday</div>
+            </div>
+            <div class="recent-item">
+              <div class="recent-dot"></div>
+              <div class="recent-text">Finished HR mock interview · Score 78</div>
+              <div class="recent-time">2 days ago</div>
+            </div>
+            <div class="recent-item">
+              <div class="recent-dot"></div>
+              <div class="recent-text">Updated project descriptions</div>
+              <div class="recent-time">3 days ago</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <nav class="mobile-nav">
+    <a href="#" class="mobile-nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Home
+    </a>
+    <a href="mock-interview.html" class="mobile-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      Interview
+    </a>
+    <a href="coding-test.html" class="mobile-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Coding
+    </a>
+    <a href="resume-analyzer.html" class="mobile-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Resume
+    </a>
+    <a href="#" class="mobile-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </a>
+  </nav>
+</body>
+</html>

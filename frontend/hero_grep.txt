@@ -1,0 +1,7 @@
+=== hero-named files (frontend/src) ===
+=== files mentioning 'hero' (frontend/src) ===
+=== files mentioning 'project-description' (frontend/src) ===
+=== root app/ exists? ===
+=== files mentioning 'project-description' (root app/) ===
+=== root app/ files ===
+=== END ===

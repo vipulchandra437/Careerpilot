@@ -1,0 +1,55 @@
+=== ROUTES (src\routes) === 
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\builder.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\coding.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\companies.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\index.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\interview.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\login.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\mentor.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\profile.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\register.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\resume.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\roadmap.tsx
+C:\Users\ranav\Desktop\hireready\frontend\src\routes\__root.tsx
+ 
+=== THREE / R3F === 
+FOUND: root/node_modules/three  else echo NONE: root/node_modules/three 
+ 
+=== ROOT (top level) === 
+.env
+.env.example
+.env.local
+.eslintrc.json
+.gitignore
+.reticle.json
+.scripts.txt
+.tmp.backend.tsbuildinfo
+AGENTS.md
+backend-dev.err.log
+backend-dev.log
+components.json
+files_frontend_src.txt
+files_list.txt
+files_src.txt
+MEMORY.md
+n
+next-env.d.ts
+next.config.mjs
+package-lock.json
+package.json
+postcss.config.mjs
+README.md
+RETICLE.md
+tailwind.config.ts
+tsconfig.json
+tsconfig.tsbuildinfo
+ 
+=== frontend/src (top level) === 
+main.tsx
+router.tsx
+routeTree.gen.ts
+server.ts
+styles.css
+ 
+=== video files in repo (excluding node_modules) === 
+=== END === 
