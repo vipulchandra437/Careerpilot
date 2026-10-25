@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #08090b;
-  --color-surface: #111318;
-  --color-elevated: #191d24;
-  --color-panel: #21262f;
-  --color-editor: #0c0e12;
-  --color-fg: #f0ebe3;
-  --color-muted: #9a9389;
-  --color-faint: #6b6560;
-  --color-primary: #b7c5ce;
-  --color-primary-fg: #0a0c0f;
-  --color-bone: #e8e0d4;
-  --color-stone: #c6bbad;
-  --color-border: color-mix(in oklab, #f0ebe3 11%, transparent);
-  --color-border-strong: color-mix(in oklab, #f0ebe3 20%, transparent);
-  --color-success: #8fa89a;
-  --color-warning: #c4a78a;
+  --color-canvas: #faf7f0;
+  --color-surface: #ffffff;
+  --color-elevated: #f8f5f0;
+  --color-panel: #f0e6da;
+  --color-editor: #f8f5f0;
+  --color-fg: #1d2a44;
+  --color-muted: #7a8a9e;
+  --color-faint: #a39a8f;
+  --color-primary: #d9a441;
+  --color-primary-fg: #ffffff;
+  --color-bone: #e07a2e;
+  --color-stone: #b8a99a;
+  --color-border: color-mix(in oklab, #1d2a44 12%, transparent);
+  --color-border-strong: color-mix(in oklab, #1d2a44 22%, transparent);
+  --color-success: #5cb896;
+  --color-warning: #e07a2e;
   --color-danger: #c47b72;
-  --color-ring: #b7c5ce;
+  --color-ring: #d9a441;
 
   --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
   --font-sans: "Figtree", "Segoe UI", system-ui, sans-serif;
@@ -36,7 +36,7 @@
 
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

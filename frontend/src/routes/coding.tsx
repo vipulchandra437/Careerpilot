@@ -234,7 +234,7 @@ function CodingPage() {
               if (results) setResults(null);
             }}
             spellCheck={false}
-            className="min-h-[280px] flex-1 resize-none bg-transparent p-4 font-mono text-[13px] leading-relaxed text-bone outline-none"
+            className="min-h-[280px] flex-1 resize-none bg-transparent p-4 font-mono text-[13px] leading-relaxed text-fg outline-none"
           />
           <div className="h-28 overflow-auto border-t border-border px-4 py-3 font-mono text-xs">
             {error ? <p className="text-danger">{error}</p> : null}
