@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [signingOut, setSigningOut] = useState(false);
 
   // Auth pages render without the shell (standalone centered card).
-  const onAuthRoute = pathname === "/login" || pathname === "/register";
+  const onAuthRoute = pathname === "/login" || pathname === "/register" || pathname === "/welcome";
   if (onAuthRoute) {
     return <>{children}</>;
   }
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Signed out and covering a protected route → send to /login.
   if (status === "unauthenticated" || !user) {
-    return <Navigate to="/login" />;
+    return <Navigate to={pathname === "/" ? "/welcome" : "/login"} />;
   }
 
   const name = user.name ?? user.email ?? "Student";
