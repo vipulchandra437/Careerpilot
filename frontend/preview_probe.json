@@ -1,0 +1,23 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "length": 567,
+    "head": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\" />\r\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\r\n    <title>CareerPilot - AI Career Preparation Platform</title>\r\n    <meta name=\"description\" content=\"AI-powered career preparation for CS students - resume analysis, mock interviews, coding tests, and career roadmaps.\" />\r\n  </head>\r\n  <body>\r\n    <div id=\"root\"></div>\r\n    <script type=\"module\" src=\"/src/main.tsx\"></script>\r\n  </body>\r\n</html>"
+  },
+  {
+    "path": "/assets/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "length": 567,
+    "head": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\" />\r\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\r\n    <title>CareerPilot - AI Career Preparation Platform</title>\r\n    <meta name=\"description\" content=\"AI-powered career preparation for CS students - resume analysis, mock interviews, coding tests, and career roadmaps.\" />\r\n  </head>\r\n  <body>\r\n    <div id=\"root\"></div>\r\n    <script type=\"module\" src=\"/src/main.tsx\"></script>\r\n  </body>\r\n</html>"
+  },
+  {
+    "path": "/__grok/manifest.webmanifest",
+    "status": 200,
+    "contentType": "application/manifest+json; charset=utf-8",
+    "length": 308,
+    "head": "{\n  \"name\": \"Grok App\",\n  \"short_name\": \"Grok App\",\n  \"id\": \"/\",\n  \"start_url\": \"/\",\n  \"scope\": \"/\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#000000\",\n  \"theme_color\": \"#000000\",\n  \"icons\": [\n    {\n      \"src\": \"/__grok/icon-180.png\",\n      \"sizes\": \"180x180\",\n      \"type\": \"image/png\"\n    }\n  ]\n}"
+  }
+]

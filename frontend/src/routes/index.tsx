@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mic, Code2, FileSearch, Map, Target, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoreRing } from "@/components/score-ring";
+import { CareerPilotHero } from "@/components/hero/CareerPilotHero";
 import { useNextSession } from "@/lib/session-context";
 import { readinessApi, resumeApi, roadmapApi, interviewApi, targetApi } from "@/lib/api";
 import {
@@ -127,8 +128,16 @@ function Dashboard() {
     action: FEATURE_ACTIONS[focus.key],
   };
 
+  const ctaLabel =
+    roadmapStatus === "Not started"
+      ? "Generate your career roadmap →"
+      : roadmapStatus === "In progress"
+        ? "Continue your roadmap →"
+        : "Generate your career roadmap →";
+
   return (
     <div className="space-y-8">
+      <CareerPilotHero cta={{ label: ctaLabel, to: "/roadmap" }} />
       <header>
         <h1 className="font-display text-3xl tracking-tight md:text-4xl">
           {greeting()}, {name}

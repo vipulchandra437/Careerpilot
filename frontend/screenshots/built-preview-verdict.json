@@ -1,0 +1,38 @@
+{
+  "target": "http://127.0.0.1:8081",
+  "routes": [
+    {
+      "path": "/",
+      "status": 200,
+      "bodyLen": 0,
+      "hasExpectedCopy": false,
+      "consoleErrors": [
+        "Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of \"text/html\". Strict MIME type checking is enforced for module scripts per HTML spec."
+      ],
+      "pageErrors": [],
+      "screenshot": "built-preview-home.png"
+    },
+    {
+      "path": "/coding",
+      "status": 200,
+      "bodyLen": 0,
+      "hasExpectedCopy": false,
+      "consoleErrors": [
+        "Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of \"text/html\". Strict MIME type checking is enforced for module scripts per HTML spec."
+      ],
+      "pageErrors": [],
+      "screenshot": "built-preview-coding.png"
+    },
+    {
+      "path": "/mentor",
+      "status": 200,
+      "bodyLen": 0,
+      "hasExpectedCopy": false,
+      "consoleErrors": [
+        "Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of \"text/html\". Strict MIME type checking is enforced for module scripts per HTML spec."
+      ],
+      "pageErrors": [],
+      "screenshot": "built-preview-mentor.png"
+    }
+  ]
+}

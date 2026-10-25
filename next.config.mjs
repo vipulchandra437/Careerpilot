@@ -73,7 +73,7 @@ const nextConfig = {
       },
       // Catch-all: serve frontend index.html for SPA routing
       {
-        source: '/:path((?!api).*)',
+        source: '/:path((?!api|hero).*)',
         destination: '/frontend/dist/index.html',
       },
     ];

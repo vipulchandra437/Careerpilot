@@ -1,0 +1,8 @@
+=== frontend/node_modules/three ===
+=== frontend/node_modules/@types/three ===
+=== package-lock.json ===
+EXISTS  else echo MISSING 
+=== versions ===
+node=v26.4.0 
+npm=11.17.0 
+=== END ===
