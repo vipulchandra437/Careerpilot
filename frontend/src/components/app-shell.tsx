@@ -12,6 +12,7 @@ import {
   User,
   LogOut,
   Loader2,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNextSession } from "@/lib/session-context";
@@ -26,6 +27,7 @@ const NAV = [
   { to: "/roadmap", label: "Career Roadmap", icon: Route },
   { to: "/mentor", label: "AI Mentor", icon: MessageCircle },
   { to: "/companies", label: "Target Companies", icon: Building2 },
+  { to: "/practice", label: "Practice", icon: Brain },
   { to: "/profile", label: "Profile", icon: User },
 ];
 
