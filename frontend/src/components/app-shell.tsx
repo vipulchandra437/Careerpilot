@@ -37,7 +37,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [signingOut, setSigningOut] = useState(false);
 
   // Auth pages render without the shell (standalone centered card).
-  const onAuthRoute = pathname === "/login" || pathname === "/register" || pathname === "/welcome";
+  // /practice renders without the session gate so it works on Vercel preview
+  // where the backend session endpoint is unreachable.
+  const onAuthRoute =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/welcome" ||
+    pathname.startsWith("/practice");
   if (onAuthRoute) {
     return <>{children}</>;
   }
