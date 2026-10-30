@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareerPilot — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* Colour tokens — exact from spec */
+    :root {
+      --paper: #F8F5EE; --card: #FFFFFF; --sand: #F1ECE1;
+      --ink: #1B2430; --muted: #6B7585; --line: #E6E0D3;
+      --gold: #C49A2C; --ember: #D9732F; --ember-soft: #FBEBDD; --sage: #4E7D6A;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: "Figtree", system-ui, sans-serif;
+      background-color: var(--paper); color: var(--ink); line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, .stat-value, .streak-value, .score-big, .progress-ring-score {
+      font-family: "Fraunces", Georgia, serif; font-weight: 600;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: "Figtree", system-ui, sans-serif; font-weight: 500; }
+    *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important; transition-duration: 0.01ms !important;
+      }
+    }
+    .progress-ring-circle, .bar-fill, .progress-bar-fill { transition: stroke-dashoffset 0.4s ease, width 0.4s ease; }
+    /* Layout grid */
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr 240px;
+      gap: 24px; max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px;
+    }
+    @media (min-width: 900px) and (max-width: 1199px) { .layout { grid-template-columns: 1fr 2fr; } }
+    @media (max-width: 899px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Top navigation */
+    .top-nav {
+      position: sticky; top: 0; z-index: 10; background-color: var(--card);
+      border-bottom: 1px solid var(--line); padding: 12px 16px; margin: -24px -16px 24px;
+    }
+    .top-nav-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+    .wordmark { font-family: "Fraunces", Georgia, serif; font-weight: 700; font-size: 1.5rem; color: var(--ink); }
+    .nav-tabs { display: flex; gap: 24px; }
+    @media (max-width: 899px) { .nav-tabs { display: none; } }
+    .nav-tab { padding: 8px 4px; color: var(--muted); font-size: 0.9rem; border-bottom: 2px solid transparent; }
+    .nav-tab:hover { color: var(--ink); }
+    .nav-tab.active { color: var(--ink); border-bottom-color: var(--gold); }
+    .user-avatar {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; background-color: var(--sand); border-radius: 50%;
+      font-size: 0.8rem; font-weight: 600; color: var(--ink);
+    }
+
+    /* Cards & layout */
+    .card { background-color: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    .card + .card { margin-top: 20px; }
+    .section-title { font-size: 1.1rem; margin-bottom: 16px; color: var(--ink); }
+    .btn-primary { display: inline-block; background-color: var(--ember); color: var(--card); padding: 10px 20px; border-radius: 8px; font-weight: 500; font-size: 0.9rem; }
+    .divider { height: 1px; background-color: var(--line); margin: 20px 0; }
+    .gold-link { color: var(--gold); font-weight: 500; font-size: 0.85rem; }
+
+    /* Profile card */
+    .avatar-large {
+      width: 72px; height: 72px; border-radius: 50%; background-color: var(--sand);
+      display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+      margin: 0 auto 12px;
+    }
+    .profile-name { font-size: 1.2rem; text-align: center; }
+    .profile-sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 1.6rem; }
+    .stat-label { font-size: 0.75rem; color: var(--muted); }
+
+    /* Continue preparing */
+    .continue-row {
+      padding: 14px 0; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .continue-row:last-child { border-bottom: none; }
+    .continue-title { font-size: 0.95rem; }
+    .continue-desc { font-size: 0.8rem; color: var(--muted); }
+
+    /* Overall readiness */
+    .overall-score { text-align: center; padding: 24px 16px; }
+    .score-big { font-size: 3rem; color: var(--gold); }
+    .score-subtext { color: var(--muted); font-size: 0.9rem; margin: 8px 0 16px; }
+    .progress-bar-track { width: 100%; height: 8px; background-color: var(--sand); border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background-color: var(--gold); }
+
+    /* Area rings */
+    .rings-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+    @media (max-width: 700px) { .rings-container { grid-template-columns: repeat(2, 1fr); } }
+    .ring-item { text-align: center; }
+    .progress-ring { width: 80px; height: 80px; margin: 0 auto; }
+    .ring-name { font-size: 0.85rem; margin-top: 8px; }
+    .ring-weight { font-size: 0.75rem; color: var(--muted); }
+
+    /* Score breakdown */
+    .breakdown-row { margin-bottom: 14px; }
+    .breakdown-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; }
+    .breakdown-value { font-weight: 600; }
+    .bar-track { width: 100%; height: 8px; background-color: var(--sand); border-radius: 4px; overflow: hidden; }
+
+    /* Submissions table */
+    .table-wrapper { overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; }
+    .pill-sage { background-color: var(--sage); color: var(--card); }
+    .pill-ember-soft { background-color: var(--ember-soft); color: var(--ink); }
+
+    /* Heatmap */
+    .heatmap-legend { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(52, 8px); gap: 2px; }
+    @media (max-width: 899px) { .heatmap-grid { grid-template-columns: repeat(26, 8px); } }
+    .heatmap-cell { width: 8px; height: 8px; border-radius: 2px; background-color: var(--sand); }
+
+    /* Streak */
+    .streak-card { text-align: center; }
+    .streak-value { font-size: 1.8rem; }
+    .streak-label { font-size: 0.8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <!-- Top navigation -->
+  <nav class="top-nav" aria-label="Main navigation">
+    <div class="top-nav-inner">
+      <div class="wordmark">CareerPilot</div>
+      <div class="nav-tabs" role="tablist">
+        <a href="#" class="nav-tab active" role="tab">Dashboard</a>
+        <a href="#" class="nav-tab" role="tab">Resume</a>
+        <a href="#" class="nav-tab" role="tab">Mock interview</a>
+        <a href="#" class="nav-tab" role="tab">Coding test</a>
+        <a href="#" class="nav-tab" role="tab">Roadmap</a>
+        <a href="#" class="nav-tab" role="tab">Target companies</a>
+      </div>
+      <div class="user-avatar" aria-label="User avatar">VR</div>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <!-- LEFT COLUMN -->
+    <aside>
+      <!-- Profile card -->
+      <div class="card" id="profile-card">
+        <div class="avatar-large">VR</div>
+        <div class="profile-name" id="profile-name">Vipul Rana</div>
+        <div class="profile-sub">AI/ML · Entry-level track</div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+
+      <!-- Continue preparing -->
+      <div class="card" id="continue-card">
+        <div class="section-title">Continue preparing</div>
+        <div class="continue-row">
+          <div>
+            <div class="continue-title">Resume analysis</div>
+            <div class="continue-desc">Upload and get personalized feedback</div>
+          </div>
+          <a href="#" class="gold-link">Start</a>
+        </div>
+        <div class="continue-row">
+          <div>
+            <div class="continue-title">Mock interview</div>
+            <div class="continue-desc">Practice with AI feedback</div>
+          </div>
+          <a href="#" class="gold-link">Start</a>
+        </div>
+        <div class="continue-row">
+          <div>
+            <div class="continue-title">Coding test</div>
+            <div class="continue-desc">Solve problems and track progress</div>
+          </div>
+          <a href="#" class="gold-link">Start</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN -->
+    <main>
+      <!-- Overall readiness -->
+      <div class="card">
+        <div class="overall-score">
+          <div class="score-big" id="overall-score">0</div>
+          <div class="score-subtext" id="readiness-explanation">
+            No activity yet — start preparing to build your score.
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="overall-progress" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Readiness by area (rings) -->
+        <div>
+          <div class="section-title">Readiness by area</div>
+          <div class="rings-container" id="rings-container"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Score breakdown (bars) -->
+        <div id="breakdown-container"></div>
+      </div>
+
+      <!-- Recent submissions -->
+      <div class="card">
+        <div class="section-title">Recent submissions</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Activity</th>
+                <th>Area</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="submissions-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT COLUMN -->
+    <aside>
+      <!-- Activity heatmap -->
+      <div class="card">
+        <div class="section-title">Activity (last 12 months)</div>
+        <div class="heatmap-legend">
+          <span style="color: var(--muted);">Less</span>
+          <div style="display: flex; gap: 2px;">
+            <div class="heatmap-cell" style="background-color: var(--sand);"></div>
+            <div class="heatmap-cell" style="background-color: var(--sand);"></div>
+            <div class="heatmap-cell" style="background-color: color-mix(in oklab, var(--gold) 25%, transparent);"></div>
+            <div class="heatmap-cell" style="background-color: color-mix(in oklab, var(--gold) 50%, transparent);"></div>
+            <div class="heatmap-cell" style="background-color: color-mix(in oklab, var(--gold) 75%, transparent);"></div>
+            <div class="heatmap-cell" style="background-color: var(--gold);"></div>
+          </div>
+          <span style="color: var(--muted);">More</span>
+        </div>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+        <div style="font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: 8px;" id="heatmap-total">0 submissions</div>
+      </div>
+
+      <!-- Streak card -->
+      <div class="card streak-card">
+        <div class="section-title">Streak</div>
+        <div style="display: flex; justify-content: space-around; margin-top: 16px;">
+          <div>
+            <div class="streak-value" id="streak-current">0</div>
+            <div class="streak-label">Current</div>
+          </div>
+          <div>
+            <div class="streak-value" id="streak-longest">0</div>
+            <div class="streak-label">Longest</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next step card -->
+      <div class="card">
+        <div class="section-title">Next step</div>
+        <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;" id="next-step-text">All areas are at 0. Start with any section to build momentum.</div>
+        <a href="#" class="btn-primary">Open roadmap</a>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    /* ── Sample data (replace with API response later) ────── */
+    const data = {
+      areas: [
+        { key: "resume",         name: "Resume",           weight: 30 },
+        { key: "mock_interview", name: "Mock interview",   weight: 30 },
+        { key: "coding_test",    name: "Coding test",      weight: 20 },
+        { key: "roadmap",        name: "Roadmap",          weight: 15 },
+        { key: "target_co",      name: "Target companies", weight: 5 },
+      ],
+      // All areas start at 0 — this is the empty (onboarding) state.
+      scores: { resume: 0, mock_interview: 0, coding_test: 0, roadmap: 0, target_co: 0 },
+      activity: {},
+      submissions: [],
+      streak: { current: 0, longest: 0 },
+      user: { name: "Vipul Rana", initials: "VR" }
+    };
+
+    /* Overall score = Σ(score × weight) / 100, capped at 100 */
+    let totalWeight = 0, scoreSum = 0;
+    data.areas.forEach(a => {
+      totalWeight += a.weight;
+      scoreSum += (data.scores[a.key] || 0) * a.weight / 100;
+    });
+    const overallPct = Math.min(100, Math.round(scoreSum));
+
+    /* Greeting changes by time of day */
+    function getGreeting() {
+      const h = new Date().getHours();
+      if (h < 12)  return "Good morning";
+      if (h < 18)  return "Good afternoon";
+      return "Good evening";
+    }
+    document.getElementById("profile-name").textContent =
+      getGreeting() + ", " + data.user.name;
+
+    /* Profile stats grid (2×2) */
+    const stats = [
+      { value: "0",                label: "Interviews" },
+      { value: data.scores.resume, label: "Resume score" },
+      { value: "0",                label: "Day streak" },
+      { value: "0",                label: "Steps done" },
+    ];
+    const grid = document.getElementById("stats-grid");
+    stats.forEach(s => {
+      const div = document.createElement("div");
+      div.className = "stat-item";
+      div.innerHTML =
+        '<div class="stat-value">' + s.value + '</div>' +
+        '<div class="stat-label">' + s.label + '</div>';
+      grid.appendChild(div);
+    });
+
+    /* Overall score display */
+    document.getElementById("overall-score").textContent = overallPct;
+    document.getElementById("overall-progress").style.width = overallPct + "%";
+    document.getElementById("readiness-explanation").textContent =
+      overallPct === 0
+        ? "No activity yet — start preparing to build your score."
+        : overallPct + "% complete — keep going to raise your readiness.";
+
+    /* ── Area rings (SVG circular progress) ───────────────────── */
+    const rings = document.getElementById("rings-container");
+    const radius = 32, circumference = 2 * Math.PI * radius;
+
+    data.areas.forEach(area => {
+      const score = data.scores[area.key] || 0;
+      const offset = circumference * (1 - score / 100);
+      const div = document.createElement("div");
+      div.className = "ring-item";
+      div.innerHTML =
+        '<div class="progress-ring">' +
+          '<svg width="80" height="80" viewBox="0 0 80 80" role="img" ' +
+          'aria-label="' + area.name + ' score: ' + score + ' out of 100">' +
+            '<circle cx="40" cy="40" r="' + radius + '" fill="none" ' +
+              'stroke="var(--sand)" stroke-width="6"/>' +
+            '<circle class="progress-ring-circle" cx="40" cy="40" r="' + radius + '" ' +
+              'fill="none" stroke="var(--gold)" stroke-width="6" ' +
+              'stroke-dasharray="' + circumference + ' ' + circumference + '" ' +
+              'stroke-dashoffset="' + offset + '" ' +
+              'transform="rotate(-90 40 40)"/>' +
+            '<text x="50%" y="50%" class="progress-ring-score" dy=".3em">' + score + '</text>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="ring-name">' + area.name + '</div>' +
+        '<div class="ring-weight">' + area.weight + ' pts</div>';
+      rings.appendChild(div);
+    });
+
+    /* ── Score breakdown (horizontal bars) ──────────────────── */
+    const breakdown = document.getElementById("breakdown-container");
+    data.areas.forEach(area => {
+      const score = data.scores[area.key] || 0;
+      const row = document.createElement("div");
+      row.className = "breakdown-row";
+      row.innerHTML =
+        '<div class="breakdown-label">' +
+          '<span>' + area.name + '</span>' +
+          '<span class="breakdown-value">' + score + ' / ' + area.weight + ' pts</span>' +
+        '</div>' +
+        '<div class="bar-track">' +
+          '<div class="bar-fill" style="width:' + score + '%;background-color:var(--gold);"></div>' +
+        '</div>';
+      breakdown.appendChild(row);
+    });
+
+    /* ── Submissions table ────────────────────────────────────── */
+    const tbody = document.getElementById("submissions-body");
+    if (data.submissions.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted);">' +
+          'No submissions yet. ' +
+          '<a href="#" style="color:var(--gold);margin-left:8px;">Upload a resume</a> or' +
+          '<a href="#" style="color:var(--gold);margin-left:4px;">start a mock interview</a>' +
+          ' to see your activity here.' +
+        '</td></tr>';
+    } else {
+      data.submissions.forEach(sub => {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td>' + sub.time + '</td>' +
+          '<td>' + sub.activity + '</td>' +
+          '<td>' + sub.area + '</td>' +
+          '<td><span class="pill ' + (sub.ok ? 'pill-sage' : 'pill-ember-soft') + '">' +
+            (sub.ok ? 'Completed' : 'Needs work') +
+          '</span></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ── Activity heatmap (364-day grid) ──────────────────────── */
+    const heatmap = document.getElementById("heatmap-grid");
+    const today = new Date();
+    let totalSubmissions = 0;
+
+    for (let i = 363; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * 86400000);
+      const dateKey = d.toISOString().slice(0, 10);
+      const count = data.activity[dateKey] || 0;
+      if (count > 0) totalSubmissions += count;
+
+      const cell = document.createElement("div");
+      cell.className = "heatmap-cell";
+      const intensity = Math.min(count, 4);
+      cell.style.backgroundColor =
+        intensity === 0
+          ? "var(--sand)"
+          : "color-mix(in oklab, var(--gold) " + (25 + intensity * 15) + "%, transparent)";
+      cell.setAttribute("aria-label", dateKey + ": " + count + " submissions");
+      heatmap.appendChild(cell);
+    }
+    document.getElementById("heatmap-total").textContent =
+      totalSubmissions + " submissions in the last year";
+
+    /* ── Streak ──────────────────────────────────────────────── */
+    document.getElementById("streak-current").textContent = data.streak.current;
+    document.getElementById("streak-longest").textContent = data.streak.longest;
+
+    /* ── Next step: identify lowest-scoring area ──────────────── */
+    const lowest = data.areas.reduce((lowest, area) => {
+      const s = data.scores[area.key] || 0;
+      if (lowest === null || s < lowest.score) return { ...area, score: s };
+      return lowest;
+    }, null);
+
+    document.getElementById("next-step-text").textContent =
+      lowest && lowest.score === 0
+        ? lowest.name + " (weight: " + lowest.weight + " pts) is at 0. " +
+          "Raising it moves your overall score the most."
+        : "All areas are at 0. Start with any section to build momentum.";
+  </script>
+</body>
+</html>

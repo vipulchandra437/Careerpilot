@@ -1,0 +1,855 @@
+{
+  "generatedAt": "2026-10-25T06:21:33.036Z",
+  "nodes": [
+    {
+      "id": "app/(marketing)/hero/page.tsx",
+      "label": "page.tsx",
+      "layer": "pages",
+      "path": "src/app/(marketing)/hero/page.tsx"
+    },
+    {
+      "id": "app/api/auth/[...nextauth]/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/auth/[...nextauth]/route.ts"
+    },
+    {
+      "id": "app/api/builder/polish/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/builder/polish/route.ts"
+    },
+    {
+      "id": "app/api/builder/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/builder/route.ts"
+    },
+    {
+      "id": "app/api/builder/seed/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/builder/seed/route.ts"
+    },
+    {
+      "id": "app/api/builder/[id]/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/builder/[id]/route.ts"
+    },
+    {
+      "id": "app/api/github/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/github/route.ts"
+    },
+    {
+      "id": "app/api/health/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/health/route.ts"
+    },
+    {
+      "id": "app/api/interview/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/interview/route.ts"
+    },
+    {
+      "id": "app/api/interview/[id]/answer/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/interview/[id]/answer/route.ts"
+    },
+    {
+      "id": "app/api/interview/[id]/finish/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/interview/[id]/finish/route.ts"
+    },
+    {
+      "id": "app/api/interview/[id]/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/interview/[id]/route.ts"
+    },
+    {
+      "id": "app/api/mentor/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/mentor/route.ts"
+    },
+    {
+      "id": "app/api/practice/attempt/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/practice/attempt/route.ts"
+    },
+    {
+      "id": "app/api/practice/challenge/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/practice/challenge/route.ts"
+    },
+    {
+      "id": "app/api/practice/hint/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/practice/hint/route.ts"
+    },
+    {
+      "id": "app/api/readiness/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/readiness/route.ts"
+    },
+    {
+      "id": "app/api/register/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/register/route.ts"
+    },
+    {
+      "id": "app/api/resume/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/resume/route.ts"
+    },
+    {
+      "id": "app/api/resume/upload/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/resume/upload/route.ts"
+    },
+    {
+      "id": "app/api/resume/[id]/analyze/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/resume/[id]/analyze/route.ts"
+    },
+    {
+      "id": "app/api/resume/[id]/parse/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/resume/[id]/parse/route.ts"
+    },
+    {
+      "id": "app/api/resume/[id]/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/resume/[id]/route.ts"
+    },
+    {
+      "id": "app/api/roadmap/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/roadmap/route.ts"
+    },
+    {
+      "id": "app/api/target/route.ts",
+      "label": "route.ts",
+      "layer": "api",
+      "path": "src/app/api/target/route.ts"
+    },
+    {
+      "id": "app/layout.tsx",
+      "label": "layout.tsx",
+      "layer": "pages",
+      "path": "src/app/layout.tsx"
+    },
+    {
+      "id": "app/robots.ts",
+      "label": "robots.ts",
+      "layer": "pages",
+      "path": "src/app/robots.ts"
+    },
+    {
+      "id": "components/ui/particle-hero-canvas.tsx",
+      "label": "particle-hero-canvas.tsx",
+      "layer": "components",
+      "path": "src/components/ui/particle-hero-canvas.tsx"
+    },
+    {
+      "id": "lib/auth-errors.ts",
+      "label": "auth-errors.ts",
+      "layer": "lib",
+      "path": "src/lib/auth-errors.ts"
+    },
+    {
+      "id": "lib/auth.ts",
+      "label": "auth.ts",
+      "layer": "lib",
+      "path": "src/lib/auth.ts"
+    },
+    {
+      "id": "lib/builder-seed.ts",
+      "label": "builder-seed.ts",
+      "layer": "lib",
+      "path": "src/lib/builder-seed.ts"
+    },
+    {
+      "id": "lib/code-runner.ts",
+      "label": "code-runner.ts",
+      "layer": "lib",
+      "path": "src/lib/code-runner.ts"
+    },
+    {
+      "id": "lib/company-type.ts",
+      "label": "company-type.ts",
+      "layer": "lib",
+      "path": "src/lib/company-type.ts"
+    },
+    {
+      "id": "lib/llm.ts",
+      "label": "llm.ts",
+      "layer": "lib",
+      "path": "src/lib/llm.ts"
+    },
+    {
+      "id": "lib/login-throttle.ts",
+      "label": "login-throttle.ts",
+      "layer": "lib",
+      "path": "src/lib/login-throttle.ts"
+    },
+    {
+      "id": "lib/prompts/builderPolish.ts",
+      "label": "builderPolish.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/builderPolish.ts"
+    },
+    {
+      "id": "lib/prompts/challengeGen.ts",
+      "label": "challengeGen.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/challengeGen.ts"
+    },
+    {
+      "id": "lib/prompts/githubAnalysis.ts",
+      "label": "githubAnalysis.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/githubAnalysis.ts"
+    },
+    {
+      "id": "lib/prompts/interviewEval.ts",
+      "label": "interviewEval.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/interviewEval.ts"
+    },
+    {
+      "id": "lib/prompts/interviewFinish.ts",
+      "label": "interviewFinish.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/interviewFinish.ts"
+    },
+    {
+      "id": "lib/prompts/interviewQuestions.ts",
+      "label": "interviewQuestions.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/interviewQuestions.ts"
+    },
+    {
+      "id": "lib/prompts/mentor.ts",
+      "label": "mentor.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/mentor.ts"
+    },
+    {
+      "id": "lib/prompts/resumeAnalysis.ts",
+      "label": "resumeAnalysis.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/resumeAnalysis.ts"
+    },
+    {
+      "id": "lib/prompts/resumeParse.ts",
+      "label": "resumeParse.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/resumeParse.ts"
+    },
+    {
+      "id": "lib/prompts/roadmapGen.ts",
+      "label": "roadmapGen.ts",
+      "layer": "lib",
+      "path": "src/lib/prompts/roadmapGen.ts"
+    },
+    {
+      "id": "lib/readiness.ts",
+      "label": "readiness.ts",
+      "layer": "lib",
+      "path": "src/lib/readiness.ts"
+    },
+    {
+      "id": "lib/speech.ts",
+      "label": "speech.ts",
+      "layer": "lib",
+      "path": "src/lib/speech.ts"
+    },
+    {
+      "id": "lib/utils.ts",
+      "label": "utils.ts",
+      "layer": "lib",
+      "path": "src/lib/utils.ts"
+    },
+    {
+      "id": "lib/validators/analysis.ts",
+      "label": "analysis.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/analysis.ts"
+    },
+    {
+      "id": "lib/validators/auth.ts",
+      "label": "auth.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/auth.ts"
+    },
+    {
+      "id": "lib/validators/builder.ts",
+      "label": "builder.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/builder.ts"
+    },
+    {
+      "id": "lib/validators/github.ts",
+      "label": "github.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/github.ts"
+    },
+    {
+      "id": "lib/validators/index.ts",
+      "label": "index.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/index.ts"
+    },
+    {
+      "id": "lib/validators/interview.ts",
+      "label": "interview.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/interview.ts"
+    },
+    {
+      "id": "lib/validators/mentor.ts",
+      "label": "mentor.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/mentor.ts"
+    },
+    {
+      "id": "lib/validators/practice.ts",
+      "label": "practice.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/practice.ts"
+    },
+    {
+      "id": "lib/validators/resume.ts",
+      "label": "resume.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/resume.ts"
+    },
+    {
+      "id": "lib/validators/roadmap.ts",
+      "label": "roadmap.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/roadmap.ts"
+    },
+    {
+      "id": "lib/validators/target.ts",
+      "label": "target.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/target.ts"
+    },
+    {
+      "id": "lib/validators/upload.ts",
+      "label": "upload.ts",
+      "layer": "lib",
+      "path": "src/lib/validators/upload.ts"
+    },
+    {
+      "id": "middleware.ts",
+      "label": "middleware.ts",
+      "layer": "middleware",
+      "path": "src/middleware.ts"
+    },
+    {
+      "id": "server/github.ts",
+      "label": "github.ts",
+      "layer": "server",
+      "path": "src/server/github.ts"
+    },
+    {
+      "id": "server/prisma.ts",
+      "label": "prisma.ts",
+      "layer": "server",
+      "path": "src/server/prisma.ts"
+    },
+    {
+      "id": "server/readiness-data.ts",
+      "label": "readiness-data.ts",
+      "layer": "server",
+      "path": "src/server/readiness-data.ts"
+    },
+    {
+      "id": "server/session-revoke.ts",
+      "label": "session-revoke.ts",
+      "layer": "server",
+      "path": "src/server/session-revoke.ts"
+    },
+    {
+      "id": "server/student-context.ts",
+      "label": "student-context.ts",
+      "layer": "server",
+      "path": "src/server/student-context.ts"
+    }
+  ],
+  "edges": [
+    {
+      "source": "app/(marketing)/hero/page.tsx",
+      "target": "components/ui/particle-hero-canvas.tsx"
+    },
+    {
+      "source": "app/api/auth/[...nextauth]/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/builder/polish/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/builder/polish/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/builder/polish/route.ts",
+      "target": "lib/prompts/builderPolish.ts"
+    },
+    {
+      "source": "app/api/builder/polish/route.ts",
+      "target": "lib/validators/builder.ts"
+    },
+    {
+      "source": "app/api/builder/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/builder/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/builder/route.ts",
+      "target": "lib/validators/builder.ts"
+    },
+    {
+      "source": "app/api/builder/seed/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/builder/seed/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/builder/[id]/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/builder/[id]/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/builder/[id]/route.ts",
+      "target": "lib/validators/builder.ts"
+    },
+    {
+      "source": "app/api/github/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/github/route.ts",
+      "target": "lib/validators/github.ts"
+    },
+    {
+      "source": "app/api/github/route.ts",
+      "target": "server/github.ts"
+    },
+    {
+      "source": "app/api/health/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/interview/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/interview/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/interview/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/interview/route.ts",
+      "target": "lib/company-type.ts"
+    },
+    {
+      "source": "app/api/interview/route.ts",
+      "target": "lib/prompts/interviewQuestions.ts"
+    },
+    {
+      "source": "app/api/interview/route.ts",
+      "target": "lib/validators/interview.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/answer/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/answer/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/answer/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/answer/route.ts",
+      "target": "lib/prompts/interviewEval.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/answer/route.ts",
+      "target": "lib/validators/interview.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/finish/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/finish/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/finish/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/finish/route.ts",
+      "target": "lib/prompts/interviewFinish.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/finish/route.ts",
+      "target": "lib/validators/interview.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/interview/[id]/route.ts",
+      "target": "lib/validators/interview.ts"
+    },
+    {
+      "source": "app/api/mentor/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/mentor/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/mentor/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/mentor/route.ts",
+      "target": "server/student-context.ts"
+    },
+    {
+      "source": "app/api/mentor/route.ts",
+      "target": "lib/prompts/mentor.ts"
+    },
+    {
+      "source": "app/api/mentor/route.ts",
+      "target": "lib/validators/mentor.ts"
+    },
+    {
+      "source": "app/api/practice/attempt/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/practice/attempt/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/practice/attempt/route.ts",
+      "target": "lib/validators/practice.ts"
+    },
+    {
+      "source": "app/api/practice/challenge/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/practice/challenge/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/practice/challenge/route.ts",
+      "target": "lib/prompts/challengeGen.ts"
+    },
+    {
+      "source": "app/api/practice/challenge/route.ts",
+      "target": "lib/validators/practice.ts"
+    },
+    {
+      "source": "app/api/practice/hint/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/practice/hint/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/practice/hint/route.ts",
+      "target": "lib/validators/practice.ts"
+    },
+    {
+      "source": "app/api/readiness/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/readiness/route.ts",
+      "target": "server/readiness-data.ts"
+    },
+    {
+      "source": "app/api/readiness/route.ts",
+      "target": "lib/readiness.ts"
+    },
+    {
+      "source": "app/api/register/route.ts",
+      "target": "lib/validators/auth.ts"
+    },
+    {
+      "source": "app/api/register/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/resume/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/resume/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/resume/upload/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/resume/upload/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/resume/upload/route.ts",
+      "target": "lib/validators/upload.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/analyze/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/analyze/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/analyze/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/analyze/route.ts",
+      "target": "lib/prompts/resumeAnalysis.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/analyze/route.ts",
+      "target": "lib/validators/index.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/parse/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/parse/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/parse/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/parse/route.ts",
+      "target": "lib/prompts/resumeParse.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/parse/route.ts",
+      "target": "lib/validators/resume.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/resume/[id]/route.ts",
+      "target": "lib/validators/index.ts"
+    },
+    {
+      "source": "app/api/roadmap/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/roadmap/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/roadmap/route.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "app/api/roadmap/route.ts",
+      "target": "server/student-context.ts"
+    },
+    {
+      "source": "app/api/roadmap/route.ts",
+      "target": "lib/prompts/roadmapGen.ts"
+    },
+    {
+      "source": "app/api/roadmap/route.ts",
+      "target": "lib/validators/roadmap.ts"
+    },
+    {
+      "source": "app/api/target/route.ts",
+      "target": "lib/auth.ts"
+    },
+    {
+      "source": "app/api/target/route.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "app/api/target/route.ts",
+      "target": "lib/validators/target.ts"
+    },
+    {
+      "source": "app/api/target/route.ts",
+      "target": "lib/company-type.ts"
+    },
+    {
+      "source": "components/ui/particle-hero-canvas.tsx",
+      "target": "lib/utils.ts"
+    },
+    {
+      "source": "lib/auth.ts",
+      "target": "lib/validators/auth.ts"
+    },
+    {
+      "source": "lib/auth.ts",
+      "target": "lib/login-throttle.ts"
+    },
+    {
+      "source": "lib/auth.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "lib/builder-seed.ts",
+      "target": "lib/validators/resume.ts"
+    },
+    {
+      "source": "lib/builder-seed.ts",
+      "target": "lib/validators/builder.ts"
+    },
+    {
+      "source": "lib/login-throttle.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "lib/login-throttle.ts",
+      "target": "lib/auth-errors.ts"
+    },
+    {
+      "source": "lib/prompts/interviewQuestions.ts",
+      "target": "lib/company-type.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/resume.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/analysis.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/interview.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/target.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/github.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/practice.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/roadmap.ts"
+    },
+    {
+      "source": "lib/validators/index.ts",
+      "target": "lib/validators/mentor.ts"
+    },
+    {
+      "source": "server/github.ts",
+      "target": "lib/llm.ts"
+    },
+    {
+      "source": "server/github.ts",
+      "target": "lib/validators/github.ts"
+    },
+    {
+      "source": "server/github.ts",
+      "target": "lib/prompts/githubAnalysis.ts"
+    },
+    {
+      "source": "server/readiness-data.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "server/readiness-data.ts",
+      "target": "lib/validators/index.ts"
+    },
+    {
+      "source": "server/readiness-data.ts",
+      "target": "lib/readiness.ts"
+    },
+    {
+      "source": "server/session-revoke.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "server/student-context.ts",
+      "target": "server/prisma.ts"
+    },
+    {
+      "source": "server/student-context.ts",
+      "target": "lib/validators/index.ts"
+    },
+    {
+      "source": "server/student-context.ts",
+      "target": "lib/readiness.ts"
+    }
+  ]
+}
