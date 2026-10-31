@@ -12,6 +12,7 @@ import {
   User,
   LogOut,
   Loader2,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNextSession } from "@/lib/session-context";
@@ -26,6 +27,7 @@ const NAV = [
   { to: "/roadmap", label: "Career Roadmap", icon: Route },
   { to: "/mentor", label: "AI Mentor", icon: MessageCircle },
   { to: "/companies", label: "Target Companies", icon: Building2 },
+  { to: "/practice", label: "Practice", icon: Brain },
   { to: "/profile", label: "Profile", icon: User },
 ];
 
@@ -35,7 +37,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [signingOut, setSigningOut] = useState(false);
 
   // Auth pages render without the shell (standalone centered card).
-  const onAuthRoute = pathname === "/login" || pathname === "/register" || pathname === "/welcome";
+  // /practice renders without the session gate so it works on Vercel preview
+  // where the backend session endpoint is unreachable.
+  const onAuthRoute =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/welcome" ||
+    pathname.startsWith("/practice");
   if (onAuthRoute) {
     return <>{children}</>;
   }

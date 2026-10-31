@@ -16,11 +16,13 @@ import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as InterviewRouteImport } from './routes/interview'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MentorRouteImport } from './routes/mentor'
+import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResumeRouteImport } from './routes/resume'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as PracticeProblemIdRouteImport } from './routes/practice.$problemId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +59,11 @@ const MentorRoute = MentorRouteImport.update({
   path: '/mentor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PracticeRoute = PracticeRouteImport.update({
+  id: '/practice',
+  path: '/practice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -82,6 +89,11 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PracticeProblemIdRoute = PracticeProblemIdRouteImport.update({
+  id: '/$problemId',
+  path: '/$problemId',
+  getParentRoute: () => PracticeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -91,11 +103,13 @@ export interface FileRoutesByFullPath {
   '/interview': typeof InterviewRoute
   '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
+  '/practice': typeof PracticeRouteWithChildren
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/resume': typeof ResumeRoute
   '/roadmap': typeof RoadmapRoute
   '/welcome': typeof WelcomeRoute
+  '/practice/$problemId': typeof PracticeProblemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -105,11 +119,13 @@ export interface FileRoutesByTo {
   '/interview': typeof InterviewRoute
   '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
+  '/practice': typeof PracticeRouteWithChildren
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/resume': typeof ResumeRoute
   '/roadmap': typeof RoadmapRoute
   '/welcome': typeof WelcomeRoute
+  '/practice/$problemId': typeof PracticeProblemIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -120,11 +136,13 @@ export interface FileRoutesById {
   '/interview': typeof InterviewRoute
   '/login': typeof LoginRoute
   '/mentor': typeof MentorRoute
+  '/practice': typeof PracticeRouteWithChildren
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/resume': typeof ResumeRoute
   '/roadmap': typeof RoadmapRoute
   '/welcome': typeof WelcomeRoute
+  '/practice/$problemId': typeof PracticeProblemIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -136,11 +154,13 @@ export interface FileRouteTypes {
     | '/interview'
     | '/login'
     | '/mentor'
+    | '/practice'
     | '/profile'
     | '/register'
     | '/resume'
     | '/roadmap'
     | '/welcome'
+    | '/practice/$problemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -150,11 +170,13 @@ export interface FileRouteTypes {
     | '/interview'
     | '/login'
     | '/mentor'
+    | '/practice'
     | '/profile'
     | '/register'
     | '/resume'
     | '/roadmap'
     | '/welcome'
+    | '/practice/$problemId'
   id:
     | '__root__'
     | '/'
@@ -164,11 +186,13 @@ export interface FileRouteTypes {
     | '/interview'
     | '/login'
     | '/mentor'
+    | '/practice'
     | '/profile'
     | '/register'
     | '/resume'
     | '/roadmap'
     | '/welcome'
+    | '/practice/$problemId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -179,6 +203,7 @@ export interface RootRouteChildren {
   InterviewRoute: typeof InterviewRoute
   LoginRoute: typeof LoginRoute
   MentorRoute: typeof MentorRoute
+  PracticeRoute: typeof PracticeRouteWithChildren
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ResumeRoute: typeof ResumeRoute
@@ -237,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/practice': {
+      id: '/practice'
+      path: '/practice'
+      fullPath: '/practice'
+      preLoaderRoute: typeof PracticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -272,8 +304,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/practice/$problemId': {
+      id: '/practice/$problemId'
+      path: '/$problemId'
+      fullPath: '/practice/$problemId'
+      preLoaderRoute: typeof PracticeProblemIdRouteImport
+      parentRoute: typeof PracticeRoute
+    }
   }
 }
+
+interface PracticeRouteChildren {
+  PracticeProblemIdRoute: typeof PracticeProblemIdRoute
+}
+
+const PracticeRouteChildren: PracticeRouteChildren = {
+  PracticeProblemIdRoute: PracticeProblemIdRoute,
+}
+
+const PracticeRouteWithChildren = PracticeRoute._addFileChildren(
+  PracticeRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -283,6 +334,7 @@ const rootRouteChildren: RootRouteChildren = {
   InterviewRoute: InterviewRoute,
   LoginRoute: LoginRoute,
   MentorRoute: MentorRoute,
+  PracticeRoute: PracticeRouteWithChildren,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ResumeRoute: ResumeRoute,
