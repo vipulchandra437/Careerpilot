@@ -45,6 +45,7 @@ function ProfileContent() {
   const [snapshot, setSnapshot] = useState<ProfileSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
   const [linkedinPaste, setLinkedinPaste] = useState("");
   const [showLinkedinPaste, setShowLinkedinPaste] = useState(false);
@@ -137,13 +138,24 @@ function ProfileContent() {
 
   async function uploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
-    setAvatarUploading(true); setError("");
+    setError(""); setNotice("");
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice("Profile picture is too large. Please choose an image up to 5 MB.");
+      e.target.value = "";
+      return;
+    }
+    setAvatarUploading(true);
     try {
       const token = localStorage.getItem("access_token"); const fd = new FormData(); fd.append("file", file);
       const res = await fetch("/api/profile/avatar", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
       if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-      const d = await res.json();
-      if (!res.ok) { setError(d.detail || "Avatar upload failed"); return; }
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = d.detail || "Avatar upload failed";
+        if (res.status === 400 || res.status === 413) setNotice(msg);
+        else setError(msg);
+        return;
+      }
       setSnapshot(d); setForm(d.personal || {});
     } catch { setError("Avatar upload failed"); } finally { setAvatarUploading(false); e.target.value = ""; }
   }
@@ -183,6 +195,7 @@ function ProfileContent() {
           {snapshot?.computed_at && <span className={muted}>Updated {new Date(snapshot.computed_at).toLocaleString()}</span>}
         </div>
 
+        {notice && <div className="alert alert-warning mb-6 animate-fade-in"><AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>{notice}</p></div>}
         {error && <div className="alert alert-error mb-6 animate-fade-in"><AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>{error}</p></div>}
 
         <section className={`${card} mb-6`}>

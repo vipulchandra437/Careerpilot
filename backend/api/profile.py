@@ -23,7 +23,7 @@ from backend.services.file_storage import upload_file as upload_file_to_s3, dele
 router = APIRouter(prefix="/profile", tags=["profile"])
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-MAX_AVATAR_BYTES = 2 * 1024 * 1024
+MAX_AVATAR_BYTES = 5 * 1024 * 1024
 ALLOWED_AVATAR_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 
 
@@ -405,7 +405,7 @@ async def upload_avatar(
     ct = (file.content_type or "").lower()
     if ct not in ALLOWED_AVATAR_TYPES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only JPG, PNG, and WEBP images are supported")
-    content = await _read_upload_with_limit(file, max_bytes=MAX_AVATAR_BYTES, detail="Profile picture must be under 2MB")
+    content = await _read_upload_with_limit(file, max_bytes=MAX_AVATAR_BYTES, detail="Profile picture is too large. Please upload an image up to 5 MB.")
 
     ext = ALLOWED_AVATAR_TYPES[ct]
     key = None
