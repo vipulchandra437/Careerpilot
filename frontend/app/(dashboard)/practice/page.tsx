@@ -22,6 +22,7 @@ interface TestResult {
   timed_out: boolean;
   exit_code: number | null;
   stdout: string;
+  expected?: string;
   stderr: string;
   elapsed_ms: number;
 }
@@ -332,10 +333,15 @@ function PracticeContent() {
                             {t.name || `Test ${i + 1}`}
                             {t.timed_out ? " — timed out" : t.passed ? " — passed" : " — failed"}
                           </p>
-                          {!t.passed && !t.timed_out && t.stdout !== undefined && t.stdout !== "" && (
-                            <pre className="mt-1 max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-slate-400">
-                              {t.stdout.slice(0, 500)}
-                            </pre>
+                          {!t.passed && !t.timed_out && (
+                            <div className="mt-1 space-y-1">
+                              {t.stdout !== undefined && t.stdout !== "" && (
+                                <pre className="max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-slate-400"><span className="text-slate-500">stdout: </span>{t.stdout.slice(0, 500)}</pre>
+                              )}
+                              {t.expected && (
+                                <pre className="max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-emerald-400/80"><span className="text-slate-500">expected: </span>{t.expected.slice(0, 500)}</pre>
+                              )}
+                            </div>
                           )}
                           {t.stderr && t.stderr !== "" && (
                             <pre className="mt-1 max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-red-400">

@@ -422,7 +422,7 @@ function RoadmapContent() {
                                   Open
                                 </a>
                               )}
-                              {(milestone.linked_action_type === "challenge" || milestone.linked_action_type === "interview") && (
+                              {milestone.linked_action_type === "challenge" && (
                                 <button
                                   onClick={() => {
                                     const params = new URLSearchParams({
@@ -432,6 +432,16 @@ function RoadmapContent() {
                                     });
                                     router.push(`/practice?${params.toString()}`);
                                   }}
+                                  className={linkClass}
+                                  disabled={milestone.status === "done"}
+                                >
+                                  <PlayCircle className="h-3.5 w-3.5" />
+                                  {milestone.status === "done" ? "Done" : "Start"}
+                                </button>
+                              )}
+                              {milestone.linked_action_type === "interview" && (
+                                <button
+                                  onClick={() => router.push("/mock-interview")}
                                   className={linkClass}
                                   disabled={milestone.status === "done"}
                                 >

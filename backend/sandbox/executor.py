@@ -226,8 +226,14 @@ def _render_tests(results: list[dict], tests: list[dict], elapsed_ms_total: int)
         status = r.get("status", {}) or {}
         status_id = status.get("id")
         passed, timed_out = _map_status(status_id)
+        stdout = _decode(r.get("stdout")) or ""
+        expected = t.get("expected") or ""
+        # Judge0 compares bytes exactly; accept common trailing-newline/CRLF differences.
+        if not passed and not timed_out:
+            if stdout.replace("\r\n", "\n").rstrip("\n") == str(expected).replace("\r\n", "\n").rstrip("\n"):
+                passed = True
         stderr_parts = []
-        if status.get("description"):
+        if status.get("description") and not passed:
             stderr_parts.append(status["description"])
         compile_output = _decode(r.get("compile_output"))
         if compile_output:
@@ -241,7 +247,8 @@ def _render_tests(results: list[dict], tests: list[dict], elapsed_ms_total: int)
                 "passed": passed,
                 "timed_out": timed_out,
                 "exit_code": r.get("exit_code"),
-                "stdout": (_decode(r.get("stdout")) or "")[-4000:],
+                "stdout": stdout[-4000:],
+                "expected": str(expected)[-4000:],
                 "stderr": ("\n".join(stderr_parts) or "")[-4000:],
                 "elapsed_ms": int(float(r.get("time") or 0) * 1000),
             }
