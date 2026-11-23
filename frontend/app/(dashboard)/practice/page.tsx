@@ -101,14 +101,13 @@ function PracticeContent() {
   }, [router]);
 
   const generateChallenge = useCallback(async () => {
-    if (!targetRoleId) { setError("Pick a target role from your roadmap/gap flow to generate a new challenge."); return; }
     setGenerating(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
     const token = localStorage.getItem("access_token");
     try {
       const res = await fetch("/api/challenges/generate", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", language, target_role_id: targetRoleId, roadmap_milestone_id: milestoneId || null }),
+        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", language, target_role_id: targetRoleId || null, roadmap_milestone_id: milestoneId || null }),
       });
       if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
       const data = await res.json();
@@ -212,7 +211,7 @@ function PracticeContent() {
                   <button onClick={() => void loadChallenges()} className={runBtn}>Filter</button>
                 </div>
                 <button onClick={() => void generateChallenge()} disabled={generating} className={`${primaryBtn} w-full justify-center`}>{generating ? <><Loader2 className="h-4 w-4 animate-spin" />Generating...</> : "Generate New"}</button>
-                {!targetRoleId && <p className="text-xs text-slate-500">Generate uses your target role from roadmap/gap flow; existing problems are still openable.</p>}
+                {!targetRoleId && <p className="text-xs text-slate-500">No target role selected — challenges will use a general profile.</p>}
               </div>
             </div>
             <div className="overflow-auto">

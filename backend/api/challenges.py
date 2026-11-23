@@ -35,7 +35,7 @@ class GenerateRequest(BaseModel):
     skill: str
     difficulty: str = "adaptive"
     language: str = "python"
-    target_role_id: str
+    target_role_id: str | None = None
     roadmap_milestone_id: str | None = None
 
 
@@ -100,32 +100,26 @@ async def create_challenge(
     else:
         difficulty = req.difficulty
 
-    role_result = await db.execute(
-        select(TargetRoleProfile).where(TargetRoleProfile.id == req.target_role_id)
-    )
-    role = role_result.scalar_one_or_none()
-    if not role:
-        raise HTTPException(status_code=404, detail="Target role not found")
+    role_name = "General Software Engineer"
+    target_role_id = req.target_role_id or "general"
+    if req.target_role_id:
+        role_result = await db.execute(select(TargetRoleProfile).where(TargetRoleProfile.id == req.target_role_id))
+        role = role_result.scalar_one_or_none()
+        if not role:
+            raise HTTPException(status_code=404, detail="Target role not found")
+        role_name, target_role_id = role.name, role.id
 
     if req.roadmap_milestone_id:
         owner = await db.execute(
-            select(RoadmapMilestone)
-            .join(Roadmap, RoadmapMilestone.roadmap_id == Roadmap.id)
-            .where(RoadmapMilestone.id == req.roadmap_milestone_id)
-            .where(Roadmap.user_id == user.id)
+            select(RoadmapMilestone).join(Roadmap, RoadmapMilestone.roadmap_id == Roadmap.id)
+            .where(RoadmapMilestone.id == req.roadmap_milestone_id).where(Roadmap.user_id == user.id)
         )
         if owner.scalar_one_or_none() is None:
             raise HTTPException(status_code=404, detail="Milestone not found")
 
     challenge = await generate_challenge(
-        db,
-        user_id=user.id,
-        skill=req.skill,
-        difficulty=difficulty,
-        target_role_id=role.id,
-        role_name=role.name,
-        language=req.language,
-        use_llm=True,
+        db, user_id=user.id, skill=req.skill, difficulty=difficulty,
+        target_role_id=target_role_id, role_name=role_name, language=req.language, use_llm=True,
     )
     if challenge is None:
         raise HTTPException(
