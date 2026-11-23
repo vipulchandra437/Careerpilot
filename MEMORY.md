@@ -10,6 +10,7 @@ Running record of cross-session decisions, known limitations, and deferred work 
 |---|---|---|---|
 | FIX-1 | Alembic is now authoritative: `001_initial` creates the current schema from `Base.metadata`; revisions 002–007 are no-ops | The old chain could not build a fresh database (006 added columns to tables no migration created). Keeping the revision IDs lets already-stamped databases still reach head. | LOCKED — fresh-DB upgrade test + offline PostgreSQL DDL test pass |
 | FIX-2 | Access-token refresh is handled on the `reason=expired` login path, not a global fetch wrapper | One central place restores the session with minimal code; callers still redirect to login on `401` instead of retrying the original request. HttpOnly cookies remain a production decision. | LOCKED |
+| MENTOR-1 | Mentor chatbot MVP added as user-requested scope outside PRD | Dedicated `/mentor` page, DB-persisted per-user history (`mentor_messages`, Alembic `010_mentor_messages`), context from profile/gap/roadmap, text-only. All LLM calls through orchestrator `mentor_chat`. PRD/PHASE should be updated if this becomes product scope. | IMPLEMENTED (2026-11-23) |
 
 ## Decisions Locked In
 
