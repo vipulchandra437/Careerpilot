@@ -39,13 +39,44 @@ async def _read_upload_with_limit(file: UploadFile) -> bytes:
     return b"".join(chunks)
 
 
+class UserProfile(BaseModel):
+    email: str
+    role: str
+    is_active: bool
+    created_at: datetime
+
+
+class PersonalInfo(BaseModel):
+    full_name: str | None = None
+    headline: str | None = None
+    bio: str | None = None
+    location: str | None = None
+    phone: str | None = None
+    website: str | None = None
+    linkedin_url: str | None = None
+    github_url: str | None = None
+
+
+class PersonalInfoUpdate(BaseModel):
+    full_name: str | None = Field(default=None, max_length=120)
+    headline: str | None = Field(default=None, max_length=200)
+    bio: str | None = Field(default=None, max_length=1000)
+    location: str | None = Field(default=None, max_length=120)
+    phone: str | None = Field(default=None, max_length=40)
+    website: str | None = Field(default=None, max_length=300)
+    linkedin_url: str | None = Field(default=None, max_length=300)
+    github_url: str | None = Field(default=None, max_length=300)
+
+
 class SnapshotResponse(BaseModel):
-    id: uuid.UUID
+    id: uuid.UUID | None = None
+    user: UserProfile
+    personal: PersonalInfo
     resume_data: dict | None
     github_data: dict | None
     linkedin_data: dict | None
     merged: dict | None
-    computed_at: datetime
+    computed_at: datetime | None = None
 
 
 class LinkedInPasteRequest(BaseModel):
@@ -253,40 +284,43 @@ async def import_linkedin_paste_endpoint(
     return {"status": "ok", "data": linkedin_data}
 
 
+def _personal(snapshot: ProfileSnapshot | None) -> PersonalInfo:
+    if not snapshot:
+        return PersonalInfo()
+    return PersonalInfo(
+        full_name=snapshot.full_name,
+        headline=snapshot.headline,
+        bio=snapshot.bio,
+        location=snapshot.location,
+        phone=snapshot.phone,
+        website=snapshot.website,
+        linkedin_url=snapshot.linkedin_url,
+        github_url=snapshot.github_url,
+    )
+
+
+def _user_profile(user: User) -> UserProfile:
+    return UserProfile(email=user.email, role=user.role.value, is_active=user.is_active, created_at=user.created_at)
+
+
 @router.get("/snapshot", response_model=SnapshotResponse)
 async def get_snapshot_endpoint(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get the user's profile snapshot with merged data."""
-    result = await db.execute(
-        select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id)
-    )
+    """Get the user's profile, personal info, and merged snapshot."""
+    result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
     snapshot = result.scalar_one_or_none()
 
-    if not snapshot:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No profile snapshot found. Upload a resume or connect GitHub to get started.",
-        )
-
-    merged = compute_merge(
-        snapshot.github_data,
-        snapshot.resume_data,
-        snapshot.linkedin_data,
-    )
-
-    return SnapshotResponse(
-        id=snapshot.id,
-        resume_data=snapshot.resume_data,
-        github_data=snapshot.github_data,
-        linkedin_data=snapshot.linkedin_data,
-        merged={
-            "skills": [{"name": s.name, "source": s.source, "confidence": s.confidence} for s in merged.skills],
-            "experience": merged.experience,
-            "education": merged.education,
-            "projects": merged.projects,
-            "languages_used": merged.languages_used,
+    merged = None
+    if snapshot and (snapshot.resume_data or snapshot.github_data or snapshot.linkedin_data):
+        m = compute_merge(snapshot.github_data, snapshot.resume_data, snapshot.linkedin_data)
+        merged = {
+            "skills": [{"name": s.name, "source": s.source, "confidence": s.confidence} for s in m.skills],
+            "experience": m.experience,
+            "education": m.education,
+            "projects": m.projects,
+            "languages_used": m.languages_used,
             "conflicts": [
                 {
                     "skill": c.skill,
@@ -295,11 +329,46 @@ async def get_snapshot_endpoint(
                     "linkedin_signal": c.linkedin_signal,
                     "resolution": c.resolution,
                 }
-                for c in merged.conflicts
+                for c in m.conflicts
             ],
-        },
-        computed_at=snapshot.computed_at,
+        }
+
+    return SnapshotResponse(
+        id=snapshot.id if snapshot else None,
+        user=_user_profile(user),
+        personal=_personal(snapshot),
+        resume_data=snapshot.resume_data if snapshot else None,
+        github_data=snapshot.github_data if snapshot else None,
+        linkedin_data=snapshot.linkedin_data if snapshot else None,
+        merged=merged,
+        computed_at=snapshot.computed_at if snapshot else None,
     )
+
+
+@router.put("/personal", response_model=SnapshotResponse)
+async def update_personal_info(
+    req: PersonalInfoUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
+    snapshot = result.scalar_one_or_none()
+    data = req.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        if isinstance(v, str):
+            data[k] = v.strip() or None
+
+    if snapshot:
+        for k, v in data.items():
+            setattr(snapshot, k, v)
+        snapshot.computed_at = datetime.now(timezone.utc)
+    else:
+        snapshot = ProfileSnapshot(user_id=user.id, **data)
+        db.add(snapshot)
+
+    await db.commit()
+    await db.refresh(snapshot)
+    return await get_snapshot_endpoint(user=user, db=db)
 
 
 @router.post("/resume/analyze", response_model=dict)
