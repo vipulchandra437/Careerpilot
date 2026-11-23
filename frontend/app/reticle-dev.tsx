@@ -16,7 +16,9 @@ export function ReticleDev() {
         // any port written into this file at install time, so moving the daemon needs no edit here.
         const url = process.env.NEXT_PUBLIC_RETICLE_URL;
         reticle.connect({
-          projectId: 'career-platform-b966ce86', ...(url ? { url } : {}),
+          projectId: 'career-platform-b966ce86',
+          captureNetworkBodies: true,
+          ...(url ? { url } : {}),
           ...(token ? { token } : {}),
           ...(root ? { root } : {}),
         });
