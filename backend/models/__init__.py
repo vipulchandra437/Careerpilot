@@ -10,6 +10,7 @@ from backend.models.interview import InterviewSession, InterviewTurn
 from backend.models.weak_topic import InterviewWeakTopic
 from backend.models.feedback import InterviewFeedback
 from backend.models.topic import ChallengeTopic
+from backend.models.mentor import MentorMessage
 
 __all__ = [
     "User",
@@ -29,4 +30,5 @@ __all__ = [
     "InterviewWeakTopic",
     "InterviewFeedback",
     "ChallengeTopic",
+    "MentorMessage",
 ]

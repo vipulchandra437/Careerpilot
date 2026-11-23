@@ -11,6 +11,7 @@ import {
   Sparkles,
   ChevronRight,
   FileText,
+  Bot,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 
@@ -41,7 +42,7 @@ export default function DashboardPage() {
   const modules = [
     {
       title: "Profile",
-      desc: "Connect resume, GitHub & LinkedIn to build your snapshot.",
+      desc: "Manage your profile details and account information.",
       href: "/profile",
       icon: User,
     },
@@ -74,6 +75,12 @@ export default function DashboardPage() {
       desc: "Run a technical or behavioral interview round.",
       href: "/mock-interview",
       icon: MessageSquareText,
+    },
+    {
+      title: "Mentor Chat",
+      desc: "Ask an AI mentor for personalized career guidance.",
+      href: "/mentor",
+      icon: Bot,
     },
   ];
 

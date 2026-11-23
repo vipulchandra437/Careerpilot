@@ -97,6 +97,7 @@ class Orchestrator:
             "communication_feedback": "openai/gpt-4o-mini",
             "resume_parsing": "openai/gpt-4o-mini",
             "resume_analysis": "openai/gpt-4o-mini",
+            "mentor_chat": "openai/gpt-4o-mini",
         }
         return defaults.get(feature, "openai/gpt-4o-mini")
 
@@ -115,6 +116,7 @@ class Orchestrator:
             "communication_feedback": 1200,
             "resume_parsing": 1200,
             "resume_analysis": 1200,
+            "mentor_chat": 700,
         }
         return defaults.get(feature, 1000)
 
@@ -132,6 +134,7 @@ class Orchestrator:
             "communication_feedback": 0.4,
             "resume_parsing": 0.1,
             "resume_analysis": 0.2,
+            "mentor_chat": 0.4,
         }
         return defaults.get(feature, 0.5)
 

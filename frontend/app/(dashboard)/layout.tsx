@@ -10,6 +10,7 @@ import {
   User,
   LogOut,
   FileText,
+  Bot,
 } from "lucide-react";
 import { clearTokens } from "@/lib/auth";
 
@@ -19,6 +20,7 @@ const sideItems = [
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/practice", label: "Practice", icon: Code2 },
   { href: "/mock-interview", label: "Interviews", icon: MessagesSquare, matches: ["/mock-interview", "/interview-feedback"] },
+  { href: "/mentor", label: "Mentor", icon: Bot },
   { href: "/profile", label: "Profile", icon: User },
 ];
 

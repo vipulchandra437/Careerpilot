@@ -14,6 +14,7 @@ from backend.api.gap import router as gap_router
 from backend.api.roadmap import router as roadmap_router
 from backend.api.challenges import router as challenges_router
 from backend.api.interviews import router as interviews_router
+from backend.api.mentor import router as mentor_router
 from backend.database import engine, Base
 
 logger = logging.getLogger(__name__)
@@ -134,3 +135,4 @@ app.include_router(gap_router, prefix="/api")
 app.include_router(roadmap_router, prefix="/api")
 app.include_router(challenges_router, prefix="/api")
 app.include_router(interviews_router, prefix="/api")
+app.include_router(mentor_router, prefix="/api")
