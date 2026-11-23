@@ -56,8 +56,8 @@ function PracticeContent() {
     difficulty: string; skill: string; language: string; expected_time_complexity: string | null;
   } | null>(null);
   const [challenges, setChallenges] = useState<ChallengeSummary[]>([]);
-  const [skillInput, setSkillInput] = useState(searchParams.get("skill") || "python");
-  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [skillInput, setSkillInput] = useState(searchParams.get("skill") || "");
+  const [difficultyFilter, setDifficultyFilter] = useState<"all" | "beginner" | "intermediate" | "advanced">("all");
   const [language, setLanguage] = useState(searchParams.get("language") || "python");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ function PracticeContent() {
     const s = (skill ?? skillInput).trim();
     const d = diff ?? difficultyFilter;
     if (s) qs.set("skill", s);
-    if (d !== "all") qs.set("difficulty", d);
+    if (d && d !== "all") qs.set("difficulty", d);
     try {
       const res = await fetch(`/api/challenges${qs.toString() ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setChallenges((await res.json()).challenges || []);
@@ -122,11 +122,10 @@ function PracticeContent() {
     if (!token) { router.push("/login"); return; }
     if (initRef.current) return;
     initRef.current = true;
-    void loadChallenges(searchParams.get("skill") || "python", "all");
+    void loadChallenges(searchParams.get("skill") || "", "all");
     if (challengeIdParam) { void openChallenge(challengeIdParam); return; }
-    if (targetRoleId && (searchParams.get("skill") || "").trim()) { void generateChallenge(); return; }
     setLoading(false);
-  }, [challengeIdParam, generateChallenge, loadChallenges, openChallenge, router, searchParams, targetRoleId]);
+  }, [challengeIdParam, loadChallenges, openChallenge, router, searchParams]);
 
   const runCode = useCallback(async (submit: boolean) => {
     if (!challenge) return;
@@ -172,8 +171,11 @@ function PracticeContent() {
   }, [challenge, code, milestoneId, router]);
 
   const passedCount = results?.filter((t) => t.passed).length || 0;
+  const diffLabel = (d: string) => d === "beginner" ? "Easy" : d === "intermediate" ? "Medium" : "Hard";
   const diffTone = (d: string) => d === "beginner" ? "text-emerald-400" : d === "intermediate" ? "text-amber-400" : "text-red-400";
   const statusIcon = (s: ChallengeSummary["status"]) => s === "solved" ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : s === "attempted" ? <Clock className="h-4 w-4 text-amber-400" /> : <div className="h-4 w-4 rounded-full border border-white/20" />;
+  const filtered = challenges.filter((c) => difficultyFilter === "all" || c.difficulty === difficultyFilter);
+  const counts = { all: challenges.length, beginner: challenges.filter(c=>c.difficulty==="beginner").length, intermediate: challenges.filter(c=>c.difficulty==="intermediate").length, advanced: challenges.filter(c=>c.difficulty==="advanced").length };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-surface text-white">
@@ -195,30 +197,33 @@ function PracticeContent() {
 
         {error && <div className="alert alert-error mb-4 animate-fade-in"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p>{error}</p></div>}
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[24rem_minmax(0,1fr)]">
           <aside className={`${cardClass} flex max-h-[calc(100vh-10rem)] flex-col !p-0 overflow-hidden`}>
-            <div className="border-b border-white/10 p-4">
-              <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Problems</h2><span className="text-xs text-slate-500">{challenges.length}</span></div>
-              <div className="space-y-2">
-                <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} placeholder="Skill or topic" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
+            <div className="border-b border-white/10 p-4 space-y-3">
+              <div className="flex items-center justify-between"><h2 className="font-semibold">Problem List</h2><span className="text-xs text-slate-500">{challenges.length} problems</span></div>
+              <div className="flex gap-2">{([["all","All"],["beginner","Easy"],["intermediate","Medium"],["advanced","Hard"]] as const).map(([k,l]) => (
+                <button key={k} onClick={() => setDifficultyFilter(k)} className={`rounded-full px-3 py-1 text-xs font-medium border ${difficultyFilter===k ? "border-brand-400/40 bg-brand-500/15 text-white" : "border-white/10 text-slate-400 hover:text-white"}`}>
+                  {l} <span className={k==="beginner"?"text-emerald-400":k==="intermediate"?"text-amber-400":k==="advanced"?"text-red-400":"text-slate-500"}>{counts[k]}</span>
+                </button>
+              ))}</div>
+              <div className="flex gap-2">
+                <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} placeholder="Search topic..." className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+                <button onClick={() => void loadChallenges()} className={runBtn}>Search</button>
+              </div>
+              <div className="flex gap-2">
                 <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
-                  <option value="python">Python 3</option><option value="javascript">JavaScript (Node.js)</option><option value="java">Java</option><option value="cpp">C++</option>
+                  <option value="python">Python 3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
                 </select>
-                <div className="flex gap-2">
-                  <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
-                    <option value="all">All difficulties</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
-                  </select>
-                  <button onClick={() => void loadChallenges()} className={runBtn}>Filter</button>
-                </div>
-                <button onClick={() => void generateChallenge()} disabled={generating} className={`${primaryBtn} w-full justify-center`}>{generating ? <><Loader2 className="h-4 w-4 animate-spin" />Generating...</> : "Generate New"}</button>
-                {!targetRoleId && <p className="text-xs text-slate-500">No target role selected — challenges will use a general profile.</p>}
+                <button onClick={() => void generateChallenge()} disabled={generating} className={primaryBtn}>{generating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}</button>
               </div>
             </div>
             <div className="overflow-auto">
-              {challenges.length === 0 ? <p className="p-4 text-sm text-slate-500">No challenges yet. Generate one to start.</p> : challenges.map((c) => (
-                <button key={c.id} onClick={() => void openChallenge(c.id)} className={`flex w-full items-start gap-3 border-b border-white/5 px-4 py-3 text-left hover:bg-white/5 ${challenge?.id === c.id ? "bg-brand-500/10" : ""}`}>
-                  <div className="mt-0.5">{statusIcon(c.status)}</div>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-200">{c.title}</p><p className="text-xs text-slate-500">{c.skill} • <span className={diffTone(c.difficulty)}>{c.difficulty}</span> • {c.language}</p></div>
+              <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem] px-4 py-2 text-xs text-slate-500 border-b border-white/5"><span>Status</span><span>Title</span><span>Difficulty</span></div>
+              {filtered.length === 0 ? <p className="p-4 text-sm text-slate-500">No problems in this filter.</p> : filtered.map((c, i) => (
+                <button key={c.id} onClick={() => void openChallenge(c.id)} className={`grid w-full grid-cols-[2.5rem_minmax(0,1fr)_5.5rem] items-center px-4 py-3 text-left border-b border-white/5 hover:bg-white/5 ${challenge?.id === c.id ? "bg-brand-500/10" : ""}`}>
+                  <span>{statusIcon(c.status)}</span>
+                  <span className="min-w-0"><span className="mr-2 text-xs text-slate-500">{i + 1}.</span><span className="truncate text-sm text-slate-200">{c.title}</span><span className="block text-xs text-slate-500 truncate">{c.skill}</span></span>
+                  <span className={`text-sm font-medium ${diffTone(c.difficulty)}`}>{diffLabel(c.difficulty)}</span>
                 </button>
               ))}
             </div>
@@ -233,7 +238,7 @@ function PracticeContent() {
               <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
                 <div className="flex flex-col gap-4">
                   <section className={cardClass}>
-                    <div className="mb-3 flex flex-wrap items-center gap-2"><h2 className="text-xl font-semibold">{challenge.title}</h2><span className={`text-sm font-medium ${diffTone(challenge.difficulty)}`}>{challenge.difficulty}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.skill}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.language}</span></div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2"><h2 className="text-xl font-semibold">{challenge.title}</h2><span className={`text-sm font-medium ${diffTone(challenge.difficulty)}`}>{diffLabel(challenge.difficulty)}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.skill}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.language}</span></div>
                     <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-200">{challenge.prompt}</pre>
                     {challenge.expected_time_complexity && <p className="mt-4 text-xs text-slate-400">Target: {challenge.expected_time_complexity}</p>}
                   </section>
