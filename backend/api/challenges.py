@@ -21,6 +21,7 @@ from backend.services.coding_challenges import (
     generate_challenge,
     submit_solution,
     get_challenge,
+    list_challenges,
     check_solution,
     get_progress_for_skill,
     DIFFICULTIES,
@@ -53,9 +54,21 @@ class ChallengeOut(BaseModel):
 
 
 @router.get("/difficulties")
-async def list_difficulties(user=Depends(get_current_user)):
+async def difficulties(user=Depends(get_current_user)):
     """Adapter-friendly list of supported difficulties."""
     return {"difficulties": list(DIFFICULTIES)}
+
+
+@router.get("")
+async def browse_challenges(
+    skill: str | None = None,
+    difficulty: str | None = None,
+    limit: int = 50,
+    user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List challenges for the practice browser."""
+    return {"challenges": await list_challenges(db, user_id=user.id, skill=skill, difficulty=difficulty, limit=limit)}
 
 
 @router.post("/generate", response_model=ChallengeOut)

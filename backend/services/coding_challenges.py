@@ -262,6 +262,45 @@ async def get_challenge(db: AsyncSession, challenge_id: str) -> Challenge | None
     return result.scalar_one_or_none()
 
 
+async def list_challenges(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    skill: str | None = None,
+    difficulty: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    """List challenges with the user's latest attempt status for a LeetCode-like browser."""
+    q = select(Challenge).order_by(Challenge.created_at.desc())
+    if skill:
+        q = q.where(Challenge.skill == skill)
+    if difficulty and difficulty in DIFFICULTIES:
+        q = q.where(Challenge.difficulty == difficulty)
+    challenges = (await db.execute(q.limit(max(1, min(limit, 100))))).scalars().all()
+    if not challenges:
+        return []
+
+    ids = [c.id for c in challenges]
+    attempts = (await db.execute(
+        select(ChallengeAttempt).where(ChallengeAttempt.user_id == user_id, ChallengeAttempt.challenge_id.in_(ids)).order_by(ChallengeAttempt.created_at.desc())
+    )).scalars().all()
+    status_by_challenge: dict[str, str] = {}
+    for a in attempts:
+        if a.challenge_id not in status_by_challenge:
+            status_by_challenge[a.challenge_id] = "solved" if a.status == "passed" else "attempted"
+        elif a.status == "passed":
+            status_by_challenge[a.challenge_id] = "solved"
+
+    return [{
+        "id": c.id,
+        "skill": c.skill,
+        "difficulty": c.difficulty,
+        "title": c.title,
+        "created_at": c.created_at.isoformat(),
+        "status": status_by_challenge.get(c.id, "unsolved"),
+    } for c in challenges]
+
+
 def check_solution(challenge: Challenge, code: str) -> RunResult:
     """Run code through the sandbox and grade it WITHOUT persisting anything.
 
