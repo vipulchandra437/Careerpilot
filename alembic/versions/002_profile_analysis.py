@@ -1,13 +1,10 @@
-"""add profile_snapshots, github_tokens, github_cache
+"""Historical profile migration — superseded by the 001 baseline.
 
-Revision ID: 002_profile_analysis
-Revises: 001_initial
-Create Date: 2026-08-26
+The baseline creates the full current schema from Base.metadata. This revision
+is kept so databases stamped at 002/003 can still traverse the chain.
 """
+
 from typing import Sequence, Union
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 revision: str = "002_profile_analysis"
 down_revision: Union[str, None] = "001_initial"
@@ -16,39 +13,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "profile_snapshots",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("resume_data", JSONB, nullable=True),
-        sa.Column("github_data", JSONB, nullable=True),
-        sa.Column("linkedin_data", JSONB, nullable=True),
-        sa.Column("merged_skills", JSONB, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("computed_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
-
-    op.create_table(
-        "github_tokens",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), unique=True, nullable=False),
-        sa.Column("encrypted_token", sa.Text(), nullable=False),
-        sa.Column("github_id", sa.Text(), nullable=False),
-        sa.Column("github_username", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
-
-    op.create_table(
-        "github_cache",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("data_type", sa.Text(), nullable=False),
-        sa.Column("data", JSONB, nullable=False),
-        sa.Column("fetched_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
+    pass
 
 
 def downgrade() -> None:
-    op.drop_table("github_cache")
-    op.drop_table("github_tokens")
-    op.drop_table("profile_snapshots")
+    pass

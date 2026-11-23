@@ -27,4 +27,6 @@ __all__ = [
     "InterviewSession",
     "InterviewTurn",
     "InterviewWeakTopic",
+    "InterviewFeedback",
+    "ChallengeTopic",
 ]

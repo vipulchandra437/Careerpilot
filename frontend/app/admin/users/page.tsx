@@ -45,14 +45,14 @@ export default function AdminUsersPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, UserUsage>>({});
 
-  const handleUnauthorized = (res: Response) => {
+  const handleUnauthorized = useCallback((res: Response) => {
     if (res.status === 401) {
       clearTokens();
       router.push("/login?reason=expired");
       return true;
     }
     return false;
-  };
+  }, [router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,7 +78,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, handleUnauthorized]);
 
   useEffect(() => {
     void load();

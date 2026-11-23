@@ -1,4 +1,3 @@
-import pytest
 from backend.services.profile_merge import compute_merge
 
 

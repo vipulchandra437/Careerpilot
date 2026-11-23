@@ -47,14 +47,14 @@ export default function AdminRolesPage() {
   const [editName, setEditName] = useState("");
   const [editSkills, setEditSkills] = useState<RequiredSkill[]>([]);
 
-  const handleUnauthorized = (res: Response) => {
+  const handleUnauthorized = useCallback((res: Response) => {
     if (res.status === 401) {
       clearTokens();
       router.push("/login?reason=expired");
       return true;
     }
     return false;
-  };
+  }, [router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,7 +80,7 @@ export default function AdminRolesPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, handleUnauthorized]);
 
   useEffect(() => {
     void load();

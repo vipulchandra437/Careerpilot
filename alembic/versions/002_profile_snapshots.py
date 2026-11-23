@@ -8,7 +8,6 @@ the superset schema. This branch is intentionally a no-op so a clean database
 can traverse the historical merge without duplicate CREATE TABLE calls.
 """
 from typing import Sequence, Union
-from alembic import op
 
 revision: str = "002_profile_snapshots"
 down_revision: Union[str, None] = "001_initial"

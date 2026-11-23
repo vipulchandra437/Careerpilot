@@ -20,6 +20,7 @@ re-running analysis updates, never duplicates (PRD §6.1).
 import json
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +30,9 @@ from backend.config import get_settings
 from backend.models.gap import GapReport
 from backend.models.llm_usage import LLMUsageLog
 from backend.services.profile_merge import MergedProfile
+
+if TYPE_CHECKING:
+    from backend.models.target_role import TargetRoleProfile
 
 settings = get_settings()
 

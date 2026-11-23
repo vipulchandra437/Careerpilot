@@ -5,7 +5,7 @@ export default function PrivacyPolicy() {
   return (
     <LegalLayout title="Privacy Policy" updated="August 31, 2026">
       <p>
-        This Privacy Policy explains what data Career Platform ("we", "us", "our")
+        This Privacy Policy explains what data Career Platform (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;)
         collects, how we use it, and the choices you have. It applies to the
         career-development services available through this platform.
       </p>
@@ -94,7 +94,7 @@ export default function PrivacyPolicy() {
       <H2>Changes to this policy</H2>
       <p>
         We may update this Privacy Policy from time to time. When we do, we will
-        revise the "Last updated" date above. Continued use of the service after
+        revise the &quot;Last updated&quot; date above. Continued use of the service after
         changes take effect constitutes acceptance of the revised policy.
       </p>
 

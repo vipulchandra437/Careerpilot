@@ -3,9 +3,11 @@
 **Audit date:** 2026-09-04  
 **Scope:** Backend, frontend, migrations, tests, configuration, repository hygiene, and Graphify-preserved artifacts.
 
+> **Current status (2026-11-22):** This is a historical audit snapshot. The credit/Stripe/payments subsystem described below was removed on 2026-09-05; those findings are retained for history only. The Alembic chain was rebuilt in the 2026-11-22 bug-fix pass, and access-token refresh is now wired. Numbers in the "Verification performed" table were refreshed to that pass. Live PostgreSQL, self-hosted Judge0 and browser-driven verification remain outstanding.
+
 ## Executive summary
 
-The project is healthy for local development and the current automated test/build checks are passing. The backend suite has **188 passing tests**, all backend Python modules compile, and the Next.js frontend typechecks and produces a successful production build for all **22 routes**.
+The project is healthy for local development and the current automated test/build checks are passing. The backend suite has **173 passing tests**, all backend Python modules compile, and the Next.js frontend typechecks and produces a successful production build for all **22 routes**.
 
 The main remaining risks are production-hardening items that require infrastructure or a larger authentication workflow. The local SQLite/mock suite is green; PostgreSQL concurrency behavior and self-hosted Judge0 still need deployment-level verification.
 
@@ -13,7 +15,7 @@ The main remaining risks are production-hardening items that require infrastruct
 
 | Check | Result |
 |---|---|
-| Backend test suite | **188 passed, 0 warnings** |
+| Backend test suite | **173 passed, 0 warnings** |
 | Backend + Alembic Python compilation | **Passed** (`PYTHON_COMPILE_OK`) |
 | Frontend TypeScript validation | **Passed** |
 | Next.js production build | **Passed**; 22/22 routes generated |
@@ -24,15 +26,15 @@ The main remaining risks are production-hardening items that require infrastruct
 
 ## Confirmed findings
 
-### Fixed: Alembic migration branch duplication
+### Fixed: Alembic migration branch duplication (superseded in 2026-11-22)
 
-**Files:** `alembic/versions/002_profile_analysis.py`, `alembic/versions/002_profile_snapshots.py`, `alembic/versions/003_merge_heads.py`
+**Files:** `alembic/versions/*.py`
 
-The historical `002_profile_snapshots` branch was a duplicate table-creation branch. It is now an intentional no-op, leaving `002_profile_analysis` as the schema-producing branch before the merge.
+The historical `002_profile_snapshots` branch was made a no-op so the merge produces one head. In 2026-11-22 the whole chain was made authoritative: `001_initial` now creates the current schema from `Base.metadata`, and all later revisions are compatibility no-ops that keep already-stamped databases able to reach head.
 
-**Verification:** Python compilation passes. A clean-database Alembic upgrade should still be run against PostgreSQL before launch.
+**Verification:** a fresh-database `alembic upgrade head` test (`backend/tests/test_migrations.py`) proves every model table is created, and an offline PostgreSQL DDL generation test proves the chain emits valid Postgres SQL.
 
-**Remaining action:** Run `alembic upgrade head` against a disposable PostgreSQL database and document the result.
+**Remaining action:** run `alembic upgrade head` against a disposable live PostgreSQL database and document the result.
 
 ### Fixed: Startup no longer runs SQLite migration SQL on PostgreSQL
 
@@ -44,7 +46,9 @@ The lightweight compatibility helper now returns immediately for non-SQLite dial
 
 **Remaining action:** Add a clean PostgreSQL startup/integration test.
 
-### Fixed: Credit deductions are serialized on PostgreSQL
+> The next two findings cover code removed on 2026-09-05 (`backend/services/credit.py`, `backend/services/payments.py`, `backend/api/payments_webhook.py`). They are historical only; no payment or credit code exists in the current tree.
+
+### Fixed: Credit deductions are serialized on PostgreSQL (obsolete)
 
 **File:** `backend/services/credit.py`
 
@@ -54,7 +58,7 @@ Credit authorization now selects the user row with `FOR UPDATE` before checking 
 
 **Remaining action:** Add a real PostgreSQL concurrency test; SQLite tests cannot prove row-lock behavior.
 
-### Fixed: Stripe fulfillment validation and concurrency protection
+### Fixed: Stripe fulfillment validation and concurrency protection (obsolete)
 
 **Files:** `backend/services/payments.py`, `backend/api/payments_webhook.py`
 
@@ -76,21 +80,19 @@ The rewrite destination now reads `BACKEND_API_URL`, defaulting to `http://local
 
 ## Medium-priority risks
 
-### Access-token refresh is not wired in the frontend
+### Access-token refresh is not wired in the frontend (fixed 2026-11-22)
 
-**Files:** `frontend/lib/auth.ts`, `backend/api/auth.py`
+**Files:** `frontend/lib/auth.ts`, `frontend/app/(auth)/login/page.tsx`, `backend/api/auth.py`
 
-The frontend stores a refresh token, but the browser client does not transparently call the refresh endpoint after access-token expiry.
+The frontend stored a refresh token but never called the refresh endpoint; a 30-minute access-token expiry forced a full re-login. `refreshTokens()` now exchanges the stored token, and the `reason=expired` login path restores the session and redirects by role.
 
-**Impact:** Users may be logged out after the 30-minute access token expires.
-
-**Recommendation:** Add one shared authenticated-fetch wrapper that refreshes once on `401`, retries the original request, and clears tokens if refresh fails. Prefer secure HttpOnly cookies for production token storage.
+**Remaining hardening:** callers still redirect to login on `401` rather than retrying the original request; secure HttpOnly cookie storage is a production decision.
 
 ### Fixed: Production configuration validation
 
 **File:** `backend/config.py`
 
-Production validation now rejects the placeholder JWT secret, missing GitHub encryption key, HTTP storage, default MinIO credentials, missing OpenRouter credentials, public Judge0, missing Judge0 auth headers, and incomplete Stripe credentials when Stripe is enabled.
+Production validation now rejects the placeholder JWT secret, missing GitHub encryption key, HTTP storage, default MinIO credentials, missing OpenRouter credentials, public Judge0, and missing Judge0 auth headers. Stripe validation was removed with the payments subsystem.
 
 **Verification:** An insecure production-shaped configuration is rejected and a complete production-shaped configuration is accepted.
 
@@ -146,9 +148,9 @@ already-declared `pypdf` dependency.
 ## Recommended release order
 
 1. Run the revised Alembic history on a clean PostgreSQL database.
-2. Add PostgreSQL integration and concurrency tests for credits and Stripe.
-3. Add token refresh and secure production cookie handling.
-4. Migrate Judge0 from the public service to the self-hosted deployment kit.
+2. Add PostgreSQL integration tests for the admin usage dashboard and row-lock behavior where applicable.
+3. Move token storage to secure HttpOnly cookies and retry the original request after a transparent refresh.
+4. Migrate Judge0 from the public service to the self-hosted deployment kit and boot it on the production VM.
 
 ## Conclusion
 

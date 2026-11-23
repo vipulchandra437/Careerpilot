@@ -13,9 +13,9 @@ class ParsedResume:
 
 
 def _extract_text_from_pdf(content: bytes) -> str:
-    """Extract text from PDF using PyPDF2."""
+    """Extract text from PDF using pypdf."""
     try:
-        from PyPDF2 import PdfReader
+        from pypdf import PdfReader
         reader = PdfReader(io.BytesIO(content))
         text = ""
         for page in reader.pages:

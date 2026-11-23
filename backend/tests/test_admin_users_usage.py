@@ -11,12 +11,10 @@ Hermetic in-memory SQLite engine (mirrors test_admin.py). Covers:
   - SECURITY (RULES §2): non-admin direct calls to the new endpoints are 403.
 """
 
-import uuid
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -75,7 +73,7 @@ async def _token(user: User) -> dict:
 @pytest.mark.asyncio
 async def test_list_users_surfaces_accounts(client, _setup_db):
     admin = await _write_user(role=UserRole.admin, email="admin@example.com")
-    st = await _write_user(
+    await _write_user(
         role=UserRole.student,
         email="student@example.com",
         password_hash=hash_password("x"),

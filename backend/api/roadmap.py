@@ -1,8 +1,7 @@
 """Roadmap API endpoints."""
 
 import logging
-import uuid
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +11,7 @@ from backend.models.gap import GapReport
 from backend.models.profile import ProfileSnapshot
 from backend.models.roadmap import Roadmap, RoadmapMilestone
 from backend.models.target_role import TargetRoleProfile
-from backend.services.profile_merge import MergedProfile
+from backend.services.profile_merge import MergedProfile, compute_merge
 from backend.services.roadmap import get_roadmap_with_milestones, get_roadmap_by_id_with_milestones, run_roadmap_generation
 
 logger = logging.getLogger(__name__)
@@ -72,11 +71,9 @@ async def generate_roadmap(
     if not snapshot:
         raise HTTPException(status_code=404, detail="Profile snapshot not found")
 
-    # Reconstruct merged profile from snapshot data
-    merged = MergedProfile()
-    if snapshot.github_data:
-        merged.languages_used = snapshot.github_data.get("languages", {})
-    # This is simplified - in production we'd store the full merged profile
+    # Use the same merged profile gap analysis sees, so roadmap evidence is not
+    # limited to GitHub languages.
+    merged = compute_merge(snapshot.github_data, snapshot.resume_data, snapshot.linkedin_data)
 
     # Run in background
     background_tasks.add_task(
@@ -203,9 +200,7 @@ async def regenerate_roadmap(
     if not snapshot:
         raise HTTPException(status_code=404, detail="Profile snapshot not found")
 
-    merged = MergedProfile()
-    if snapshot.github_data:
-        merged.languages_used = snapshot.github_data.get("languages", {})
+    merged = compute_merge(snapshot.github_data, snapshot.resume_data, snapshot.linkedin_data)
 
     background_tasks.add_task(
         _generate_roadmap_background,
@@ -233,7 +228,7 @@ async def update_milestone(
     Body: {"status": "not_started" | "in_progress" | "done"}
     Returns the updated milestone with new order_index and the full re-ordered milestone list.
     """
-    from backend.services.roadmap import update_milestone_status, get_roadmap_with_milestones
+    from backend.services.roadmap import update_milestone_status
 
     status = body.get("status")
     if status not in ("not_started", "in_progress", "done"):

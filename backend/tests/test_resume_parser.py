@@ -1,4 +1,9 @@
+from io import BytesIO
+
 import pytest
+from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
 from backend.services.resume_parser import parse_resume, _extract_skills, _extract_experience, _extract_education
 
 
@@ -70,3 +75,25 @@ def test_parse_resume_empty_content():
     # Test with invalid PDF content that should fail parsing
     with pytest.raises(ValueError):
         parse_resume("resume.pdf", b"not a real pdf")
+
+
+def test_parse_resume_pdf_uses_installed_pypdf():
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=612, height=792)
+    content = DecodedStreamObject()
+    content.set_data(b"BT /F1 12 Tf 72 700 Td (Python developer) Tj ET")
+    page[NameObject("/Contents")] = writer._add_object(content)
+    font = DictionaryObject({
+        NameObject("/Type"): NameObject("/Font"),
+        NameObject("/Subtype"): NameObject("/Type1"),
+        NameObject("/BaseFont"): NameObject("/Helvetica"),
+    })
+    page[NameObject("/Resources")] = DictionaryObject({
+        NameObject("/Font"): DictionaryObject({NameObject("/F1"): writer._add_object(font)})
+    })
+    buffer = BytesIO()
+    writer.write(buffer)
+
+    result = parse_resume("resume.pdf", buffer.getvalue())
+    assert "Python developer" in result.raw_text
+    assert "python" in result.skills

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
-from backend.models.user import User, UserRole
+from backend.models.user import User
 from backend.auth import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 
 logger = logging.getLogger(__name__)

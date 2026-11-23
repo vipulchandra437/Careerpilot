@@ -22,7 +22,6 @@ student code in this process (RULES.md §2).
 """
 
 import base64
-import json
 import time
 
 import httpx

@@ -11,7 +11,6 @@ Covers the orchestrator's `_estimate_cost_usd`:
 import pytest
 
 from backend.ai.orchestrator import Orchestrator
-from backend.config import get_settings
 
 
 class _FakeUsage:
@@ -58,9 +57,7 @@ class _FakeClient:
 
 def test_known_model_pricing():
     orch = Orchestrator()
-    settings = get_settings()
     model = "openai/gpt-4o-mini"
-    price = settings.llm_pricing[model]
     # 1M in @0.15 + 1M out @0.60 = 0.75
     assert orch._estimate_cost_usd(model, 1_000_000, 1_000_000) == pytest.approx(0.75)
 

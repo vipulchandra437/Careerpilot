@@ -235,3 +235,34 @@ async def test_closed_loop_full_run_defensive_without_roadmap(db):
     assert fb.remedial_actions[0]["created"] is False
     rows = (await db.execute(select(RoadmapMilestone))).scalars().all()
     assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_roadmap_regeneration_keeps_progress_and_bumps_version(db):
+    roadmap_id = await _make_roadmap(db)
+    db.add(
+        RoadmapMilestone(
+            roadmap_id=roadmap_id,
+            title="Old SQL milestone",
+            linked_gap_skill="sql",
+            status="done",
+        )
+    )
+    await db.commit()
+
+    from backend.services.roadmap import _upsert_roadmap
+
+    report_id = (await db.execute(select(GapReport))).scalars().first().id
+    roadmap = await _upsert_roadmap(
+        db,
+        user_id="user-1",
+        gap_report_id=report_id,
+        milestones_data=[
+            {"title": "New SQL milestone", "linked_gap_skill": "sql", "status": "not_started"}
+        ],
+        version="v1.0",  # regeneration still passes the initial version
+    )
+    rows = (await db.execute(select(RoadmapMilestone))).scalars().all()
+    assert roadmap.version == "v2.0"
+    assert len(rows) == 1
+    assert rows[0].status == "done"  # progress survived regeneration

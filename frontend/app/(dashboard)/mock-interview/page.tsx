@@ -54,8 +54,11 @@ function MockInterviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type") || "";
+  const initialRoleId = searchParams.get("role") || "";
 
-  const [stage, setStage] = useState<"pick" | "chat">(initialType ? "chat" : "pick");
+  // Deep links start in "pick" so a failed auto-start still leaves a usable
+  // screen; startInterview moves to "chat" only on success.
+  const [stage, setStage] = useState<"pick" | "chat">("pick");
   const [type, setType] = useState<string>(initialType || "");
   const [targetRoleId, setTargetRoleId] = useState("");
   const [targetRoles, setTargetRoles] = useState<{ id: string; name: string }[]>([]);
@@ -68,7 +71,16 @@ function MockInterviewContent() {
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState("");
   const [showTimer, setShowTimer] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const [rolesLoaded, setRolesLoaded] = useState(false);
+  const autoStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showTimer) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [showTimer]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -76,24 +88,33 @@ function MockInterviewContent() {
       router.push("/login");
       return;
     }
-    if (initialType && stage === "chat" && !sessionId) {
-      void startInterview(initialType);
-    }
+    // Wait for roles so a deep link keeps its target-role context, and guard
+    // against StrictMode's second mount starting a duplicate session.
+    if (!initialType || !rolesLoaded || autoStarted.current) return;
+    autoStarted.current = true;
+    void startInterview(initialType, initialRoleId || targetRoleId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialType, initialRoleId, rolesLoaded, router]);
 
   useEffect(() => {
     void fetch("/api/gap/roles", { headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } })
       .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setTargetRoles(Array.isArray(data) ? data : []))
-      .catch(() => setTargetRoles([]));
-  }, []);
+      .then((data) => {
+        const roles = Array.isArray(data) ? data : [];
+        setTargetRoles(roles);
+        if (initialRoleId && roles.some((r) => r.id === initialRoleId)) {
+          setTargetRoleId(initialRoleId);
+        }
+        setRolesLoaded(true);
+      })
+      .catch(() => setRolesLoaded(true));
+  }, [initialRoleId]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [transcript, waiting]);
 
-  const startInterview = async (t: string) => {
+  const startInterview = async (t: string, roleId: string = targetRoleId) => {
     const token = localStorage.getItem("access_token");
     setWaiting(true);
     setError("");
@@ -101,7 +122,7 @@ function MockInterviewContent() {
       const res = await fetch("/api/interviews/sessions", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ type: t, target_role_id: targetRoleId || null, domain }),
+        body: JSON.stringify({ type: t, target_role_id: roleId || null, domain }),
       });
       if (res.status === 401) {
         localStorage.removeItem("access_token");
@@ -165,6 +186,7 @@ function MockInterviewContent() {
       const res = await fetch(`/api/interviews/${sessionId}/end`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 401) {
         localStorage.removeItem("access_token");
+        setEnding(false);
         router.push("/login?reason=expired");
         return;
       }
@@ -185,7 +207,7 @@ function MockInterviewContent() {
 
   const elapsed = () => {
     if (!startedAt) return "0:00";
-    const diff = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
+    const diff = Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000));
     return `${Math.floor(diff / 60)}:${String(diff % 60).padStart(2, "0")}`;
   };
 

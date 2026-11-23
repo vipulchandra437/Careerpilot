@@ -22,6 +22,7 @@ from backend.models import (  # noqa: F401 (register tables)
     InterviewTurn,
     LLMUsageLog,
     InterviewFeedback,
+    InterviewWeakTopic,
 )
 from backend.ai.orchestrator import LLMResponse
 from backend.services.interviews import (
@@ -176,6 +177,29 @@ async def test_generate_persists_llm_items_referencing_real_turns(db):
     fb_usage = [r for r in usage if r.feature == "communication_feedback"]
     assert len(fb_usage) == 1
     assert fb_usage[0].user_id == "user-1"
+
+
+@pytest.mark.asyncio
+async def test_bad_llm_scores_do_not_discard_feedback(db):
+    session, ids = await _build_ended_session(db, ["I built a small API.", "I used Redis for caching."])
+    payload = json.dumps(
+        {
+            "clarity_score": 4,
+            "overall_score": "not-a-number",
+            "feedback_items": [
+                {"turn_id": ids["a0"], "category": "clarity", "quote": "I built a small API.", "comment": "clear"},
+            ],
+            "weak_topics": [{"topic": "caching", "confidence": None, "evidence": "vague"}],
+        }
+    )
+    with patch("backend.services.interviews.orchestrator") as orch:
+        orch.call_llm = AsyncMock(return_value=_resp(payload))
+        fb = await generate_feedback(db, session.id, "user-1")
+    assert fb.overall_score == 4  # invalid value falls back to clarity_score
+    assert fb.feedback_items
+    weak = (await db.execute(select(InterviewWeakTopic))).scalars().all()
+    assert len(weak) == 1
+    assert weak[0].confidence == 3
 
 
 @pytest.mark.asyncio

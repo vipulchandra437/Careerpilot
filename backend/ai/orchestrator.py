@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from dataclasses import dataclass
 
@@ -49,7 +50,9 @@ class Orchestrator:
         temp = self._default_temperature(feature) if temperature is None else temperature
         tokens_limit = self._default_max_tokens(feature) if max_tokens is None else max_tokens
 
-        response = client.chat.completions.create(
+        # The OpenAI client is synchronous; keep the FastAPI event loop free.
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
             model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=temp,

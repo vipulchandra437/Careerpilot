@@ -1,7 +1,7 @@
 import pytest
 import uuid
 from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from backend.services.github import _get_cached_data, _cache_data
 

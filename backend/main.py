@@ -39,13 +39,13 @@ class RedactSensitiveQueryParams(logging.Filter):
     def _redact(text: str) -> str:
         for key in RedactSensitiveQueryParams._SENSITIVE_KEYS:
             pattern = re.compile(rf"([?&]{key}=)([^&\s]*)", re.IGNORECASE)
-            text = pattern.sub(rf"\1[REDACTED]", text)
+            text = pattern.sub(r"\1[REDACTED]", text)
         return text
 
     def filter(self, record: logging.LogRecord) -> bool:
         # Sanitize the full_path argument (args[2]) used by uvicorn's formatter.
         if isinstance(record.args, (tuple, list)) and len(record.args) >= 5:
-            client_addr, method, full_path = record.args[0], record.args[1], record.args[2]
+            full_path = record.args[2]
             if isinstance(full_path, str) and ("?" in full_path):
                 redacted = self._redact(full_path)
                 if redacted != full_path:

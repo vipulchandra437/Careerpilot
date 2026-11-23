@@ -77,7 +77,7 @@ export default function SignupPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.status === 409) {
           setError(`An account with this email already exists — sign in instead`);
         } else {
@@ -91,7 +91,7 @@ export default function SignupPage() {
       localStorage.setItem("refresh_token", data.refresh_token);
       router.push("/dashboard");
     } catch {
-      setError("Network error. Please check your connection and try again.");
+      setError("Cannot reach the server. Make sure the backend is running, then try again.");
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,6 @@ roadmap prompt.
 """
 
 import json
-import uuid
 from pathlib import Path
 
 from sqlalchemy import select
@@ -128,11 +127,20 @@ async def _upsert_roadmap(
     )
     roadmap = result.scalar_one_or_none()
 
+    previous_status: dict[str, str] = {}
     if roadmap:
-        # Version bump: keep existing roadmap but create new version
-        # For v1, we'll just overwrite milestones (simple approach)
-        # In future: could implement proper versioning with append-only
-        roadmap.version = version
+        # Regeneration must not reset a student's completed milestones. Carry
+        # progress over by skill and bump the version so "new version" is real.
+        old_milestones = (
+            await db.execute(
+                select(RoadmapMilestone).where(RoadmapMilestone.roadmap_id == roadmap.id)
+            )
+        ).scalars().all()
+        previous_status = {
+            m.linked_gap_skill: m.status for m in old_milestones if m.linked_gap_skill
+        }
+        major = roadmap.version.lstrip("v").split(".")[0]
+        roadmap.version = f"v{int(major) + 1 if major.isdigit() else 2}.0"
         # Delete old milestones
         await db.execute(
             RoadmapMilestone.__table__.delete().where(
@@ -154,7 +162,7 @@ async def _upsert_roadmap(
             roadmap_id=roadmap.id,
             title=m.get("title", "")[:200],
             linked_gap_skill=m.get("linked_gap_skill"),
-            status=m.get("status", "not_started"),
+            status=previous_status.get(m.get("linked_gap_skill")) or m.get("status", "not_started"),
             linked_action_type=m.get("linked_action_type"),
             linked_action_id=m.get("linked_action_id"),
             order_index=m.get("order_index", i),

@@ -1,4 +1,3 @@
-import pytest
 from backend.services.linkedin import (
     parse_linkedin_import,
     parse_linkedin_paste,

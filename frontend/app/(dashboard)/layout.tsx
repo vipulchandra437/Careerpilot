@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </nav>
 
       {/* Content: offset for fixed sidebar on desktop, pad bottom for mobile tab */}
-      <div className="pb-16 md:pb-0 md:pl-60">{children}</div>
+      <div className="pb-16 md:pb-0 md:pl-64">{children}</div>
     </div>
   );
 }

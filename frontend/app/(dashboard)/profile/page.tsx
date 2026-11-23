@@ -135,7 +135,7 @@ function ProfileContent() {
   useEffect(() => {
     const githubError = searchParams.get("github_error");
     if (githubError) {
-      setError(`GitHub: ${decodeURIComponent(githubError)}`);
+      setError(`GitHub: ${githubError}`);
       window.history.replaceState({}, "", "/profile");
     }
   }, [searchParams]);
@@ -180,7 +180,7 @@ function ProfileContent() {
     }
 
     completeGithubConnect();
-  }, [searchParams, fetchSnapshot]);
+  }, [searchParams, fetchSnapshot, router]);
 
   async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

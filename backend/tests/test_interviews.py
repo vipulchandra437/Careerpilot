@@ -200,8 +200,9 @@ async def test_failed_follow_up_preserves_student_turn(db):
         session = await start_session(db, "user-1", "technical")
     with patch("backend.services.interviews.orchestrator") as orch:
         orch.call_llm = AsyncMock(side_effect=RuntimeError("openrouter down"))
-        with pytest.raises(RuntimeError):
-            await submit_answer(db, session.id, "user-1", "my answer survives")
+        completed, follow_up = await submit_answer(db, session.id, "user-1", "my answer survives")
+    assert completed.id == session.id
+    assert follow_up is None
     turns = await get_turns(db, session)
     # opener + student answer persisted even though the follow-up call failed.
     assert len(turns) == 2

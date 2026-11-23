@@ -16,6 +16,7 @@ fallback: if the sandbox is unavailable, submission fails cleanly rather than
 ever running student code in the API process (RULES.md §2).
 """
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -27,7 +28,7 @@ from backend.config import get_settings
 from backend.models.challenge import Challenge, ChallengeAttempt, ChallengeProgress
 from backend.models.llm_usage import LLMUsageLog
 from backend.models.roadmap import RoadmapMilestone
-from backend.sandbox.executor import run_code, SandboxRunError, RunResult
+from backend.sandbox.executor import run_code, RunResult
 
 settings = get_settings()
 
@@ -220,7 +221,11 @@ async def generate_challenge(
                 usage_row = None
 
     if challenge is None:
-        await db.rollback()
+        # Never roll back the caller's session: the closed-loop caller may have
+        # pending roadmap milestones. Drop only this call's partial Challenge.
+        for pending in list(db.new):
+            if isinstance(pending, Challenge):
+                db.expunge(pending)
         return None
 
     if usage_row is not None:
@@ -305,7 +310,8 @@ async def submit_solution(
     progress = await get_or_make_progress(db, user_id, challenge.skill)
 
     # -- 1 & 2: execute in the sandbox only ---------------------------------
-    result: RunResult = run_code(
+    result: RunResult = await asyncio.to_thread(
+        run_code,
         language="python",
         code=code,
         tests=challenge.test_cases or [],

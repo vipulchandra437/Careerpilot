@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, AlertTriangle } from "lucide-react";
-import { decodeToken } from "@/lib/auth";
+import { decodeToken, getAccessToken, getRefreshToken, refreshTokens } from "@/lib/auth";
 
 function LoginContent() {
   const router = useRouter();
@@ -15,6 +15,21 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(reason === "expired" ? "Your session expired. Please log in again." : "");
   const [loading, setLoading] = useState(false);
+
+  // 401 handlers send users here with reason=expired. A valid refresh token
+  // should restore the session instead of forcing a manual re-login.
+  useEffect(() => {
+    if (reason !== "expired" || !getRefreshToken()) return;
+    let cancelled = false;
+    void refreshTokens().then((ok) => {
+      if (cancelled || !ok) return;
+      const role = decodeToken<{ role?: string }>(getAccessToken() || "")?.role;
+      router.replace(role === "admin" ? "/admin" : "/dashboard");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [reason, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,7 +109,7 @@ function LoginContent() {
 className="input !px-10 focus-ring disabled:pointer-events-none"
                   disabled={loading}
                   required
-                  autoComplete="current-password"
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -115,7 +130,7 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
 className="input !px-10 focus-ring disabled:pointer-events-none"
                   disabled={loading}
                   required
-                  autoComplete="email"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -162,7 +177,7 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
 
             {/* Register link */}
             <p className="text-center text-sm text-slate-400">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
                 className="font-semibold text-blue-400 underline-offset-2 transition-colors hover:text-blue-300 hover:underline"

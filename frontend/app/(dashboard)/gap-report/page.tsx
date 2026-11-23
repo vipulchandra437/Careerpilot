@@ -95,14 +95,26 @@ function GapReportContent() {
       const res = await fetch("/api/gap/roles", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/login?reason=expired");
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
-        setTargetRoles(Array.isArray(data) ? data : data.roles || []);
+        const roles = Array.isArray(data) ? data : data.roles || [];
+        setTargetRoles(roles);
+        // No roles means no dependent fetch will run to clear the spinner.
+        if (roles.length === 0) setLoading(false);
+      } else {
+        setError("Failed to load target roles");
+        setLoading(false);
       }
     } catch {
-      // Ignore
+      setError("Network error");
+      setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const fetchGapReport = useCallback(async (roleId: string) => {
     setLoading(true);

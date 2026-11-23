@@ -40,14 +40,14 @@ export default function AdminTopicsPage() {
   const [editEnabled, setEditEnabled] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const handleUnauthorized = (res: Response) => {
+  const handleUnauthorized = useCallback((res: Response) => {
     if (res.status === 401) {
       clearTokens();
       router.push("/login?reason=expired");
       return true;
     }
     return false;
-  };
+  }, [router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,7 +73,7 @@ export default function AdminTopicsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, handleUnauthorized]);
 
   useEffect(() => {
     void load();

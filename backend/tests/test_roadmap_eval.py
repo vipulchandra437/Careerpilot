@@ -7,7 +7,6 @@ milestones with a non-gap skill or a missing action are discarded, valid ones
 survive, and the fallback ordering is critical-first.
 """
 
-import pytest
 
 from backend.services.roadmap import (
     _fallback_milestones,

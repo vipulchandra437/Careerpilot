@@ -215,9 +215,10 @@ async def submit_answer(
             session.target_role_name or "the user's target role",
         )
     except Exception:
-        # Never lose the student's answer: persist what exists, surface the error.
+        # Persist the answer and continue without a follow-up; raising here makes
+        # the client retry and duplicate the student turn after a 502.
         await db.commit()
-        raise
+        return session, None
 
     db.add(
         InterviewTurn(
@@ -447,7 +448,6 @@ def _deterministic_feedback(
                     "comment": "Solid answer — strengthen it by naming the specific mechanism or trade-off you chose.",
                 }
             )
-    total = len(students)
     structure_notes = (
         f"{len(students)} student turns analyzed. "
         + (
@@ -585,6 +585,14 @@ async def _link_weak_topics_to_roadmap(
     return actions
 
 
+def _safe_score(value, default: int = 3) -> int:
+    """LLM JSON scores are untrusted; never let a bad value discard all feedback."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 async def generate_feedback(
     db: AsyncSession,
     session_id: str,
@@ -634,7 +642,7 @@ async def generate_feedback(
                     score = 3
                 data = {
                     "clarity_score": max(1, min(5, score)),
-                    "overall_score": max(1, min(5, int(parsed.get("overall_score", score)))),
+                    "overall_score": max(1, min(5, _safe_score(parsed.get("overall_score"), score))),
                     "strengths": [str(x) for x in parsed.get("strengths", []) if str(x).strip()][:5],
                     "weaknesses": [str(x) for x in parsed.get("weaknesses", []) if str(x).strip()][:5],
                     "question_scores": parsed.get("question_scores", []) if isinstance(parsed.get("question_scores"), list) else [],
@@ -675,7 +683,7 @@ async def generate_feedback(
                 user_id=user_id,
                 session_id=session.id,
                 topic=str(item["topic"])[:120],
-                confidence=max(1, min(5, int(item.get("confidence", 3)))),
+                confidence=max(1, min(5, _safe_score(item.get("confidence"), 3))),
                 evidence=str(item.get("evidence", "No specific evidence provided."))[:1000],
             )
         )

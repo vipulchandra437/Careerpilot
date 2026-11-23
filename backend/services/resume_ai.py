@@ -8,8 +8,6 @@ never hard-fails. Skill extraction remains regex-based (proven reliable).
 """
 
 import json
-from dataclasses import asdict
-from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

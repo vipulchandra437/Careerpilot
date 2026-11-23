@@ -85,6 +85,11 @@ function InterviewFeedbackContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setGenerating(false);
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/login?reason=expired");
+        return null;
+      }
     }
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

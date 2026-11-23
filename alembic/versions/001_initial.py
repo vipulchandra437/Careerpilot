@@ -1,49 +1,30 @@
-"""empty message
+"""Baseline schema for the current models.
 
-Revision ID: 001_initial
-Revises:
-Create Date: 2026-08-26
+Alembic history was never authoritative here — the application builds its
+schema with ``Base.metadata.create_all`` at startup. This revision makes the
+migration chain match that schema so a fresh database can be built with
+``alembic upgrade head``. Later historical revisions are retained (so existing
+stamped databases still upgrade) but are schema no-ops.
 """
-from typing import Sequence, Union
+
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import inspect
+
+import backend.models  # noqa: F401 - register all tables on Base.metadata
+from backend.database import Base
 
 revision: str = "001_initial"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels = None
+depends_on = None
 
 
 def upgrade() -> None:
-    user_role_enum = sa.Enum("student", "admin", name="user_role")
-    user_role_enum.create(op.get_bind(), checkfirst=True)
-
-    op.create_table(
-        "users",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("email", sa.Text(), unique=True, nullable=False, index=True),
-        sa.Column("password_hash", sa.Text(), nullable=True),
-        sa.Column("github_id", sa.Text(), nullable=True),
-        sa.Column("role", user_role_enum, nullable=False, server_default="student"),
-        sa.Column("credit_balance", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
-
-    op.create_table(
-        "llm_usage_log",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("feature", sa.Text(), nullable=False),
-        sa.Column("model", sa.Text(), nullable=False),
-        sa.Column("tokens_in", sa.Integer(), nullable=False),
-        sa.Column("tokens_out", sa.Integer(), nullable=False),
-        sa.Column("cost_usd", sa.Numeric(10, 6), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-    )
+    Base.metadata.create_all(op.get_bind(), checkfirst=True)
 
 
 def downgrade() -> None:
-    op.drop_table("llm_usage_log")
-    op.drop_table("users")
-    sa.Enum(name="user_role").drop(op.get_bind(), checkfirst=True)
+    existing = set(inspect(op.get_bind()).get_table_names())
+    for table in reversed(Base.metadata.sorted_tables):
+        if table.name in existing:
+            op.drop_table(table.name)

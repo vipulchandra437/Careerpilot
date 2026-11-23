@@ -5,6 +5,8 @@ Submission routes code through the sandbox (backend/sandbox); if the sandbox is
 unavailable the endpoint returns 503 cleanly and NEVER executes the code here.
 """
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -12,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import get_current_user
 from backend.database import get_db
-from backend.models.challenge import Challenge
 from backend.models.target_role import TargetRoleProfile
 from backend.models.roadmap import RoadmapMilestone, Roadmap
 from backend.sandbox.executor import SandboxRunError
@@ -164,7 +165,7 @@ async def run_without_submit(
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
     try:
-        result = check_solution(challenge, req.code)
+        result = await asyncio.to_thread(check_solution, challenge, req.code)
     except SandboxRunError as e:
         raise HTTPException(
             status_code=503,

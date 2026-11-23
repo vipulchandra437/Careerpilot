@@ -2,6 +2,15 @@
 
 Running record of cross-session decisions, known limitations, and deferred work for the Career Platform.
 
+> **Current state (2026-11-22):** Phase 6 monetization rows (P6-1…P6-15) are **historical** — the Stripe/credits/payments subsystem was removed on 2026-09-05 (see Update Log). Cost metering in `llm_usage_log` remains live. `PROJECT_AUDIT_REPORT.md` and `PHASE.md §6` carry the same status banner.
+
+## Current build decisions (2026-11-22)
+
+| # | Decision | Context / Rationale | Status |
+|---|---|---|---|
+| FIX-1 | Alembic is now authoritative: `001_initial` creates the current schema from `Base.metadata`; revisions 002–007 are no-ops | The old chain could not build a fresh database (006 added columns to tables no migration created). Keeping the revision IDs lets already-stamped databases still reach head. | LOCKED — fresh-DB upgrade test + offline PostgreSQL DDL test pass |
+| FIX-2 | Access-token refresh is handled on the `reason=expired` login path, not a global fetch wrapper | One central place restores the session with minimal code; callers still redirect to login on `401` instead of retrying the original request. HttpOnly cookies remain a production decision. | LOCKED |
+
 ## Decisions Locked In
 
 | # | Decision | Context / Rationale | Status |
@@ -110,6 +119,10 @@ Running record of cross-session decisions, known limitations, and deferred work 
 | P7-4 | **Self-hosted Judge0 migration kit delivered (pre-production item 1, Path A) — config-only switch, code verified locally.** | Docker isn't installed on this dev machine, so the actual container boot runs on the production VM; the app-side migration is a 2-line `.env` change. Delivered: `deploy/judge0/docker-compose.yml` (pinned `judge0/judge0:1.13.1` + postgres:16.2 + redis:7.2.4, official topology + health checks + `privileged:true` for isolate), `deploy/judge0/judge0.conf` (hardened: auth enabled `X-Judge0-Token`, telemetry off, network off by default, limits matching `backend/config.py`), and `deploy/judge0/README.md` (VM runbook: Docker install, secret gen, compose boot, verify `/healthz`+/`/version`+/`/system_info`, TLS via reverse proxy, backups/upgrade/rollback). **Code side:** added config-driven `check_health()` to `backend/sandbox/executor.py` + surfaced it on `/api/health` (judge0 field, `unreachable` on failure — DB stays the hard dep). **Proof:** 5 new health/mock tests (suite 182 → 187); live `check_health()` against real Judge0 returns `{'status':'ok','version':'1.14.0'}`; live `run_code` of a sum-of-ints challenge through the exact app path → **3/3 tests passed**, confirming the executor's base-URL/auth-header/poll loop is fully functional and swapping base URL + auth headers is pure config (P3-2). Actual self-hosted container run still requires the VM (Docker). | LOCKED (code verified locally; container boot on VM) |
 
 ## Update Log
+
+- **Registration "Network error" root cause fixed (2026-11-22):** the README told users to run `cd backend && uvicorn main:app`, which fails with `ModuleNotFoundError: No module named 'backend'`, so no API listened on `localhost:8000` and the signup fetch threw into its generic catch. README now installs the venv at the repo root and runs `uvicorn backend.main:app` from the root; stale Stripe key line removed. Signup now shows an actionable "make sure the backend is running" message and tolerates a non-JSON error body. Verified: direct signup `201`, proxy signup `201`, typecheck/lint clean.
+
+- **Bug-fix pass (2026-11-22):** fixed 25 confirmed bugs (config `.env` loading, CI lint config, ruff errors, event-loop blocking in LLM/Judge0 paths, duplicate interview turns on follow-up failure, unsafe LLM score parsing, rollback wiping roadmap milestones, roadmap prompt dropping resume/LinkedIn evidence, regeneration destroying milestone progress, GitHub connect not setting `github_id`, frontend 401/spinner/timer/autocomplete/JSX issues, and stored refresh token never used). Rebuilt the Alembic chain (FIX-1), fixed the `?type=` deep link to wait for target roles and keep `?role=` context, and refreshed stale current-state claims in `README.md`, `PROJECT_AUDIT_REPORT.md`, `PHASE.md` and this file. Verification: **173 backend tests pass**, `ruff` clean, frontend typecheck/lint clean (0 warnings), `next build` succeeds on all 22 routes. Live browser verification still blocked by Reticle daemon 3.10.11 vs app SDK 2.13.1 wire-contract mismatch; no live PostgreSQL or self-hosted Judge0 run this session.
 
 - **Closed loop wired + payments subsystem removed (2026-09-05, P4-9):**
   - **Interview weak-topics → roadmap/challenge closed loop DONE** (user's chosen focus, "auto-generate on feedback"). See decision P4-9. Live-verified end-to-end through the real API + dev SQLite: a throwaway user with a roadmap got a `created:true` milestone (`'Practice Profiling Tools (from mock interview)'`, `linked_action_type='challenge'`, real `challenge_id`) persisted; without a roadmap the same feedback returns a recommendation with `created:false` + a challenge_id. `GET` read-back matches `POST`.

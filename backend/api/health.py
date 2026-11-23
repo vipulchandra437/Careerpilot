@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -39,7 +41,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     # separately so a Judge0 outage is visible without blocking the API itself.
     judge0 = None
     try:
-        judge0 = Judge0Health(**check_health())
+        judge0 = Judge0Health(**await asyncio.to_thread(check_health))
     except SandboxRunError:
         judge0 = Judge0Health(status="unreachable", version="unknown")
     return HealthResponse(status="ok", version="0.1.0", judge0=judge0)

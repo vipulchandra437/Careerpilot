@@ -121,14 +121,26 @@ function RoadmapContent() {
       const res = await fetch("/api/gap/roles", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/login?reason=expired");
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
-        setTargetRoles(Array.isArray(data) ? data : data.roles || []);
+        const roles = Array.isArray(data) ? data : data.roles || [];
+        setTargetRoles(roles);
+        // No roles means no dependent fetch will run to clear the spinner.
+        if (roles.length === 0) setLoading(false);
+      } else {
+        setError("Failed to load target roles");
+        setLoading(false);
       }
     } catch {
-      // Ignore
+      setError("Network error");
+      setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const fetchRoadmap = useCallback(async (roleId: string) => {
     setLoading(true);
@@ -182,6 +194,8 @@ function RoadmapContent() {
     if (!gapReport) return;
     setGenerating(true);
     setError("");
+    // Generation replaces milestones in place; their IDs tell us when it is done.
+    const previousIds = (roadmap?.milestones || []).map((m) => m.id).join(",");
     try {
       const token = localStorage.getItem("access_token");
       const res = await fetch(`/api/roadmap/${gapReport.id}/regenerate`, {
@@ -207,11 +221,14 @@ function RoadmapContent() {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (roadmapRes.ok) {
-            const roadmapData = await roadmapRes.json();
-            setRoadmap(normalizeRoadmap(roadmapData));
-            break;
+            const next = normalizeRoadmap(await roadmapRes.json());
+            setRoadmap(next);
+            if (next.milestones.map((m) => m.id).join(",") !== previousIds) break;
           }
           attempts++;
+        }
+        if (attempts >= 10) {
+          setError("Generation is taking longer than expected; refresh to check later.");
         }
       } else {
         const err = await res.json();
@@ -222,7 +239,7 @@ function RoadmapContent() {
     } finally {
       setGenerating(false);
     }
-  }, [router, gapReport]);
+  }, [router, gapReport, roadmap]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -452,7 +469,7 @@ function RoadmapContent() {
           <div className={`${cardClass} text-center py-12`}>
             <Flag className="h-12 w-12 text-slate-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">No roadmap generated yet</h3>
-            <p className={mutedText} mb-6>
+            <p className={`${mutedText} mb-6`}>
               Generate a personalized learning roadmap based on your skill gaps.
             </p>
             <button
@@ -477,7 +494,7 @@ function RoadmapContent() {
           <div className={`${cardClass} text-center py-12`}>
             <Target className="h-12 w-12 text-slate-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Select a target role</h3>
-            <p className={mutedText} mb-4>
+            <p className={`${mutedText} mb-4`}>
               Choose a role to view or generate your learning roadmap.
             </p>
           </div>

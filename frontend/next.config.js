@@ -1,3 +1,4 @@
+const { withReticle } = require('@reticlehq/next');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
@@ -17,4 +18,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withReticle(nextConfig);

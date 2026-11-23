@@ -5,7 +5,6 @@ validation, and next-difficulty clamping. Sandbox execution is NOT unit-tested
 here (it requires Docker) — it is covered by the manual security test.
 """
 
-import pytest
 
 from backend.services.coding_challenges import (
     DIFFICULTIES,

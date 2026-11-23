@@ -5,9 +5,9 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
+import backend.models  # noqa: F401 - register tables on Base.metadata for autogenerate
 from backend.config import get_settings
 from backend.database import Base
-from backend.models import User, UserRole, LLMUsageLog
 
 config = context.config
 settings = get_settings()

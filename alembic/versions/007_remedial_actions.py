@@ -1,20 +1,20 @@
-"""Add remedial_actions (closed loop) to interview_feedback."""
+"""Historical remedial-actions migration — superseded by the 001 baseline.
 
-from alembic import op
-import sqlalchemy as sa
+The baseline creates interview_feedback with remedial_actions included. Kept
+only so databases already stamped at this revision can still reach head.
+"""
 
-revision = "007_remedial_actions"
-down_revision = "006_interview_phase1"
-branch_labels = None
-depends_on = None
+from typing import Sequence, Union
+
+revision: str = "007_remedial_actions"
+down_revision: Union[str, None] = "006_interview_phase1"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "interview_feedback",
-        sa.Column("remedial_actions", sa.JSON(), nullable=False, server_default="[]"),
-    )
+    pass
 
 
 def downgrade() -> None:
-    op.drop_column("interview_feedback", "remedial_actions")
+    pass

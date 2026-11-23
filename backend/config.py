@@ -1,6 +1,10 @@
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pathlib import Path
+
+# README starts uvicorn from the repo root, where .env also lives.
+ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
 
 class Settings(BaseSettings):
@@ -43,8 +47,6 @@ class Settings(BaseSettings):
 
     next_public_api_url: str = "http://localhost:3000"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
-
     @model_validator(mode="after")
     def validate_production_secrets(self):
         if self.environment.lower() == "production":
@@ -76,7 +78,7 @@ class Settings(BaseSettings):
         "openai/gpt-4o": {"input_per_1m": 2.50, "output_per_1m": 10.00},
     }
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ENV_FILE, "env_file_encoding": "utf-8"}
 
 
 @lru_cache

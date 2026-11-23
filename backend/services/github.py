@@ -1,5 +1,4 @@
 import uuid
-import json
 import hashlib
 import base64
 from datetime import datetime, timezone, timedelta
@@ -11,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import get_settings
 from backend.models.github import GitHubToken
+from backend.models.user import User
 
 settings = get_settings()
 
@@ -157,6 +157,13 @@ async def connect_github_account(db: AsyncSession, user_id: uuid.UUID, code: str
             github_username=user_info.get("login"),
         )
         db.add(github_token)
+
+    # Admin users list derives "github_connected" from User.github_id.
+    github_id = user_info.get("id")
+    if github_id is not None:
+        user = await db.get(User, user_id)
+        if user is not None:
+            user.github_id = str(github_id)
 
     await db.commit()
 

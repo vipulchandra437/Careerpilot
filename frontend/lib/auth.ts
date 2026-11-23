@@ -18,6 +18,26 @@ export function clearTokens(): void {
   localStorage.removeItem("refresh_token");
 }
 
+/** Exchange the stored refresh token for a fresh token pair. */
+export async function refreshTokens(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken || typeof window === "undefined") return false;
+  try {
+    const res = await fetch("/api/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("refresh_token", data.refresh_token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Decode a JWT payload without verifying (verification is server-side). */
 export function decodeToken<T = Record<string, unknown>>(token: string): T | null {
   try {

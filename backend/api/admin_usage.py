@@ -10,7 +10,6 @@ it honestly rather than hiding it.
 """
 
 from datetime import datetime
-from collections import defaultdict
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

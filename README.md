@@ -67,7 +67,7 @@ It brings together:
 - OpenRouter for LLM orchestration
 - GitHub API integration
 - Judge0-style code execution support
-- Stripe-ready credit flows
+- Per-user LLM usage metering and cost logging
 
 ### Data / storage
 - SQLite for local/dev testing
@@ -116,11 +116,12 @@ It brings together:
 
 ### 1) Clone and install backend dependencies
 
+Run these from the repository root (all app imports use the `backend` package):
+
 ```bash
-cd backend
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 ### 2) Configure environment variables
@@ -128,7 +129,6 @@ pip install -r requirements.txt
 Copy the example env file and update the keys as needed:
 
 ```bash
-cd ..
 copy .env.example .env
 ```
 
@@ -139,14 +139,22 @@ Important environment values include:
 - OPENROUTER_API_KEY
 - GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET
 - GITHUB_TOKEN_ENCRYPTION_KEY
-- STRIPE keys if using live checkout
+
+The frontend proxy reads `BACKEND_API_URL` from `frontend/.env.local`, not the
+repo-root `.env`. If the backend is not on `http://localhost:8000`, create that
+file with `BACKEND_API_URL=http://your-host:your-port`.
+
+For production, the example also lists the `JUDGE0_BASE_URL` and
+`JUDGE0_AUTH_HEADERS` overrides needed by the self-hosted setup in
+`deploy/judge0/README.md`.
 
 ### 3) Run the backend
 
 ```bash
-cd backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Run this from the repository root. `uvicorn main:app` from inside `backend/` fails with `ModuleNotFoundError: No module named 'backend'`.
 
 ### 4) Run the frontend
 
@@ -181,7 +189,7 @@ npm run typecheck
 
 ## Notes on the current implementation
 
-This repository is a production-style MVP architecture with working backend patterns, AI orchestration hooks, role management, credit-related billing scaffolding, and a polished landing-page experience. The current frontend is already structured as a dark premium SaaS UI, with a strong product narrative and app-like route organization.
+This repository is a production-style MVP architecture with working backend patterns, AI orchestration hooks, role management, per-user LLM usage metering, and a polished landing-page experience. The current frontend is already structured as a dark premium SaaS UI, with a strong product narrative and app-like route organization.
 
 ## Project status
 
