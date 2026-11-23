@@ -18,7 +18,7 @@ from backend.services.resume_builder import build_resume_pdf, normalize_resume, 
 from backend.services.github import get_github_auth_url, connect_github_account, get_github_data
 from backend.services.linkedin import parse_linkedin_import, parse_linkedin_paste
 from backend.services.profile_merge import compute_merge
-from backend.services.file_storage import upload_file as upload_file_to_s3, get_presigned_url, delete_file as delete_s3_file
+from backend.services.file_storage import upload_file as upload_file_to_s3, delete_file as delete_s3_file
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -405,7 +405,10 @@ async def upload_avatar(
     content = await _read_upload_with_limit(file, max_bytes=MAX_AVATAR_BYTES, detail="Profile picture must be under 2MB")
 
     ext = ALLOWED_AVATAR_TYPES[ct]
-    key = await upload_file_to_s3(uuid.UUID(user.id), f"avatar.{ext}", content)
+    try:
+        key = await upload_file_to_s3(uuid.UUID(user.id), f"avatar.{ext}", content)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Avatar storage unavailable: {e.__class__.__name__}")
 
     result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
     snapshot = result.scalar_one_or_none()

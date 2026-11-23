@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileText, Github, Linkedin, Loader2, AlertTriangle, X, CheckCircle2,
-  User, Mail, MapPin, Phone, Globe, Pencil, Save,
+  User, Mail, MapPin, Phone, Globe, Pencil, Save, Camera,
 } from "lucide-react";
 
 interface Skill { name: string; source: string; confidence: string; }
@@ -188,24 +188,29 @@ function ProfileContent() {
         <section className={`${card} mb-6`}>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                {personal.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, dynamic domain
-                  <img src={personal.avatar_url} alt="Profile picture" className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-xl font-bold text-white">{initials}</div>
+              <div className="relative group">
+                <label className="block cursor-pointer" title="Change profile picture">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} disabled={avatarUploading} />
+                  {personal.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, dynamic domain
+                    <img src={personal.avatar_url} alt="Profile picture" className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-xl font-bold text-white">{initials}</div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                  {avatarUploading && <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/60"><Loader2 className="h-5 w-5 animate-spin text-white" /></div>}
+                </label>
+                {personal.avatar_url && !avatarUploading && (
+                  <button onClick={removeAvatar} aria-label="Remove profile picture" className="absolute -top-1 -right-1 rounded-full bg-slate-800 border border-white/10 p-0.5 text-slate-300 hover:text-red-300" >
+                    <X className="h-3 w-3" />
+                  </button>
                 )}
-                {avatarUploading && <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50"><Loader2 className="h-5 w-5 animate-spin text-white" /></div>}
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-white">{displayName}</h2>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                  <label className={`${linkCls} cursor-pointer`}>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} disabled={avatarUploading} />
-                    {personal.avatar_url ? "Change photo" : "Upload photo"}
-                  </label>
-                  {personal.avatar_url && <button onClick={removeAvatar} disabled={avatarUploading} className="text-slate-500 hover:text-red-300 transition-colors">Remove</button>}
-                </div>
+                <p className="text-xs text-slate-500 mt-1">Click photo to change</p>
                 <p className={muted}>{personal.headline || "Add a headline to tell people what you're aiming for."}</p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
                   {user?.email && <span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{user.email}</span>}
