@@ -22,8 +22,8 @@ from backend.services.profile_merge import compute_merge
 
 _PROMPT_PATH = Path(__file__).resolve().parent.parent / "ai" / "prompts" / "mentor_chat.txt"
 _FEATURE = "mentor_chat"
-_MAX_HISTORY = 20
-_MAX_CONTEXT_CHARS = 3500
+_MAX_HISTORY = 10
+_MAX_CONTEXT_CHARS = 1600
 
 
 def _clip(text: str, limit: int = 220) -> str:
@@ -39,12 +39,12 @@ async def _build_context(db: AsyncSession, user_id: str) -> str:
         if snapshot.headline:
             parts.append(f"Headline: {_clip(snapshot.headline, 120)}")
         if merged.skills:
-            parts.append("Skills: " + ", ".join(s.name for s in merged.skills[:20]))
+            parts.append("Skills: " + ", ".join(s.name for s in merged.skills[:10]))
         if snapshot.resume_data and snapshot.resume_data.get("experience"):
-            roles = [e.get("title") or e.get("company") for e in snapshot.resume_data.get("experience", [])[:3]]
+            roles = [e.get("title") or e.get("company") for e in snapshot.resume_data.get("experience", [])[:2]]
             roles = [r for r in roles if r]
             if roles:
-                parts.append("Experience: " + ", ".join(_clip(str(r), 60) for r in roles))
+                parts.append("Experience: " + ", ".join(_clip(str(r), 50) for r in roles))
     else:
         parts.append("Profile: no snapshot yet.")
 
@@ -59,7 +59,7 @@ async def _build_context(db: AsyncSession, user_id: str) -> str:
     if gap:
         report, role_name = gap
         gaps = report.gaps or []
-        top = [g.get("skill") for g in gaps if g.get("severity") in ("critical", "important")][:5]
+        top = [g.get("skill") for g in gaps if g.get("severity") in ("critical", "important")][:3]
         parts.append(f"Latest gap target: {role_name or 'Unknown'}")
         if top:
             parts.append("Top gaps: " + ", ".join(str(s) for s in top))
@@ -75,7 +75,7 @@ async def _build_context(db: AsyncSession, user_id: str) -> str:
         next_ms = next((m for m in milestones if m.status != "done"), None)
         parts.append(f"Roadmap: {done}/{len(milestones)} milestones done")
         if next_ms:
-            parts.append(f"Next milestone: {_clip(next_ms.title, 100)}")
+            parts.append(f"Next milestone: {_clip(next_ms.title, 70)}")
 
     context = "\n".join(f"- {p}" for p in parts) if parts else "- No student context available yet."
     return context[:_MAX_CONTEXT_CHARS]

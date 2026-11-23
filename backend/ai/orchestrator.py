@@ -116,7 +116,7 @@ class Orchestrator:
             "communication_feedback": 1200,
             "resume_parsing": 1200,
             "resume_analysis": 1200,
-            "mentor_chat": 700,
+            "mentor_chat": 450,
         }
         return defaults.get(feature, 1000)
 
