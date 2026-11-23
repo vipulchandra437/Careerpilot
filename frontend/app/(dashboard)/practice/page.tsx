@@ -73,9 +73,11 @@ function PracticeContent() {
     if (l && l !== "all") qs.set("language", l);
     try {
       const res = await fetch(`/api/challenges${qs.toString() ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setChallenges((await res.json()).challenges || []);
-    } catch { /* list is optional */ }
-  }, [skillInput, difficultyFilter, language]);
+      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
+      if (!res.ok) { setError("Could not load questions. Please refresh the page."); return; }
+      setChallenges((await res.json()).challenges || []);
+    } catch { setError("Could not load questions. Please refresh the page."); }
+  }, [skillInput, difficultyFilter, language, router]);
 
   const openChallenge = useCallback(async (id: string) => {
     setLoading(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
