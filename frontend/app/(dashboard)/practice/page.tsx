@@ -182,78 +182,87 @@ function PracticeContent() {
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
       <div className="mx-auto w-full max-w-[90rem] p-4 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="rounded-md p-2 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Back"><ChevronLeft className="h-5 w-5" /></button>
-            <div><h1 className="text-xl font-semibold tracking-tight">Problemset</h1><p className="text-xs text-slate-500">Practice coding problems</p></div>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Practice Problems</h1>
+            <p className="text-sm text-slate-400">Pick a question and start coding.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <select value={language} onChange={(e) => { const v = e.target.value; setLanguage(v); void loadChallenges(undefined, undefined, v); }} className="rounded-md border border-white/10 bg-[#262626] px-3 py-1.5 text-sm text-slate-200 focus:outline-none">
-              <option value="all">All Languages</option><option value="python">Python3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
-            </select>
-            <button onClick={() => void generateChallenge()} disabled={generating} className="rounded-md bg-[#2cbb5d] px-3 py-1.5 text-sm font-medium text-black hover:bg-[#32c766] disabled:opacity-50">{generating ? "Generating..." : "Generate"}</button>
-          </div>
+          <button onClick={() => void generateChallenge()} disabled={generating} className={primaryBtn}>
+            {generating ? <><Loader2 className="h-4 w-4 animate-spin" />Generating...</> : "Generate Question"}
+          </button>
         </div>
 
         {error && <div className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"><AlertTriangle className="mr-2 inline h-4 w-4" />{error}</div>}
 
-        <div className="grid grid-cols-1 gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:border xl:border-white/10 xl:rounded-lg overflow-hidden min-h-[calc(100vh-11rem)]">
-          <aside className="flex flex-col border-b xl:border-b-0 xl:border-r border-white/10 bg-[#1a1a1a]">
-            <div className="border-b border-white/10 p-3 space-y-3">
-              <div className="flex flex-wrap gap-2">{([["all","All Topics"],...topics.filter(t=>t!=="all").map(t=>[t,t])] as [string,string][]).slice(0,8).map(([k,l]) => (
-                <button key={k} onClick={() => setTopicFilter(k)} className={`rounded-full px-3 py-1 text-xs ${topicFilter===k ? "bg-white text-black" : "bg-[#303030] text-slate-300 hover:bg-[#3a3a3a]"}`}>{l}</button>
-              ))}
-                {topics.length > 9 && <select value={topicFilter} onChange={(e)=>setTopicFilter(e.target.value)} className="rounded-full bg-[#303030] px-3 py-1 text-xs text-slate-300 focus:outline-none"><option value="all">More</option>{topics.filter(t=>t!=="all").map(t=><option key={t} value={t}>{t}</option>)}</select>}
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <div className="flex rounded-md bg-[#262626] p-0.5">{([["all","All"],["beginner","Easy"],["intermediate","Med."],["advanced","Hard"]] as const).map(([k,l]) => (
-                  <button key={k} onClick={() => setDifficultyFilter(k)} className={`px-3 py-1 text-xs rounded ${difficultyFilter===k ? "bg-[#3e3e3e] text-white" : "text-slate-400 hover:text-slate-200"}`}><span className={k==="beginner"?"text-emerald-400":k==="intermediate"?"text-amber-400":k==="advanced"?"text-red-400":""}>{l}</span></button>
-                ))}</div>
-                <select value={statusFilter} onChange={(e)=>setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-md bg-[#262626] px-2 py-1.5 text-xs text-slate-300 focus:outline-none"><option value="all">Status</option><option value="solved">Solved</option><option value="attempted">Attempted</option><option value="unsolved">Todo</option></select>
-                <div className="flex-1 min-w-[10rem] flex gap-2"><input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==="Enter") void loadChallenges(); }} placeholder="Search questions" className="w-full rounded-md bg-[#262626] px-3 py-1.5 text-sm text-white placeholder:text-slate-500 focus:outline-none" /><button onClick={() => void loadChallenges()} className="rounded-md bg-[#262626] px-3 py-1.5 text-sm text-slate-300 hover:bg-[#333]">Search</button></div>
+        {!challenge ? (
+          <div className={`${cardClass} !p-0 overflow-hidden`}>
+            <div className="flex flex-wrap items-center gap-2 border-b border-white/10 p-4">
+              <div className="flex rounded-md bg-white/5 p-0.5">{([["all","All"],["beginner","Easy"],["intermediate","Medium"],["advanced","Hard"]] as const).map(([k,l]) => (
+                <button key={k} onClick={() => setDifficultyFilter(k)} className={`px-3 py-1.5 text-xs rounded ${difficultyFilter===k ? "bg-white/10 text-white" : "text-slate-400 hover:text-slate-200"}`}>
+                  <span className={k==="beginner"?"text-emerald-400":k==="intermediate"?"text-amber-400":k==="advanced"?"text-red-400":""}>{l}</span>
+                </button>
+              ))}</div>
+              <select value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)} className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 focus:outline-none">
+                <option value="all">All Topics</option>
+                {topics.filter((t) => t !== "all").map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <select value={language} onChange={(e) => { const v = e.target.value; setLanguage(v); void loadChallenges(undefined, undefined, v); }} className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 focus:outline-none">
+                <option value="all">All Languages</option><option value="python">Python 3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
+              </select>
+              <div className="ml-auto flex gap-2 min-w-[14rem]">
+                <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==="Enter") void loadChallenges(); }} placeholder="Search questions..." className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+                <button onClick={() => void loadChallenges()} className={runBtn}>Search</button>
               </div>
             </div>
-            <div className="overflow-auto flex-1">
-              <div className="grid grid-cols-[3rem_minmax(0,1fr)_6rem] px-4 py-2 text-xs text-slate-500 border-b border-white/10"><span>Status</span><span>Title</span><span className="text-right">Difficulty</span></div>
-              {filtered.length === 0 ? <p className="p-8 text-sm text-slate-500 text-center">No questions found.</p> : filtered.map((c, i) => (
-                <button key={c.id} onClick={() => void openChallenge(c.id)} className={`grid w-full grid-cols-[3rem_minmax(0,1fr)_6rem] items-center px-4 py-2.5 text-left hover:bg-[#2a2a2a] ${challenge?.id === c.id ? "bg-[#2a2a2a]" : i % 2 === 1 ? "bg-[#262626]" : ""}`}>
+            <div className="overflow-auto">
+              <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_8rem_7rem] px-4 py-3 text-xs font-medium text-slate-500 border-b border-white/10">
+                <span>Status</span><span>Title</span><span>Topic</span><span className="text-right">Difficulty</span>
+              </div>
+              {loading ? (
+                <div className="flex items-center gap-3 p-6 text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading questions...</div>
+              ) : filtered.length === 0 ? (
+                <p className="p-8 text-sm text-slate-500 text-center">No questions found.</p>
+              ) : filtered.map((c, i) => (
+                <button key={c.id} onClick={() => void openChallenge(c.id)} className={`grid w-full grid-cols-[3.5rem_minmax(0,1fr)_8rem_7rem] items-center px-4 py-3 text-left border-b border-white/5 hover:bg-white/[0.04] ${i % 2 === 1 ? "bg-white/[0.01]" : ""}`}>
                   <span className="flex items-center">{statusIcon(c.status)}</span>
-                  <span className="min-w-0 pr-3"><span className="text-sm text-slate-200">{i + 1}. {c.title}</span></span>
+                  <span className="min-w-0 pr-3 text-sm text-slate-200 truncate">{c.title}</span>
+                  <span className="text-xs text-slate-400 truncate">{c.skill}</span>
                   <span className={`text-right text-sm ${diffTone(c.difficulty)}`}>{diffLabel(c.difficulty)}</span>
                 </button>
               ))}
             </div>
-          </aside>
-
-          <div className="min-w-0 bg-[#1a1a1a] flex flex-col">
-            {loading && !challenge ? (
-              <div className="flex flex-1 items-center justify-center gap-3 text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /><p>Loading...</p></div>
-            ) : !challenge ? (
-              <div className="flex flex-1 flex-col items-center justify-center text-slate-500 p-8"><Code2 className="mb-3 h-10 w-10 opacity-40" /><p className="text-sm">Select a question to view details</p></div>
-            ) : (
-              <>
-                <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0"><div className="flex items-center gap-2"><h2 className="font-medium text-slate-100 truncate">{challenge.title}</h2><span className={`text-xs ${diffTone(challenge.difficulty)}`}>{diffLabel(challenge.difficulty)}</span></div><div className="text-xs text-slate-500 mt-0.5">{challenge.skill} • {({python:"Python3",javascript:"JavaScript",java:"Java",cpp:"C++"} as Record<string,string>)[challenge.language] || challenge.language}</div></div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => runCode(false)} disabled={running} className="rounded-md bg-[#3e3e3e] px-3 py-1.5 text-sm text-slate-200 hover:bg-[#4a4a4a] disabled:opacity-50 inline-flex items-center gap-1.5">{running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Run</button>
-                    <button onClick={() => runCode(true)} disabled={running} className="rounded-md bg-[#2cbb5d] px-3 py-1.5 text-sm font-medium text-black hover:bg-[#32c766] disabled:opacity-50 inline-flex items-center gap-1.5">{running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit</button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-4 space-y-4">
-                  <section><pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-300">{challenge.prompt}</pre>{challenge.expected_time_complexity && <p className="mt-3 text-xs text-slate-500">Target: {challenge.expected_time_complexity}</p>}</section>
-                  <section><div className="text-xs font-medium text-slate-400 mb-2">Signature</div><pre className="whitespace-pre-wrap rounded-md bg-[#262626] p-3 font-mono text-xs text-slate-200">{challenge.function_signature}</pre></section>
-                  <section className="flex-1 flex flex-col"><div className="text-xs font-medium text-slate-400 mb-2">Code</div><textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} className="w-full min-h-[20rem] flex-1 resize-y rounded-md border border-white/10 bg-[#262626] p-3 font-mono text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-white/20" aria-label="Code editor" /></section>
-                  {milestoneMarked && <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300"><CheckCircle2 className="inline h-4 w-4 mr-2" />Passed — roadmap milestone marked complete.</div>}
-                  {results && <section><div className="text-xs font-medium text-slate-400 mb-2">Testcase {lastPassed !== null && <span className={lastPassed ? "text-emerald-400" : "text-red-400"}>{passedCount}/{results.length} passed</span>}</div><div className="space-y-2">{results.map((t, i) => (
-                    <div key={i} className="rounded-md bg-[#262626] p-3 text-sm"><div className="flex items-center gap-2">{t.timed_out ? <Clock className="h-4 w-4 text-yellow-400" /> : t.passed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-red-400" />}<span className="text-slate-300">{t.name || `Case ${i + 1}`}</span><span className="text-xs text-slate-500 ml-auto">{t.timed_out ? "Timed out" : t.passed ? "Accepted" : "Wrong Answer"}</span></div>
-                    {!t.passed && !t.timed_out && <div className="mt-2 space-y-1 text-xs font-mono">{t.stdout !== undefined && t.stdout !== "" && <div><div className="text-slate-500">Output</div><pre className="bg-[#1a1a1a] p-2 rounded text-slate-300 overflow-auto">{t.stdout.slice(0,500)}</pre></div>}{t.expected && <div><div className="text-slate-500">Expected</div><pre className="bg-[#1a1a1a] p-2 rounded text-slate-300 overflow-auto">{t.expected.slice(0,500)}</pre></div>}</div>}
-                    {t.stderr && <pre className="mt-2 text-xs font-mono bg-[#1a1a1a] p-2 rounded text-red-400 overflow-auto">{t.stderr.slice(0,500)}</pre>}</div>
-                  ))}</div></section>}
-                </div>
-              </>
-            )}
           </div>
-        </div>
+        ) : (
+          <div className={`${cardClass} !p-0 overflow-hidden`}>
+            <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <button onClick={() => { setChallenge(null); setResults(null); setError(""); }} className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white"><ChevronLeft className="h-4 w-4" /></button>
+                <div className="min-w-0"><h2 className="font-medium text-slate-100 truncate">{challenge.title}</h2><div className="text-xs text-slate-500">{challenge.skill} • <span className={diffTone(challenge.difficulty)}>{diffLabel(challenge.difficulty)}</span></div></div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => runCode(false)} disabled={running} className={runBtn}>{running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Run</button>
+                <button onClick={() => runCode(true)} disabled={running} className={primaryBtn}>{running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[32rem]">
+              <div className="border-b lg:border-b-0 lg:border-r border-white/10 p-4 overflow-auto space-y-4">
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-300">{challenge.prompt}</pre>
+                {challenge.expected_time_complexity && <p className="text-xs text-slate-500">Target: {challenge.expected_time_complexity}</p>}
+                <div><div className="text-xs font-medium text-slate-400 mb-2">Signature</div><pre className="whitespace-pre-wrap rounded-md bg-black/20 p-3 font-mono text-xs text-slate-200">{challenge.function_signature}</pre></div>
+                {results && <div><div className="text-xs font-medium text-slate-400 mb-2">Results {lastPassed !== null && <span className={lastPassed ? "text-emerald-400" : "text-red-400"}>{passedCount}/{results.length}</span>}</div><div className="space-y-2">{results.map((t, i) => (
+                  <div key={i} className="rounded-md bg-black/20 p-3 text-sm"><div className="flex items-center gap-2">{t.timed_out ? <Clock className="h-4 w-4 text-yellow-400" /> : t.passed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-red-400" />}<span className="text-slate-300">{t.name || `Case ${i + 1}`}</span><span className="text-xs text-slate-500 ml-auto">{t.timed_out ? "Timed out" : t.passed ? "Accepted" : "Wrong Answer"}</span></div>
+                  {!t.passed && !t.timed_out && <div className="mt-2 space-y-1 text-xs font-mono">{t.stdout !== undefined && t.stdout !== "" && <div><div className="text-slate-500">Output</div><pre className="bg-black/20 p-2 rounded text-slate-300 overflow-auto">{t.stdout.slice(0,500)}</pre></div>}{t.expected && <div><div className="text-slate-500">Expected</div><pre className="bg-black/20 p-2 rounded text-slate-300 overflow-auto">{t.expected.slice(0,500)}</pre></div>}</div>}
+                  {t.stderr && <pre className="mt-2 text-xs font-mono bg-black/20 p-2 rounded text-red-400 overflow-auto">{t.stderr.slice(0,500)}</pre>}</div>
+                ))}</div></div>}
+                {milestoneMarked && <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300"><CheckCircle2 className="inline h-4 w-4 mr-2" />Passed — roadmap milestone marked complete.</div>}
+              </div>
+              <div className="p-4 flex flex-col">
+                <div className="text-xs font-medium text-slate-400 mb-2">Code <span className="text-slate-500">({({python:"Python 3",javascript:"JavaScript",java:"Java",cpp:"C++"} as Record<string,string>)[challenge.language] || challenge.language})</span></div>
+                <textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} className={codeEditorClass} aria-label="Code editor" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
