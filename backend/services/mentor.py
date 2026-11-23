@@ -7,8 +7,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.ai.orchestrator import orchestrator
 from backend.models.gap import GapReport
@@ -99,11 +100,21 @@ async def _get_conversation(db: AsyncSession, user_id: str, conversation_id: str
     )).scalar_one_or_none()
 
 
+async def _ensure_tables(db: AsyncSession) -> None:
+    conn = await db.connection()
+    await conn.run_sync(lambda sync: MentorConversation.__table__.create(sync, checkfirst=True))
+    await conn.run_sync(lambda sync: MentorMessage.__table__.create(sync, checkfirst=True))
+
+
 async def _legacy_messages(db: AsyncSession, user_id: str) -> list[MentorMessage]:
-    return list((await db.execute(
-        select(MentorMessage).where(MentorMessage.user_id == user_id, MentorMessage.conversation_id.is_(None))
-        .order_by(MentorMessage.created_at.asc())
-    )).scalars().all())
+    try:
+        return list((await db.execute(
+            select(MentorMessage).where(MentorMessage.user_id == user_id, MentorMessage.conversation_id.is_(None))
+            .order_by(MentorMessage.created_at.asc())
+        )).scalars().all())
+    except SQLAlchemyError:
+        await _ensure_tables(db)
+        return []
 
 
 async def ensure_legacy_conversation(db: AsyncSession, user_id: str) -> MentorConversation | None:
@@ -122,14 +133,21 @@ async def ensure_legacy_conversation(db: AsyncSession, user_id: str) -> MentorCo
 
 
 async def list_conversations(db: AsyncSession, user_id: str) -> list[dict]:
-    await ensure_legacy_conversation(db, user_id)
-    rows = (await db.execute(
-        select(MentorConversation).where(MentorConversation.user_id == user_id).order_by(MentorConversation.updated_at.desc())
-    )).scalars().all()
-    return [{"id": c.id, "title": c.title, "created_at": c.created_at.isoformat(), "updated_at": c.updated_at.isoformat()} for c in rows]
+    try:
+        await _ensure_tables(db)
+        await ensure_legacy_conversation(db, user_id)
+        rows = (await db.execute(
+            select(MentorConversation).where(MentorConversation.user_id == user_id).order_by(MentorConversation.updated_at.desc())
+        )).scalars().all()
+        return [{"id": c.id, "title": c.title, "created_at": c.created_at.isoformat(), "updated_at": c.updated_at.isoformat()} for c in rows]
+    except SQLAlchemyError:
+        await db.rollback()
+        await _ensure_tables(db)
+        return []
 
 
 async def create_conversation(db: AsyncSession, user_id: str) -> MentorConversation:
+    await _ensure_tables(db)
     conv = MentorConversation(user_id=user_id, title="New chat")
     db.add(conv)
     await db.commit()
@@ -160,6 +178,7 @@ async def delete_conversation(db: AsyncSession, user_id: str, conversation_id: s
 
 
 async def send_message(db: AsyncSession, user_id: str, content: str, conversation_id: str | None = None) -> tuple[MentorConversation, MentorMessage, MentorMessage]:
+    await _ensure_tables(db)
     content = (content or "").strip()
     if not content:
         raise ValueError("Message cannot be empty")
