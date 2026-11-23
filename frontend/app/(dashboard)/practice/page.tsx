@@ -2,19 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  ChevronLeft,
-  Loader2,
-  Play,
-  Send,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Code2,
-  Target,
-  Layers,
-} from "lucide-react";
+import { ChevronLeft, Loader2, Play, Send, CheckCircle2, XCircle, Clock, AlertTriangle, Code2 } from "lucide-react";
 
 interface TestResult {
   name: string;
@@ -58,6 +46,7 @@ function PracticeContent() {
   const [challenges, setChallenges] = useState<ChallengeSummary[]>([]);
   const [skillInput, setSkillInput] = useState(searchParams.get("skill") || "");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | "beginner" | "intermediate" | "advanced">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "solved" | "attempted" | "unsolved">("all");
   const [topicFilter, setTopicFilter] = useState("all");
   const [language, setLanguage] = useState(searchParams.get("language") || "all");
   const [code, setCode] = useState("");
@@ -179,7 +168,11 @@ function PracticeContent() {
   const diffTone = (d: string) => d === "beginner" ? "text-emerald-400" : d === "intermediate" ? "text-amber-400" : "text-red-400";
   const statusIcon = (s: ChallengeSummary["status"]) => s === "solved" ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : s === "attempted" ? <div className="h-4 w-4 rounded-full border-2 border-amber-400/70" /> : <div className="h-4 w-4 rounded-full border border-white/20" />;
   const topics = ["all", ...Array.from(new Set(challenges.map((c) => c.skill).filter(Boolean))).sort((a, b) => a.localeCompare(b))];
-  const filtered = challenges.filter((c) => (difficultyFilter === "all" || c.difficulty === difficultyFilter) && (topicFilter === "all" || c.skill === topicFilter));
+  const filtered = challenges.filter((c) =>
+    (difficultyFilter === "all" || c.difficulty === difficultyFilter) &&
+    (topicFilter === "all" || c.skill === topicFilter) &&
+    (statusFilter === "all" || c.status === statusFilter)
+  );
   const counts = { all: challenges.length, beginner: challenges.filter(c=>c.difficulty==="beginner").length, intermediate: challenges.filter(c=>c.difficulty==="intermediate").length, advanced: challenges.filter(c=>c.difficulty==="advanced").length };
 
   return (
@@ -189,94 +182,75 @@ function PracticeContent() {
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
       <div className="mx-auto w-full max-w-[90rem] p-4 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5" aria-label="Back"><ChevronLeft className="h-5 w-5" /></button>
-            <div><h1 className="text-2xl font-bold tracking-tight">Coding Practice</h1><p className="text-sm text-slate-400">LeetCode-style problem browser and editor</p></div>
+            <button onClick={() => router.back()} className="rounded-md p-2 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Back"><ChevronLeft className="h-5 w-5" /></button>
+            <div><h1 className="text-xl font-semibold tracking-tight">Problemset</h1><p className="text-xs text-slate-500">Practice coding problems</p></div>
           </div>
-          {challenge && <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => runCode(false)} disabled={running} className={runBtn}>{running ? <><Loader2 className="h-4 w-4 animate-spin" />Running...</> : <><Play className="h-4 w-4" />Run</>}</button>
-            <button onClick={() => runCode(true)} disabled={running} className={primaryBtn}>{running ? <><Loader2 className="h-4 w-4 animate-spin" />Running...</> : <><Send className="h-4 w-4" />Submit</>}</button>
-          </div>}
+          <div className="flex items-center gap-2">
+            <select value={language} onChange={(e) => { const v = e.target.value; setLanguage(v); void loadChallenges(undefined, undefined, v); }} className="rounded-md border border-white/10 bg-[#262626] px-3 py-1.5 text-sm text-slate-200 focus:outline-none">
+              <option value="all">All Languages</option><option value="python">Python3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
+            </select>
+            <button onClick={() => void generateChallenge()} disabled={generating} className="rounded-md bg-[#2cbb5d] px-3 py-1.5 text-sm font-medium text-black hover:bg-[#32c766] disabled:opacity-50">{generating ? "Generating..." : "Generate"}</button>
+          </div>
         </div>
 
-        {error && <div className="alert alert-error mb-4 animate-fade-in"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p>{error}</p></div>}
+        {error && <div className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"><AlertTriangle className="mr-2 inline h-4 w-4" />{error}</div>}
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[28rem_minmax(0,1fr)]">
-          <aside className={`${cardClass} flex max-h-[calc(100vh-10rem)] flex-col !p-0 overflow-hidden`}>
-            <div className="border-b border-white/10 p-4 space-y-3">
-              <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Problems</h2><span className="text-xs text-slate-500">{filtered.length} / {challenges.length}</span></div>
-              <div className="flex flex-wrap gap-2">{([["all","All"],["beginner","Easy"],["intermediate","Medium"],["advanced","Hard"]] as const).map(([k,l]) => (
-                <button key={k} onClick={() => setDifficultyFilter(k)} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${difficultyFilter===k ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}>
-                  <span className={k==="beginner"?"text-emerald-400":k==="intermediate"?"text-amber-400":k==="advanced"?"text-red-400":""}>{l}</span> <span className="text-slate-500">{counts[k]}</span>
-                </button>
-              ))}</div>
-              <div className="grid grid-cols-2 gap-2">
-                <select value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)} className="rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20">
-                  <option value="all">All Topics</option>
-                  {topics.filter((t) => t !== "all").map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select value={language} onChange={(e) => { const v = e.target.value; setLanguage(v); void loadChallenges(undefined, undefined, v); }} className="rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20">
-                  <option value="all">All Languages</option><option value="python">Python 3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
-                </select>
+        <div className="grid grid-cols-1 gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:border xl:border-white/10 xl:rounded-lg overflow-hidden min-h-[calc(100vh-11rem)]">
+          <aside className="flex flex-col border-b xl:border-b-0 xl:border-r border-white/10 bg-[#1a1a1a]">
+            <div className="border-b border-white/10 p-3 space-y-3">
+              <div className="flex flex-wrap gap-2">{([["all","All Topics"],...topics.filter(t=>t!=="all").map(t=>[t,t])] as [string,string][]).slice(0,8).map(([k,l]) => (
+                <button key={k} onClick={() => setTopicFilter(k)} className={`rounded-full px-3 py-1 text-xs ${topicFilter===k ? "bg-white text-black" : "bg-[#303030] text-slate-300 hover:bg-[#3a3a3a]"}`}>{l}</button>
+              ))}
+                {topics.length > 9 && <select value={topicFilter} onChange={(e)=>setTopicFilter(e.target.value)} className="rounded-full bg-[#303030] px-3 py-1 text-xs text-slate-300 focus:outline-none"><option value="all">More</option>{topics.filter(t=>t!=="all").map(t=><option key={t} value={t}>{t}</option>)}</select>}
               </div>
-              <div className="flex gap-2">
-                <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==="Enter") void loadChallenges(); }} placeholder="Search questions..." className="w-full rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-white/20" />
-                <button onClick={() => void loadChallenges()} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 hover:bg-white/10">Search</button>
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex rounded-md bg-[#262626] p-0.5">{([["all","All"],["beginner","Easy"],["intermediate","Med."],["advanced","Hard"]] as const).map(([k,l]) => (
+                  <button key={k} onClick={() => setDifficultyFilter(k)} className={`px-3 py-1 text-xs rounded ${difficultyFilter===k ? "bg-[#3e3e3e] text-white" : "text-slate-400 hover:text-slate-200"}`}><span className={k==="beginner"?"text-emerald-400":k==="intermediate"?"text-amber-400":k==="advanced"?"text-red-400":""}>{l}</span></button>
+                ))}</div>
+                <select value={statusFilter} onChange={(e)=>setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-md bg-[#262626] px-2 py-1.5 text-xs text-slate-300 focus:outline-none"><option value="all">Status</option><option value="solved">Solved</option><option value="attempted">Attempted</option><option value="unsolved">Todo</option></select>
+                <div className="flex-1 min-w-[10rem] flex gap-2"><input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e)=>{ if(e.key==="Enter") void loadChallenges(); }} placeholder="Search questions" className="w-full rounded-md bg-[#262626] px-3 py-1.5 text-sm text-white placeholder:text-slate-500 focus:outline-none" /><button onClick={() => void loadChallenges()} className="rounded-md bg-[#262626] px-3 py-1.5 text-sm text-slate-300 hover:bg-[#333]">Search</button></div>
               </div>
-              <button onClick={() => void generateChallenge()} disabled={generating} className="w-full rounded-lg bg-emerald-600/90 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50">{generating ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Generating...</span> : "Generate New Question"}</button>
             </div>
-            <div className="overflow-auto">
-              <div className="grid grid-cols-[3rem_minmax(0,1fr)_5.5rem] px-4 py-2.5 text-xs font-medium text-slate-500 border-b border-white/10 bg-white/[0.02]"><span>Status</span><span>Title</span><span className="text-right">Difficulty</span></div>
-              {filtered.length === 0 ? <p className="p-6 text-sm text-slate-500 text-center">No questions found. Try changing filters or generate a new question.</p> : filtered.map((c, i) => (
-                <button key={c.id} onClick={() => void openChallenge(c.id)} className={`grid w-full grid-cols-[3rem_minmax(0,1fr)_5.5rem] items-center px-4 py-3 text-left border-b border-white/5 hover:bg-white/[0.04] ${challenge?.id === c.id ? "bg-white/[0.06]" : i % 2 === 1 ? "bg-white/[0.01]" : ""}`}>
-                  <span className="flex justify-center">{statusIcon(c.status)}</span>
-                  <span className="min-w-0 pr-2"><span className="text-sm text-slate-200 hover:text-white">{c.title}</span><div className="mt-0.5 flex gap-2 text-[11px] text-slate-500"><span className="truncate">{c.skill}</span><span>•</span><span>{c.language}</span></div></span>
+            <div className="overflow-auto flex-1">
+              <div className="grid grid-cols-[3rem_minmax(0,1fr)_6rem] px-4 py-2 text-xs text-slate-500 border-b border-white/10"><span>Status</span><span>Title</span><span className="text-right">Difficulty</span></div>
+              {filtered.length === 0 ? <p className="p-8 text-sm text-slate-500 text-center">No questions found.</p> : filtered.map((c, i) => (
+                <button key={c.id} onClick={() => void openChallenge(c.id)} className={`grid w-full grid-cols-[3rem_minmax(0,1fr)_6rem] items-center px-4 py-2.5 text-left hover:bg-[#2a2a2a] ${challenge?.id === c.id ? "bg-[#2a2a2a]" : i % 2 === 1 ? "bg-[#262626]" : ""}`}>
+                  <span className="flex items-center">{statusIcon(c.status)}</span>
+                  <span className="min-w-0 pr-3"><span className="text-sm text-slate-200">{i + 1}. {c.title}</span></span>
                   <span className={`text-right text-sm ${diffTone(c.difficulty)}`}>{diffLabel(c.difficulty)}</span>
                 </button>
               ))}
             </div>
           </aside>
 
-          <div className="min-w-0">
+          <div className="min-w-0 bg-[#1a1a1a] flex flex-col">
             {loading && !challenge ? (
-              <div className="flex items-center gap-3 text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /><p>Loading challenge...</p></div>
+              <div className="flex flex-1 items-center justify-center gap-3 text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /><p>Loading...</p></div>
             ) : !challenge ? (
-              <div className={`${cardClass} py-12 text-center`}><Target className="mx-auto mb-4 h-12 w-12 text-slate-500" /><h3 className="mb-2 text-xl font-semibold">Pick a problem</h3><p className="text-sm text-slate-400">Select a problem from the list, or generate a new one for your skill gap.</p></div>
+              <div className="flex flex-1 flex-col items-center justify-center text-slate-500 p-8"><Code2 className="mb-3 h-10 w-10 opacity-40" /><p className="text-sm">Select a question to view details</p></div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
-                <div className="flex flex-col gap-4">
-                  <section className={cardClass}>
-                    <div className="mb-3 flex flex-wrap items-center gap-2"><h2 className="text-xl font-semibold">{challenge.title}</h2><span className={`text-sm font-medium ${diffTone(challenge.difficulty)}`}>{diffLabel(challenge.difficulty)}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.skill}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.language}</span></div>
-                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-200">{challenge.prompt}</pre>
-                    {challenge.expected_time_complexity && <p className="mt-4 text-xs text-slate-400">Target: {challenge.expected_time_complexity}</p>}
-                  </section>
-                  <section className={cardClass}>
-                    <div className="mb-3 flex items-center gap-2"><Code2 className="h-4 w-4 text-indigo-400" /><h2 className="font-semibold">Signature</h2></div>
-                    <pre className="whitespace-pre-wrap rounded-xl bg-[#0d1220] p-4 font-mono text-sm text-emerald-200">{challenge.function_signature}</pre>
-                  </section>
-                  {milestoneMarked && <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300"><CheckCircle2 className="h-4 w-4 text-emerald-400" /><p>Challenge passed — linked roadmap milestone marked complete.</p></div>}
+              <>
+                <div className="border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0"><div className="flex items-center gap-2"><h2 className="font-medium text-slate-100 truncate">{challenge.title}</h2><span className={`text-xs ${diffTone(challenge.difficulty)}`}>{diffLabel(challenge.difficulty)}</span></div><div className="text-xs text-slate-500 mt-0.5">{challenge.skill} • {({python:"Python3",javascript:"JavaScript",java:"Java",cpp:"C++"} as Record<string,string>)[challenge.language] || challenge.language}</div></div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => runCode(false)} disabled={running} className="rounded-md bg-[#3e3e3e] px-3 py-1.5 text-sm text-slate-200 hover:bg-[#4a4a4a] disabled:opacity-50 inline-flex items-center gap-1.5">{running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Run</button>
+                    <button onClick={() => runCode(true)} disabled={running} className="rounded-md bg-[#2cbb5d] px-3 py-1.5 text-sm font-medium text-black hover:bg-[#32c766] disabled:opacity-50 inline-flex items-center gap-1.5">{running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Submit</button>
+                  </div>
                 </div>
-
-                <div className="flex flex-col gap-4">
-                  <section className={cardClass}>
-                    <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Code</h2><span className="text-xs text-slate-500">{({python:"Python 3",javascript:"JavaScript (Node.js)",java:"Java",cpp:"C++"} as Record<string,string>)[challenge.language] || challenge.language}</span></div>
-                    <textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} className={codeEditorClass} placeholder="# Write your solution here" aria-label="Code editor" />
-                  </section>
-                  {results && <section className={cardClass}>
-                    <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Test Results {lastPassed !== null && <span className={`ml-2 text-sm ${lastPassed ? "text-emerald-400" : "text-red-400"}`}>{passedCount}/{results.length} passed</span>}</h2></div>
-                    <ul className="space-y-2">{results.map((t, i) => (
-                      <li key={i} className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
-                        <div className="flex items-start gap-3">{t.timed_out ? <Clock className="mt-0.5 h-4 w-4 text-yellow-400" /> : t.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-400" /> : <XCircle className="mt-0.5 h-4 w-4 text-red-400" />}
-                          <div className="min-w-0 flex-1"><p className="text-sm font-medium text-slate-200">{t.name || `Test ${i + 1}`} {t.timed_out ? "— timed out" : t.passed ? "— passed" : "— failed"}</p>
-                            {!t.passed && !t.timed_out && <div className="mt-1 space-y-1">{t.stdout !== undefined && t.stdout !== "" && <pre className="max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-slate-400"><span className="text-slate-500">stdout: </span>{t.stdout.slice(0, 500)}</pre>}{t.expected && <pre className="max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-emerald-400/80"><span className="text-slate-500">expected: </span>{t.expected.slice(0, 500)}</pre>}</div>}
-                            {t.stderr && t.stderr !== "" && <pre className="mt-1 max-h-24 overflow-auto rounded-md bg-black/30 p-2 font-mono text-xs text-red-400">{t.stderr.slice(0, 500)}</pre>}
-                          </div></div>
-                      </li>
-                    ))}</ul>
-                  </section>}
+                <div className="flex-1 overflow-auto p-4 space-y-4">
+                  <section><pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-300">{challenge.prompt}</pre>{challenge.expected_time_complexity && <p className="mt-3 text-xs text-slate-500">Target: {challenge.expected_time_complexity}</p>}</section>
+                  <section><div className="text-xs font-medium text-slate-400 mb-2">Signature</div><pre className="whitespace-pre-wrap rounded-md bg-[#262626] p-3 font-mono text-xs text-slate-200">{challenge.function_signature}</pre></section>
+                  <section className="flex-1 flex flex-col"><div className="text-xs font-medium text-slate-400 mb-2">Code</div><textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} className="w-full min-h-[20rem] flex-1 resize-y rounded-md border border-white/10 bg-[#262626] p-3 font-mono text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-white/20" aria-label="Code editor" /></section>
+                  {milestoneMarked && <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300"><CheckCircle2 className="inline h-4 w-4 mr-2" />Passed — roadmap milestone marked complete.</div>}
+                  {results && <section><div className="text-xs font-medium text-slate-400 mb-2">Testcase {lastPassed !== null && <span className={lastPassed ? "text-emerald-400" : "text-red-400"}>{passedCount}/{results.length} passed</span>}</div><div className="space-y-2">{results.map((t, i) => (
+                    <div key={i} className="rounded-md bg-[#262626] p-3 text-sm"><div className="flex items-center gap-2">{t.timed_out ? <Clock className="h-4 w-4 text-yellow-400" /> : t.passed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-red-400" />}<span className="text-slate-300">{t.name || `Case ${i + 1}`}</span><span className="text-xs text-slate-500 ml-auto">{t.timed_out ? "Timed out" : t.passed ? "Accepted" : "Wrong Answer"}</span></div>
+                    {!t.passed && !t.timed_out && <div className="mt-2 space-y-1 text-xs font-mono">{t.stdout !== undefined && t.stdout !== "" && <div><div className="text-slate-500">Output</div><pre className="bg-[#1a1a1a] p-2 rounded text-slate-300 overflow-auto">{t.stdout.slice(0,500)}</pre></div>}{t.expected && <div><div className="text-slate-500">Expected</div><pre className="bg-[#1a1a1a] p-2 rounded text-slate-300 overflow-auto">{t.expected.slice(0,500)}</pre></div>}</div>}
+                    {t.stderr && <pre className="mt-2 text-xs font-mono bg-[#1a1a1a] p-2 rounded text-red-400 overflow-auto">{t.stderr.slice(0,500)}</pre>}</div>
+                  ))}</div></section>}
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
