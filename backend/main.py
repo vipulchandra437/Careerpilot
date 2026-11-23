@@ -106,6 +106,15 @@ async def lifespan(app: FastAPI):
             await conn.run_sync(Base.metadata.create_all)
             await _apply_lightweight_migrations(conn)
         logger.info("Database tables created/verified")
+        # The deployed DB may predate the language column and the built-in bank.
+        # Keep startup self-healing so any database the app points at works.
+        try:
+            from backend.seed_dsa import ensure_dsa_challenges
+            added = await ensure_dsa_challenges()
+            if added:
+                logger.info("Seeded %s built-in DSA challenges", added)
+        except Exception:
+            logger.exception("Could not seed built-in DSA challenges")
     except Exception as e:
         # Hard-fail: never start the API without a working database. Starting
         # without a DB causes write endpoints (signup, resume upload, etc.) to

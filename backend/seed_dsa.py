@@ -543,9 +543,13 @@ Output:
 ]
 
 
-async def main() -> None:
+async def ensure_dsa_challenges() -> int:
+    """Make the built-in bank available on whichever database the app uses.
+
+    Idempotent and safe to call at startup: adds the language column if an old
+    schema lacks it, then inserts only titles that are not already present.
+    """
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
         cols = await conn.run_sync(
             lambda c: [col["name"] for col in inspect(c).get_columns("challenges")]
         )
@@ -576,7 +580,14 @@ async def main() -> None:
             ))
             added += 1
         await db.commit()
-        print(f"DSA seed: {added} added, {len(PROBLEMS) - added} already present")
+        return added
+
+
+async def main() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    added = await ensure_dsa_challenges()
+    print(f"DSA seed: {added} added, {len(PROBLEMS) - added} already present")
 
 
 if __name__ == "__main__":
