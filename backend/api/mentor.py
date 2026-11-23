@@ -87,6 +87,10 @@ async def create_message(req: SendRequest, user=Depends(get_current_user), db: A
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.exception("Mentor message failed for user %s", getattr(user, "id", "?"))
+        try:
+            await db.rollback()
+        except Exception:
+            pass
         status = getattr(e, "status_code", None) or getattr(getattr(e, "response", None), "status_code", None)
         if not get_settings().openrouter_api_key:
             detail = "Mentor AI is not configured. Please set OPENROUTER_API_KEY."
