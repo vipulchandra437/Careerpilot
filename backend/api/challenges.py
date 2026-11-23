@@ -66,12 +66,13 @@ async def difficulties(user=Depends(get_current_user)):
 async def browse_challenges(
     skill: str | None = None,
     difficulty: str | None = None,
+    language: str | None = None,
     limit: int = 50,
     user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """List challenges for the practice browser."""
-    return {"challenges": await list_challenges(db, user_id=user.id, skill=skill, difficulty=difficulty, limit=limit)}
+    return {"challenges": await list_challenges(db, user_id=user.id, skill=skill, difficulty=difficulty, language=language, limit=limit)}
 
 
 @router.post("/generate", response_model=ChallengeOut)

@@ -270,6 +270,7 @@ async def list_challenges(
     user_id: str,
     skill: str | None = None,
     difficulty: str | None = None,
+    language: str | None = None,
     limit: int = 50,
 ) -> list[dict]:
     """List challenges with the user's latest attempt status for a LeetCode-like browser."""
@@ -278,6 +279,8 @@ async def list_challenges(
         q = q.where(Challenge.skill == skill)
     if difficulty and difficulty in DIFFICULTIES:
         q = q.where(Challenge.difficulty == difficulty)
+    if language and language in LANGUAGES:
+        q = q.where(Challenge.language == language)
     challenges = (await db.execute(q.limit(max(1, min(limit, 100))))).scalars().all()
     if not challenges:
         return []

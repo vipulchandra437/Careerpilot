@@ -58,7 +58,7 @@ function PracticeContent() {
   const [challenges, setChallenges] = useState<ChallengeSummary[]>([]);
   const [skillInput, setSkillInput] = useState(searchParams.get("skill") || "");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | "beginner" | "intermediate" | "advanced">("all");
-  const [language, setLanguage] = useState(searchParams.get("language") || "python");
+  const [language, setLanguage] = useState(searchParams.get("language") || "all");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -73,19 +73,21 @@ function PracticeContent() {
   const challengeIdParam = searchParams.get("challengeId") || "";
   const initRef = useRef(false);
 
-  const loadChallenges = useCallback(async (skill?: string, diff?: string) => {
+  const loadChallenges = useCallback(async (skill?: string, diff?: string, lang?: string) => {
     const token = localStorage.getItem("access_token");
     if (!token) return;
     const qs = new URLSearchParams();
     const s = (skill ?? skillInput).trim();
     const d = diff ?? difficultyFilter;
+    const l = lang ?? language;
     if (s) qs.set("skill", s);
     if (d && d !== "all") qs.set("difficulty", d);
+    if (l && l !== "all") qs.set("language", l);
     try {
       const res = await fetch(`/api/challenges${qs.toString() ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setChallenges((await res.json()).challenges || []);
     } catch { /* list is optional */ }
-  }, [skillInput, difficultyFilter]);
+  }, [skillInput, difficultyFilter, language]);
 
   const openChallenge = useCallback(async (id: string) => {
     setLoading(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
@@ -103,11 +105,12 @@ function PracticeContent() {
   const generateChallenge = useCallback(async () => {
     setGenerating(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
     const token = localStorage.getItem("access_token");
+    const genLang = language === "all" ? "python" : language;
     try {
       const res = await fetch("/api/challenges/generate", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", language, target_role_id: targetRoleId || null, roadmap_milestone_id: milestoneId || null }),
+        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", language: genLang, target_role_id: targetRoleId || null, roadmap_milestone_id: milestoneId || null }),
       });
       if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
       const data = await res.json();
@@ -122,7 +125,7 @@ function PracticeContent() {
     if (!token) { router.push("/login"); return; }
     if (initRef.current) return;
     initRef.current = true;
-    void loadChallenges(searchParams.get("skill") || "", "all");
+    void loadChallenges(searchParams.get("skill") || "", "all", "all");
     if (challengeIdParam) { void openChallenge(challengeIdParam); return; }
     setLoading(false);
   }, [challengeIdParam, loadChallenges, openChallenge, router, searchParams]);
@@ -211,8 +214,8 @@ function PracticeContent() {
                 <button onClick={() => void loadChallenges()} className={runBtn}>Search</button>
               </div>
               <div className="flex gap-2">
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
-                  <option value="python">Python 3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
+                <select value={language} onChange={(e) => { const v = e.target.value; setLanguage(v); void loadChallenges(undefined, undefined, v); }} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
+                  <option value="all">All languages</option><option value="python">Python 3</option><option value="javascript">JavaScript</option><option value="java">Java</option><option value="cpp">C++</option>
                 </select>
                 <button onClick={() => void generateChallenge()} disabled={generating} className={primaryBtn}>{generating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}</button>
               </div>
