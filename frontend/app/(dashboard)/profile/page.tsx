@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  FileText, Github, Linkedin, Loader2, AlertTriangle, X, CheckCircle2,
-  User, Mail, MapPin, Phone, Globe, Pencil, Save, Camera,
+  FileText, Loader2, AlertTriangle, CheckCircle2,
+  User, Mail, MapPin, Phone, Globe, Pencil, Save, Camera, X,
 } from "lucide-react";
 
 interface Skill { name: string; source: string; confidence: string; }
@@ -46,9 +46,6 @@ function ProfileContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [linkedinPaste, setLinkedinPaste] = useState("");
-  const [showLinkedinPaste, setShowLinkedinPaste] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -71,57 +68,6 @@ function ProfileContent() {
 
   useEffect(() => { const token = localStorage.getItem("access_token"); if (!token) { router.push("/login"); return; } fetchSnapshot(); }, [router, fetchSnapshot]);
   useEffect(() => { const ge = searchParams.get("github_error"); if (ge) { setError(`GitHub: ${ge}`); window.history.replaceState({}, "", "/profile"); } }, [searchParams]);
-
-  useEffect(() => {
-    const githubCode = searchParams.get("github_code");
-    if (!githubCode) return;
-    (async () => {
-      const token = localStorage.getItem("access_token"); if (!token) return;
-      setUploading(true); setError("");
-      try {
-        const res = await fetch(`/api/profile/github/connect?code=${encodeURIComponent(githubCode)}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-        if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-        if (!res.ok) { const d = await res.json(); setError(d.detail || "GitHub connection failed"); }
-      } catch { setError("GitHub connection failed"); }
-      finally { window.history.replaceState({}, "", "/profile"); await fetchSnapshot(); setUploading(false); }
-    })();
-  }, [searchParams, fetchSnapshot, router]);
-
-  async function uploadResume(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploading(true); setError("");
-    try {
-      const token = localStorage.getItem("access_token"); const fd = new FormData(); fd.append("file", file);
-      const res = await fetch("/api/profile/resume", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
-      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-      if (!res.ok) { const d = await res.json(); setError(d.detail || "Upload failed"); return; }
-      await fetchSnapshot();
-    } catch { setError("Upload failed"); } finally { setUploading(false); }
-  }
-
-  async function importLinkedinPaste() {
-    if (!linkedinPaste.trim()) return;
-    setUploading(true); setError("");
-    try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/profile/linkedin/paste", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ content: linkedinPaste }) });
-      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-      if (!res.ok) { const d = await res.json(); setError(d.detail || "Import failed"); return; }
-      setLinkedinPaste(""); setShowLinkedinPaste(false); await fetchSnapshot();
-    } catch { setError("Import failed"); } finally { setUploading(false); }
-  }
-
-  async function uploadLinkedinFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploading(true); setError("");
-    try {
-      const token = localStorage.getItem("access_token"); const fd = new FormData(); fd.append("file", file);
-      const res = await fetch("/api/profile/linkedin/import", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
-      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-      if (!res.ok) { const d = await res.json(); setError(d.detail || "Import failed"); return; }
-      setLinkedinPaste(""); setShowLinkedinPaste(false); await fetchSnapshot();
-    } catch { setError("Import failed"); } finally { setUploading(false); e.target.value = ""; }
-  }
 
   async function savePersonal() {
     setSaving(true); setError("");
@@ -174,9 +120,6 @@ function ProfileContent() {
 
   if (loading) return <main className="relative flex min-h-screen items-center justify-center bg-surface p-8"><div className="flex items-center gap-3 text-slate-400"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" /><p>Loading profile...</p></div></main>;
 
-  const hasResume = snapshot?.resume_data;
-  const hasGithub = snapshot?.github_data;
-  const hasLinkedin = snapshot?.linkedin_data;
   const conflicts = snapshot?.merged?.conflicts || [];
   const personal = snapshot?.personal || {};
   const user = snapshot?.user;
@@ -246,71 +189,11 @@ function ProfileContent() {
           {!editing && personal.bio && <p className="mt-4 border-t border-white/10 pt-4 text-sm text-slate-300">{personal.bio}</p>}
         </section>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <div className={card}><div className={muted}>Email</div><div className="mt-1 text-sm font-medium text-white break-all">{user?.email}</div></div>
           <div className={card}><div className={muted}>Member since</div><div className="mt-1 text-sm font-medium text-white">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</div></div>
           <div className={card}><div className={muted}>Skills detected</div><div className="mt-1 text-sm font-medium text-white">{snapshot?.merged?.skills?.length || 0}</div></div>
-          <div className={card}><div className={muted}>Sources connected</div><div className="mt-1 text-sm font-medium text-white">{[hasResume, hasGithub, hasLinkedin].filter(Boolean).length} / 3</div></div>
         </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className={card}>
-            <div className="flex items-center justify-between"><h2 className={cardTitle}><FileText aria-hidden="true" className="h-5 w-5 text-brand-400" />Resume</h2>{hasResume && <span className={`${pill} ${pillColors.blue}`}>{snapshot.resume_data!.skills?.length || 0} skills</span>}</div>
-            {hasResume ? (
-              <div className="mt-4">
-                <p className={`${muted} mb-3`}>{snapshot.resume_data!.filename}</p>
-                <div className="mb-4 flex flex-wrap gap-2">{snapshot.resume_data!.skills?.slice(0, 5).map(s => <span key={s} className={`${pill} ${pillColors.blue}`}>{s}</span>)}</div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="block"><span className={muted}>Re-upload</span><input type="file" accept=".pdf,.docx,.txt" onChange={uploadResume} className={`${fileCls} mt-2`} disabled={uploading} /></label>
-                  <button onClick={() => router.push("/resume-builder")} className="text-sm text-brand-300 hover:text-brand-200">Open Builder & Analyzer</button>
-                </div>
-              </div>
-            ) : <div className="mt-4"><p className={`${muted} mb-4`}>No resume uploaded</p><label className="block"><span className={muted}>Upload resume</span><input type="file" accept=".pdf,.docx,.txt" onChange={uploadResume} className={`${fileCls} mt-2`} disabled={uploading} /></label></div>}
-          </div>
-
-          <div className={card}>
-            <div className="flex items-center justify-between"><h2 className={cardTitle}><Github aria-hidden="true" className="h-5 w-5 text-emerald-400" />GitHub</h2>{hasGithub && <span className={`${pill} ${pillColors.green}`}>{snapshot.github_data!.repos?.length || 0} repos</span>}</div>
-            {hasGithub ? (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-slate-200 mb-1">@{snapshot.github_data!.username}</p>
-                <p className={`${muted} mb-3`}>Connected account</p>
-                <div className="mb-4 flex flex-wrap gap-2">{Object.entries(snapshot.github_data!.languages || {}).slice(0, 5).map(([lang]) => <span key={lang} className={`${pill} ${pillColors.green}`}>{lang}</span>)}</div>
-                <button onClick={() => {}} className={linkCls}>Re-analyze</button>
-              </div>
-            ) : (
-              <div className="mt-4"><p className={`${muted} mb-4`}>GitHub not connected</p><button onClick={async () => {
-                try { const token = localStorage.getItem("access_token"); const res = await fetch("/api/profile/github/auth-url", { headers: { Authorization: `Bearer ${token}` } });
-                  if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-                  if (res.ok) { const d = await res.json(); document.cookie = `github_oauth_state=${d.state}; path=/; SameSite=Lax; max-age=300`; window.location.href = d.url; } else setError("Failed to start GitHub connection");
-                } catch { setError("Failed to start GitHub connection"); }
-              }} className="btn-primary focus-ring w-full !py-2.5">Connect GitHub</button></div>
-            )}
-          </div>
-
-          <div className={card}>
-            <div className="flex items-center justify-between"><h2 className={cardTitle}><Linkedin aria-hidden="true" className="h-5 w-5 text-purple-400" />LinkedIn</h2>{hasLinkedin && <span className={`${pill} ${pillColors.purple}`}>{snapshot.linkedin_data!.skills?.length || 0} skills</span>}</div>
-            {hasLinkedin ? (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-slate-200 mb-1">{snapshot.linkedin_data!.name || "Imported"}</p>
-                <p className={`${muted} mb-3`}>Imported profile</p>
-                <div className="mb-4 flex flex-wrap gap-2">{snapshot.linkedin_data!.skills?.slice(0, 5).map(s => <span key={s} className={`${pill} ${pillColors.purple}`}>{s}</span>)}</div>
-                <button onClick={() => setShowLinkedinPaste(true)} className={linkCls}>Re-import</button>
-              </div>
-            ) : <div className="mt-4"><p className={`${muted} mb-4`}>No LinkedIn data</p><button onClick={() => setShowLinkedinPaste(true)} className={primaryBtn}>Import LinkedIn</button></div>}
-          </div>
-        </div>
-
-        {showLinkedinPaste && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg card animate-scale-in p-6 shadow-2xl">
-              <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-semibold text-white">Import LinkedIn Data</h3><button onClick={() => { setShowLinkedinPaste(false); setLinkedinPaste(""); }} aria-label="Close" className="rounded-md p-1 text-slate-400 hover:text-white"><X aria-hidden="true" className="h-5 w-5" /></button></div>
-              <p className="text-sm text-slate-400 mb-4">Paste your LinkedIn profile info or upload a data export file. Manual import only - no scraping.</p>
-              <textarea value={linkedinPaste} onChange={e => setLinkedinPaste(e.target.value)} placeholder="Paste your LinkedIn profile information here..." className="input mb-4 h-48 !overflow-y-auto p-3 focus-ring" />
-              <label className="block mb-4"><span className={`${muted} mb-1 block`}>Or upload a JSON/CSV data export file</span><input type="file" accept=".json,.csv,.txt" onChange={uploadLinkedinFile} className={`${fileCls} mt-2`} disabled={uploading} /></label>
-              <div className="flex gap-4"><button onClick={importLinkedinPaste} disabled={uploading || !linkedinPaste.trim()} className={primaryBtn}>{uploading ? <><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />Importing...</> : "Import"}</button><button onClick={() => { setShowLinkedinPaste(false); setLinkedinPaste(""); }} className={darkBtn}>Cancel</button></div>
-            </div>
-          </div>
-        )}
 
         {conflicts.length > 0 && <div className={`${card} mt-6`}><h2 className={cardTitle}><AlertTriangle aria-hidden="true" className="h-5 w-5 text-yellow-400" />Data Conflicts</h2><div className="mt-4 space-y-4">{conflicts.map(c => <div key={c.skill} className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4"><p className="mb-2 font-medium text-yellow-200">{c.skill}</p><div className="space-y-1 text-sm text-slate-300">{c.github_signal && <p>GitHub: {c.github_signal}</p>}{c.resume_signal && <p>Resume: {c.resume_signal}</p>}{c.linkedin_signal && <p>LinkedIn: {c.linkedin_signal}</p>}<p className="font-medium text-yellow-300">{c.resolution}</p></div></div>)}</div></div>}
 
@@ -320,7 +203,7 @@ function ProfileContent() {
 
         {snapshot?.merged?.education && snapshot.merged.education.length > 0 && <div className={`${card} mt-6`}><h2 className={cardTitle}><FileText aria-hidden="true" className="h-5 w-5 text-indigo-400" />Education</h2><div className="mt-4 space-y-3">{snapshot.merged.education.slice(0, 6).map((e: any, i) => <div key={i} className="rounded-lg border border-white/10 p-3"><div className="font-medium text-white">{e.degree || "Degree"}</div><div className={muted}>{[e.institution || e.school, e.year || e.period].filter(Boolean).join(" · ")}</div></div>)}</div></div>}
 
-        {snapshot?.merged?.projects && snapshot.merged.projects.length > 0 && <div className={`${card} mt-6`}><h2 className={cardTitle}><Github aria-hidden="true" className="h-5 w-5 text-emerald-400" />Projects</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{snapshot.merged.projects.slice(0, 6).map((p: any, i) => <div key={i} className="rounded-lg border border-white/10 p-3"><div className="font-medium text-white">{p.name || "Project"}</div>{p.description && <p className="mt-1 text-sm text-slate-400">{String(p.description).slice(0, 160)}</p>}{Array.isArray(p.technologies) && p.technologies.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{p.technologies.slice(0, 5).map((t: string) => <span key={t} className={`${pill} ${pillColors.gray}`}>{t}</span>)}</div>}</div>)}</div></div>}
+        {snapshot?.merged?.projects && snapshot.merged.projects.length > 0 && <div className={`${card} mt-6`}><h2 className={cardTitle}><FileText aria-hidden="true" className="h-5 w-5 text-emerald-400" />Projects</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{snapshot.merged.projects.slice(0, 6).map((p: any, i) => <div key={i} className="rounded-lg border border-white/10 p-3"><div className="font-medium text-white">{p.name || "Project"}</div>{p.description && <p className="mt-1 text-sm text-slate-400">{String(p.description).slice(0, 160)}</p>}{Array.isArray(p.technologies) && p.technologies.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{p.technologies.slice(0, 5).map((t: string) => <span key={t} className={`${pill} ${pillColors.gray}`}>{t}</span>)}</div>}</div>)}</div></div>}
       </div>
     </main>
   );
