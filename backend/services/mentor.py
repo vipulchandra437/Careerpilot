@@ -1,18 +1,19 @@
-"""Mentor chat service (user-requested MVP).
+"""Mentor chat service.
 
-All LLM calls go through orchestrator (RULES §1). Messages are persisted per user.
+All LLM calls go through orchestrator (RULES §1). Conversations/messages are persisted per user.
 """
 
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.ai.orchestrator import orchestrator
 from backend.models.gap import GapReport
 from backend.models.llm_usage import LLMUsageLog
-from backend.models.mentor import MentorMessage
+from backend.models.mentor import MentorConversation, MentorMessage
 from backend.models.profile import ProfileSnapshot
 from backend.models.roadmap import Roadmap, RoadmapMilestone
 from backend.models.target_role import TargetRoleProfile
@@ -87,30 +88,103 @@ def _render_transcript(messages: list[MentorMessage]) -> str:
     return "\n".join(lines)
 
 
-async def get_messages(db: AsyncSession, user_id: str, limit: int = 50) -> list[MentorMessage]:
+def _title_from(content: str) -> str:
+    text = " ".join((content or "").split())
+    return (text[:60] + "...") if len(text) > 60 else (text or "New chat")
+
+
+async def _get_conversation(db: AsyncSession, user_id: str, conversation_id: str) -> MentorConversation | None:
+    return (await db.execute(
+        select(MentorConversation).where(MentorConversation.id == conversation_id, MentorConversation.user_id == user_id)
+    )).scalar_one_or_none()
+
+
+async def _legacy_messages(db: AsyncSession, user_id: str) -> list[MentorMessage]:
+    return list((await db.execute(
+        select(MentorMessage).where(MentorMessage.user_id == user_id, MentorMessage.conversation_id.is_(None))
+        .order_by(MentorMessage.created_at.asc())
+    )).scalars().all())
+
+
+async def ensure_legacy_conversation(db: AsyncSession, user_id: str) -> MentorConversation | None:
+    legacy = await _legacy_messages(db, user_id)
+    if not legacy:
+        return None
+    title = _title_from(next((m.content for m in legacy if m.role == "user"), "Previous chat"))
+    conv = MentorConversation(user_id=user_id, title=title, created_at=legacy[0].created_at, updated_at=legacy[-1].created_at)
+    db.add(conv)
+    await db.flush()
+    for m in legacy:
+        m.conversation_id = conv.id
+    await db.commit()
+    await db.refresh(conv)
+    return conv
+
+
+async def list_conversations(db: AsyncSession, user_id: str) -> list[dict]:
+    await ensure_legacy_conversation(db, user_id)
+    rows = (await db.execute(
+        select(MentorConversation).where(MentorConversation.user_id == user_id).order_by(MentorConversation.updated_at.desc())
+    )).scalars().all()
+    return [{"id": c.id, "title": c.title, "created_at": c.created_at.isoformat(), "updated_at": c.updated_at.isoformat()} for c in rows]
+
+
+async def create_conversation(db: AsyncSession, user_id: str) -> MentorConversation:
+    conv = MentorConversation(user_id=user_id, title="New chat")
+    db.add(conv)
+    await db.commit()
+    await db.refresh(conv)
+    return conv
+
+
+async def get_messages(db: AsyncSession, user_id: str, conversation_id: str, limit: int = 200) -> list[MentorMessage]:
+    conv = await _get_conversation(db, user_id, conversation_id)
+    if not conv:
+        raise KeyError("Conversation not found")
     result = await db.execute(
-        select(MentorMessage).where(MentorMessage.user_id == user_id).order_by(MentorMessage.created_at.desc()).limit(limit)
+        select(MentorMessage).where(MentorMessage.user_id == user_id, MentorMessage.conversation_id == conversation_id)
+        .order_by(MentorMessage.created_at.asc()).limit(limit)
     )
-    return list(reversed(result.scalars().all()))
+    return list(result.scalars().all())
 
 
-async def clear_messages(db: AsyncSession, user_id: str) -> None:
-    rows = (await db.execute(select(MentorMessage).where(MentorMessage.user_id == user_id))).scalars().all()
-    for r in rows:
-        await db.delete(r)
+async def delete_conversation(db: AsyncSession, user_id: str, conversation_id: str) -> None:
+    conv = await _get_conversation(db, user_id, conversation_id)
+    if not conv:
+        raise KeyError("Conversation not found")
+    msgs = (await db.execute(select(MentorMessage).where(MentorMessage.conversation_id == conversation_id, MentorMessage.user_id == user_id))).scalars().all()
+    for m in msgs:
+        await db.delete(m)
+    await db.delete(conv)
     await db.commit()
 
 
-async def send_message(db: AsyncSession, user_id: str, content: str) -> MentorMessage:
+async def send_message(db: AsyncSession, user_id: str, content: str, conversation_id: str | None = None) -> tuple[MentorConversation, MentorMessage, MentorMessage]:
     content = (content or "").strip()
     if not content:
         raise ValueError("Message cannot be empty")
     if len(content) > 4000:
         raise ValueError("Message is too long")
 
-    history = await get_messages(db, user_id, limit=_MAX_HISTORY)
-    user_msg = MentorMessage(user_id=user_id, role="user", content=content)
+    conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
+    if conversation_id and not conv:
+        raise KeyError("Conversation not found")
+    if not conv:
+        conv = MentorConversation(user_id=user_id, title=_title_from(content))
+        db.add(conv)
+        await db.flush()
+
+    history = (await db.execute(
+        select(MentorMessage).where(MentorMessage.conversation_id == conv.id, MentorMessage.user_id == user_id)
+        .order_by(MentorMessage.created_at.desc()).limit(_MAX_HISTORY)
+    )).scalars().all()
+    history = list(reversed(history))
+
+    user_msg = MentorMessage(user_id=user_id, conversation_id=conv.id, role="user", content=content)
     db.add(user_msg)
+    if conv.title == "New chat":
+        conv.title = _title_from(content)
+    conv.updated_at = datetime.now(timezone.utc)
     await db.flush()
 
     context = await _build_context(db, user_id)
@@ -123,8 +197,11 @@ async def send_message(db: AsyncSession, user_id: str, content: str) -> MentorMe
         tokens_in=resp.tokens_in, tokens_out=resp.tokens_out, cost_usd=resp.cost_usd,
     ))
     answer = (resp.content or "").strip() or "I couldn't generate a response right now. Please try again."
-    assistant_msg = MentorMessage(user_id=user_id, role="assistant", content=answer)
+    assistant_msg = MentorMessage(user_id=user_id, conversation_id=conv.id, role="assistant", content=answer)
     db.add(assistant_msg)
+    conv.updated_at = datetime.now(timezone.utc)
     await db.commit()
+    await db.refresh(conv)
+    await db.refresh(user_msg)
     await db.refresh(assistant_msg)
-    return assistant_msg
+    return conv, user_msg, assistant_msg

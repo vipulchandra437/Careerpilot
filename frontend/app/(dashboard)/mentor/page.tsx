@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Loader2, Send, Trash2, User } from "lucide-react";
-import { PageHeader } from "@/components/ui";
+import { Bot, Loader2, Plus, Send, Trash2, User, MessageSquare } from "lucide-react";
 
-type Msg = { id: string; role: "user" | "assistant"; content: string; created_at: string | null };
+type Msg = { id: string; role: "user" | "assistant"; content: string; created_at: string | null; conversation_id?: string | null };
+type Conv = { id: string; title: string; created_at: string | null; updated_at: string | null };
 
 export default function MentorPage() {
   const router = useRouter();
+  const [conversations, setConversations] = useState<Conv[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -16,116 +18,150 @@ export default function MentorPage() {
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  const token = () => localStorage.getItem("access_token");
-  const auth = () => ({ Authorization: `Bearer ${token()}` });
+  const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("access_token")}` });
+
+  async function loadConversations(selectId?: string | null) {
+    const res = await fetch("/api/mentor/conversations", { headers: auth() });
+    if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return null; }
+    if (!res.ok) throw new Error("load");
+    const data = await res.json();
+    const list: Conv[] = data.conversations || [];
+    setConversations(list);
+    const next = selectId ?? activeId ?? list[0]?.id ?? null;
+    setActiveId(next);
+    return next;
+  }
+
+  async function loadMessages(conversationId: string) {
+    const res = await fetch(`/api/mentor/conversations/${conversationId}/messages`, { headers: auth() });
+    if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
+    if (!res.ok) throw new Error("messages");
+    const data = await res.json();
+    setMessages(data.messages || []);
+  }
 
   useEffect(() => {
     const t = localStorage.getItem("access_token");
     if (!t) { router.push("/login"); return; }
     (async () => {
       try {
-        const res = await fetch("/api/mentor/messages", { headers: { Authorization: `Bearer ${t}` } });
-        if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-        if (res.ok) setMessages((await res.json()).messages || []);
-        else setError("Could not load mentor chat.");
-      } catch { setError("Could not load mentor chat."); }
+        const id = await loadConversations(null);
+        if (id) await loadMessages(id);
+        else setMessages([]);
+      } catch { setError("Could not load mentor chats."); }
       finally { setLoading(false); }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages, sending]);
+
+  async function selectConversation(id: string) {
+    if (id === activeId) return;
+    setError(""); setActiveId(id); setLoading(true);
+    try { await loadMessages(id); } catch { setError("Could not load chat."); } finally { setLoading(false); }
+  }
+
+  function startNewChat() {
+    setError(""); setActiveId(null); setMessages([]); setInput("");
+  }
 
   async function send() {
     const content = input.trim();
     if (!content || sending) return;
     setError(""); setInput(""); setSending(true);
-    const optimistic: Msg = { id: `tmp-${Date.now()}`, role: "user", content, created_at: new Date().toISOString() };
+    const optimistic: Msg = { id: `tmp-${Date.now()}`, role: "user", content, created_at: new Date().toISOString(), conversation_id: activeId };
     setMessages((m) => [...m, optimistic]);
     try {
       const res = await fetch("/api/mentor/messages", {
         method: "POST",
         headers: { ...auth(), "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, conversation_id: activeId }),
       });
       if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setError(data.detail || "Mentor is unavailable."); return; }
-      setMessages((m) => [...m, data.message]);
+      const conv: Conv = data.conversation;
+      setActiveId(conv.id);
+      setConversations((prev) => [conv, ...prev.filter((c) => c.id !== conv.id)]);
+      setMessages((m) => [...m.filter((x) => x.id !== optimistic.id), data.user_message, data.message]);
     } catch {
       setError("Mentor is unavailable.");
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   }
 
-  async function clear() {
-    if (!confirm("Clear mentor chat history?")) return;
+  async function removeConversation(id: string) {
+    if (!confirm("Delete this chat?")) return;
     setError("");
     try {
-      const res = await fetch("/api/mentor/messages", { method: "DELETE", headers: auth() });
-      if (res.ok) setMessages([]);
-      else setError("Could not clear chat.");
-    } catch { setError("Could not clear chat."); }
+      const res = await fetch(`/api/mentor/conversations/${id}`, { method: "DELETE", headers: auth() });
+      if (!res.ok) { setError("Could not delete chat."); return; }
+      const next = conversations.filter((c) => c.id !== id);
+      setConversations(next);
+      if (activeId === id) {
+        const nid = next[0]?.id ?? null;
+        setActiveId(nid);
+        if (nid) await loadMessages(nid); else setMessages([]);
+      }
+    } catch { setError("Could not delete chat."); }
   }
 
   return (
-    <main className="min-h-screen bg-surface p-6 sm:p-8">
-      <div className="mx-auto flex max-w-4xl flex-col" style={{ minHeight: "calc(100vh - 4rem)" }}>
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <PageHeader title="Mentor" subtitle="Ask for career guidance, roadmap help, interview prep, or next steps." />
-          {messages.length > 0 && (
-            <button onClick={clear} className="btn-secondary focus-ring !px-3 !py-2 !text-sm mt-1">
-              <Trash2 className="h-4 w-4" /> Clear
-            </button>
-          )}
-        </div>
+    <main className="min-h-screen bg-surface p-4 sm:p-6">
+      <div className="mx-auto flex max-w-6xl gap-4" style={{ minHeight: "calc(100vh - 3rem)" }}>
+        <aside className="card hidden w-72 shrink-0 flex-col overflow-hidden md:flex">
+          <div className="border-b border-white/10 p-3">
+            <button onClick={startNewChat} className="btn-primary focus-ring w-full !py-2.5 !text-sm"><Plus className="h-4 w-4" /> New chat</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {conversations.length === 0 ? <p className="px-2 py-3 text-sm text-slate-500">No chats yet.</p> : conversations.map((c) => (
+              <div key={c.id} className={`group mb-1 flex items-center gap-1 rounded-lg ${activeId === c.id ? "bg-white/10" : "hover:bg-white/5"}`}>
+                <button onClick={() => void selectConversation(c.id)} className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm text-slate-200">
+                  <MessageSquare className="h-4 w-4 shrink-0 text-slate-500" />
+                  <span className="truncate">{c.title || "New chat"}</span>
+                </button>
+                <button onClick={() => void removeConversation(c.id)} aria-label="Delete chat" className="mr-1 rounded p-1.5 text-slate-500 opacity-0 hover:text-red-300 group-hover:opacity-100"><Trash2 className="h-3.5 w-3.5" /></button>
+              </div>
+            ))}
+          </div>
+        </aside>
 
-        {error && <div className="mb-4 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300">{error}</div>}
+        <section className="card flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+            <div>
+              <h1 className="text-lg font-semibold text-white">Mentor</h1>
+              <p className="text-xs text-slate-400">Personalized career guidance</p>
+            </div>
+            <button onClick={startNewChat} className="btn-secondary focus-ring md:hidden !px-3 !py-2 !text-sm"><Plus className="h-4 w-4" /> New</button>
+          </div>
 
-        <div className="card flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5" style={{ maxHeight: "calc(100vh - 18rem)" }} role="log" aria-label="Mentor chat">
+          {error && <div className="mx-4 mt-4 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300">{error}</div>}
+
+          <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5" style={{ maxHeight: "calc(100vh - 13rem)" }} role="log" aria-label="Mentor chat">
             {loading ? (
               <div className="flex items-center gap-3 text-slate-400"><Loader2 className="h-5 w-5 animate-spin" />Loading chat...</div>
             ) : messages.length === 0 ? (
-              <div className="py-8 text-center">
+              <div className="py-10 text-center">
                 <Bot className="mx-auto mb-3 h-10 w-10 text-brand-300" />
-                <p className="text-white font-medium">Your career mentor</p>
-                <p className="mt-1 text-sm text-slate-400">Ask what to learn next, how to improve your resume, or how to prepare for interviews.</p>
+                <p className="text-white font-medium">Start a new mentor chat</p>
+                <p className="mt-1 text-sm text-slate-400">Your chats are saved so you can come back to them anytime.</p>
               </div>
             ) : messages.map((m) => (
               <div key={m.id} className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 {m.role === "assistant" && <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-300"><Bot className="h-4 w-4" /></div>}
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${m.role === "user" ? "bg-gradient-brand text-white rounded-tr-sm" : "border border-white/10 bg-white/[0.04] text-slate-200 rounded-tl-sm"}`}>
-                  {m.content}
-                </div>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${m.role === "user" ? "bg-gradient-brand text-white rounded-tr-sm" : "border border-white/10 bg-white/[0.04] text-slate-200 rounded-tl-sm"}`}>{m.content}</div>
                 {m.role === "user" && <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-300"><User className="h-4 w-4" /></div>}
               </div>
             ))}
-            {sending && (
-              <div className="flex gap-3 justify-start">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-300"><Bot className="h-4 w-4" /></div>
-                <div className="rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.04] px-4 py-3"><Loader2 className="h-4 w-4 animate-spin text-slate-400" /></div>
-              </div>
-            )}
+            {sending && <div className="flex gap-3 justify-start"><div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-300"><Bot className="h-4 w-4" /></div><div className="rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.04] px-4 py-3"><Loader2 className="h-4 w-4 animate-spin text-slate-400" /></div></div>}
             <div ref={endRef} />
           </div>
 
           <form className="border-t border-white/10 p-4 flex gap-3" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-              rows={2}
-              placeholder="Ask your mentor..."
-              className="min-h-[3.25rem] flex-1 resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-              aria-label="Message mentor"
-            />
-            <button type="submit" disabled={sending || !input.trim()} className="btn-primary focus-ring h-[3.25rem] !px-5 !py-0 disabled:opacity-50">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send
-            </button>
+            <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} rows={2} placeholder="Ask your mentor..." className="min-h-[3.25rem] flex-1 resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30" aria-label="Message mentor" />
+            <button type="submit" disabled={sending || !input.trim()} className="btn-primary focus-ring h-[3.25rem] !px-5 !py-0 disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send</button>
           </form>
-        </div>
+        </section>
       </div>
     </main>
   );
