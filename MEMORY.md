@@ -12,6 +12,7 @@ Running record of cross-session decisions, known limitations, and deferred work 
 | FIX-2 | Access-token refresh is handled on the `reason=expired` login path, not a global fetch wrapper | One central place restores the session with minimal code; callers still redirect to login on `401` instead of retrying the original request. HttpOnly cookies remain a production decision. | LOCKED |
 | MENTOR-1 | Mentor chatbot MVP added as user-requested scope outside PRD | Dedicated `/mentor` page, DB-persisted per-user history (`mentor_messages`, Alembic `010_mentor_messages`), context from profile/gap/roadmap, text-only. All LLM calls through orchestrator `mentor_chat`. PRD/PHASE should be updated if this becomes product scope. | IMPLEMENTED (2026-11-23) |
 | MENTOR-2 | Mentor chat upgraded to conversation history | Added `mentor_conversations` + `mentor_messages.conversation_id` (Alembic `011_mentor_conversations`), conversation list/new/delete APIs, sidebar UI. New chat starts empty; old messages backfilled into legacy conversation. | IMPLEMENTED (2026-11-23) |
+| PRACTICE-1 | Built-in DSA bank is a curated set of classic problems written in our own words, not an imported commercial question bank | `backend/seed_dsa.py` seeds 35 Python stdin/stdout problems across 14 topics with fixed test cases; idempotent by title. Commercial banks (e.g. LeetCode) are copyrighted. Alembic `012_challenge_language` adds `challenges.language` (prod was missing it, which broke the list API). | IMPLEMENTED (2026-11-23) |
 
 ## Decisions Locked In
 
