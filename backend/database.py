@@ -5,7 +5,9 @@ from backend.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(settings.database_url, echo=False)
+# Serverless/Neon closes idle DB connections between warm invocations; pre-ping
+# discards stale pooled connections instead of failing the request.
+engine = create_async_engine(settings.database_url, echo=False, pool_pre_ping=True)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
