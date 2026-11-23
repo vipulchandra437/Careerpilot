@@ -20,16 +20,14 @@ export default function MentorPage() {
 
   const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("access_token")}` });
 
-  async function loadConversations(selectId?: string | null) {
+  async function loadConversations() {
     const res = await fetch("/api/mentor/conversations", { headers: auth() });
-    if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return null; }
+    if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return [] as Conv[]; }
     if (!res.ok) throw new Error("load");
     const data = await res.json();
     const list: Conv[] = data.conversations || [];
     setConversations(list);
-    const next = selectId ?? activeId ?? list[0]?.id ?? null;
-    setActiveId(next);
-    return next;
+    return list;
   }
 
   async function loadMessages(conversationId: string) {
@@ -45,7 +43,9 @@ export default function MentorPage() {
     if (!t) { router.push("/login"); return; }
     (async () => {
       try {
-        const id = await loadConversations(null);
+        const list = await loadConversations();
+        const id = list[0]?.id ?? null;
+        setActiveId(id);
         if (id) await loadMessages(id);
         else setMessages([]);
       } catch { setError("Could not load mentor chats."); }
