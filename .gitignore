@@ -30,3 +30,5 @@ tests/verify_*.py
 tests/security_verify_admin.py
 tests/check_github_status.py
 
+.vercel
+.env*
