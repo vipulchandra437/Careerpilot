@@ -44,3 +44,14 @@ def test_postgres_offline_ddl_matches_model_ids(monkeypatch):
     sql = output.getvalue()
     assert "CREATE TABLE users" in sql
     assert "VARCHAR(36)" in sql  # models use String(36), not PostgreSQL UUID
+    for col in [
+        "full_name",
+        "headline",
+        "bio",
+        "location",
+        "phone",
+        "website",
+        "linkedin_url",
+        "github_url",
+    ]:
+        assert col in sql
