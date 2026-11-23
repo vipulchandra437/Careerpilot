@@ -24,6 +24,7 @@ _PROMPT_PATH = Path(__file__).resolve().parent.parent / "ai" / "prompts" / "ment
 _FEATURE = "mentor_chat"
 _MAX_HISTORY = 10
 _MAX_CONTEXT_CHARS = 1600
+_schema_ready = False
 
 
 def _clip(text: str, limit: int = 220) -> str:
@@ -101,8 +102,9 @@ async def _get_conversation(db: AsyncSession, user_id: str, conversation_id: str
 
 
 async def _ensure_tables(db: AsyncSession) -> None:
-    # Run in autocommit connection so a failed/rolled-back request transaction
-    # cannot prevent schema repair from taking effect in prod.
+    global _schema_ready
+    if _schema_ready:
+        return
     async with db.bind.begin() as conn:
         await conn.run_sync(lambda sync: MentorConversation.__table__.create(sync, checkfirst=True))
         await conn.run_sync(lambda sync: MentorMessage.__table__.create(sync, checkfirst=True))
@@ -110,6 +112,7 @@ async def _ensure_tables(db: AsyncSession) -> None:
             await conn.execute(text("ALTER TABLE mentor_messages ADD COLUMN conversation_id VARCHAR(36)"))
         except Exception:
             pass
+    _schema_ready = True
 
 
 async def _legacy_messages(db: AsyncSession, user_id: str) -> list[MentorMessage]:
@@ -141,14 +144,12 @@ async def ensure_legacy_conversation(db: AsyncSession, user_id: str) -> MentorCo
 async def list_conversations(db: AsyncSession, user_id: str) -> list[dict]:
     try:
         await _ensure_tables(db)
-        await ensure_legacy_conversation(db, user_id)
         rows = (await db.execute(
             select(MentorConversation).where(MentorConversation.user_id == user_id).order_by(MentorConversation.updated_at.desc())
         )).scalars().all()
         return [{"id": c.id, "title": c.title, "created_at": c.created_at.isoformat(), "updated_at": c.updated_at.isoformat()} for c in rows]
     except SQLAlchemyError:
         await db.rollback()
-        await _ensure_tables(db)
         return []
 
 
@@ -224,9 +225,7 @@ async def send_message(db: AsyncSession, user_id: str, content: str, conversatio
     await db.flush()
 
     context = await _build_context(db, user_id)
-    transcript = _render_transcript([*history, user_msg])
-    prompt = _PROMPT_PATH.read_text(encoding="utf-8").replace("{context}", context).replace("{transcript}", transcript)
-
+    prompt = _PROMPT_PATH.read_text(encoding="utf-8").replace("{context}", context).replace("{transcript}", _render_transcript([*history, user_msg]))
     resp = await orchestrator.call_llm(feature=_FEATURE, prompt=prompt, user_id=uuid.UUID(user_id))
     db.add(LLMUsageLog(
         user_id=user_id, feature=_FEATURE, model=resp.model,
