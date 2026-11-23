@@ -7,9 +7,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, ProgrammingError, OperationalError
 
 from backend.ai.orchestrator import orchestrator
 from backend.models.gap import GapReport
@@ -104,6 +104,11 @@ async def _ensure_tables(db: AsyncSession) -> None:
     conn = await db.connection()
     await conn.run_sync(lambda sync: MentorConversation.__table__.create(sync, checkfirst=True))
     await conn.run_sync(lambda sync: MentorMessage.__table__.create(sync, checkfirst=True))
+    # Postgres prod may have mentor_messages table from 010 but missing conversation_id from 011.
+    try:
+        await conn.execute(text("ALTER TABLE mentor_messages ADD COLUMN conversation_id VARCHAR(36)"))
+    except Exception:
+        pass
 
 
 async def _legacy_messages(db: AsyncSession, user_id: str) -> list[MentorMessage]:
@@ -178,14 +183,20 @@ async def delete_conversation(db: AsyncSession, user_id: str, conversation_id: s
 
 
 async def send_message(db: AsyncSession, user_id: str, content: str, conversation_id: str | None = None) -> tuple[MentorConversation, MentorMessage, MentorMessage]:
-    await _ensure_tables(db)
     content = (content or "").strip()
     if not content:
         raise ValueError("Message cannot be empty")
     if len(content) > 4000:
         raise ValueError("Message is too long")
 
-    conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
+    try:
+        await _ensure_tables(db)
+        conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
+    except (ProgrammingError, OperationalError, SQLAlchemyError):
+        await db.rollback()
+        await _ensure_tables(db)
+        conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
+
     if conversation_id and not conv:
         raise KeyError("Conversation not found")
     if not conv:
@@ -193,10 +204,15 @@ async def send_message(db: AsyncSession, user_id: str, content: str, conversatio
         db.add(conv)
         await db.flush()
 
-    history = (await db.execute(
-        select(MentorMessage).where(MentorMessage.conversation_id == conv.id, MentorMessage.user_id == user_id)
-        .order_by(MentorMessage.created_at.desc()).limit(_MAX_HISTORY)
-    )).scalars().all()
+    try:
+        history = (await db.execute(
+            select(MentorMessage).where(MentorMessage.conversation_id == conv.id, MentorMessage.user_id == user_id)
+            .order_by(MentorMessage.created_at.desc()).limit(_MAX_HISTORY)
+        )).scalars().all()
+    except (ProgrammingError, OperationalError):
+        await db.rollback()
+        await _ensure_tables(db)
+        history = []
     history = list(reversed(history))
 
     user_msg = MentorMessage(user_id=user_id, conversation_id=conv.id, role="user", content=content)
