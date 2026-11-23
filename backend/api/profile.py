@@ -288,21 +288,24 @@ async def import_linkedin_paste_endpoint(
 def _avatar_url(snapshot: ProfileSnapshot | None, user: User) -> str | None:
     if not snapshot or not snapshot.avatar_key:
         return None
+    key = snapshot.avatar_key
+    if key.startswith("data:image/"):
+        return key
     try:
-        return get_presigned_url_sync(user.id, snapshot.avatar_key)
+        return get_presigned_url_sync(user.id, key)
     except Exception:
         return None
 
 
 def get_presigned_url_sync(user_id: str, key: str, expires_in: int = 3600) -> str:
-    # file_storage.get_presigned_url is async in signature but does sync boto; keep a small sync helper.
     import uuid as _uuid
     from backend.services.file_storage import get_s3_client
+    from backend.config import get_settings
     uid = _uuid.UUID(user_id)
     if not key.startswith(f"profiles/{uid}/"):
         raise PermissionError("Access denied")
     client = get_s3_client()
-    return client.generate_presigned_url("get_object", Params={"Bucket": __import__('backend.config', fromlist=['get_settings']).get_settings().s3_bucket, "Key": key}, ExpiresIn=expires_in)
+    return client.generate_presigned_url("get_object", Params={"Bucket": get_settings().s3_bucket, "Key": key}, ExpiresIn=expires_in)
 
 
 def _personal(snapshot: ProfileSnapshot | None, user: User) -> PersonalInfo:
@@ -405,10 +408,13 @@ async def upload_avatar(
     content = await _read_upload_with_limit(file, max_bytes=MAX_AVATAR_BYTES, detail="Profile picture must be under 2MB")
 
     ext = ALLOWED_AVATAR_TYPES[ct]
+    key = None
     try:
         key = await upload_file_to_s3(uuid.UUID(user.id), f"avatar.{ext}", content)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Avatar storage unavailable: {e.__class__.__name__}")
+    except Exception:
+        # Fallback when S3 is not configured/reachable: store a small data URL in avatar_key.
+        import base64
+        key = f"data:{ct};base64,{base64.b64encode(content).decode('ascii')}"
 
     result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
     snapshot = result.scalar_one_or_none()
