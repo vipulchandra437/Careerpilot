@@ -9,7 +9,7 @@ import {
 
 interface Skill { name: string; source: string; confidence: string; }
 interface Conflict { skill: string; github_signal: string | null; resume_signal: string | null; linkedin_signal: string | null; resolution: string; }
-interface PersonalInfo { full_name?: string | null; headline?: string | null; bio?: string | null; location?: string | null; phone?: string | null; website?: string | null; linkedin_url?: string | null; github_url?: string | null; }
+interface PersonalInfo { full_name?: string | null; headline?: string | null; bio?: string | null; location?: string | null; phone?: string | null; website?: string | null; linkedin_url?: string | null; github_url?: string | null; avatar_url?: string | null; }
 interface UserInfo { email: string; role: string; is_active: boolean; created_at: string; }
 interface ProfileSnapshot {
   id: string | null;
@@ -50,6 +50,7 @@ function ProfileContent() {
   const [showLinkedinPaste, setShowLinkedinPaste] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [form, setForm] = useState<PersonalInfo>({});
 
   const fetchSnapshot = useCallback(async () => {
@@ -125,12 +126,38 @@ function ProfileContent() {
     setSaving(true); setError("");
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/profile/personal", { method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const { avatar_url: _a, ...payload } = form;
+      const res = await fetch("/api/profile/personal", { method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
       const d = await res.json();
       if (!res.ok) { setError(d.detail || "Save failed"); return; }
       setSnapshot(d); setForm(d.personal || {}); setEditing(false);
     } catch { setError("Save failed"); } finally { setSaving(false); }
+  }
+
+  async function uploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return;
+    setAvatarUploading(true); setError("");
+    try {
+      const token = localStorage.getItem("access_token"); const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/profile/avatar", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "Avatar upload failed"); return; }
+      setSnapshot(d); setForm(d.personal || {});
+    } catch { setError("Avatar upload failed"); } finally { setAvatarUploading(false); e.target.value = ""; }
+  }
+
+  async function removeAvatar() {
+    setAvatarUploading(true); setError("");
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/profile/avatar", { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "Avatar remove failed"); return; }
+      setSnapshot(d); setForm(d.personal || {});
+    } catch { setError("Avatar remove failed"); } finally { setAvatarUploading(false); }
   }
 
   if (loading) return <main className="relative flex min-h-screen items-center justify-center bg-surface p-8"><div className="flex items-center gap-3 text-slate-400"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" /><p>Loading profile...</p></div></main>;
@@ -161,9 +188,24 @@ function ProfileContent() {
         <section className={`${card} mb-6`}>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-xl font-bold text-white">{initials}</div>
+              <div className="relative">
+                {personal.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, dynamic domain
+                  <img src={personal.avatar_url} alt="Profile picture" className="h-16 w-16 rounded-2xl object-cover border border-white/10" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-xl font-bold text-white">{initials}</div>
+                )}
+                {avatarUploading && <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50"><Loader2 className="h-5 w-5 animate-spin text-white" /></div>}
+              </div>
               <div>
                 <h2 className="text-xl font-semibold text-white">{displayName}</h2>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                  <label className={`${linkCls} cursor-pointer`}>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} disabled={avatarUploading} />
+                    {personal.avatar_url ? "Change photo" : "Upload photo"}
+                  </label>
+                  {personal.avatar_url && <button onClick={removeAvatar} disabled={avatarUploading} className="text-slate-500 hover:text-red-300 transition-colors">Remove</button>}
+                </div>
                 <p className={muted}>{personal.headline || "Add a headline to tell people what you're aiming for."}</p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
                   {user?.email && <span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{user.email}</span>}

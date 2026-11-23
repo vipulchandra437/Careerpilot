@@ -18,23 +18,23 @@ from backend.services.resume_builder import build_resume_pdf, normalize_resume, 
 from backend.services.github import get_github_auth_url, connect_github_account, get_github_data
 from backend.services.linkedin import parse_linkedin_import, parse_linkedin_paste
 from backend.services.profile_merge import compute_merge
+from backend.services.file_storage import upload_file as upload_file_to_s3, get_presigned_url, delete_file as delete_s3_file
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_AVATAR_BYTES = 2 * 1024 * 1024
+ALLOWED_AVATAR_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 
 
-async def _read_upload_with_limit(file: UploadFile) -> bytes:
+async def _read_upload_with_limit(file: UploadFile, max_bytes: int = MAX_UPLOAD_BYTES, detail: str = "File size must be under 10MB") -> bytes:
     """Read an upload in bounded chunks so oversized bodies do not exhaust memory."""
     chunks = []
     total = 0
     while chunk := await file.read(1024 * 1024):
         total += len(chunk)
-        if total > MAX_UPLOAD_BYTES:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File size must be under 10MB",
-            )
+        if total > max_bytes:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
         chunks.append(chunk)
     return b"".join(chunks)
 
@@ -55,6 +55,7 @@ class PersonalInfo(BaseModel):
     website: str | None = None
     linkedin_url: str | None = None
     github_url: str | None = None
+    avatar_url: str | None = None
 
 
 class PersonalInfoUpdate(BaseModel):
@@ -284,7 +285,27 @@ async def import_linkedin_paste_endpoint(
     return {"status": "ok", "data": linkedin_data}
 
 
-def _personal(snapshot: ProfileSnapshot | None) -> PersonalInfo:
+def _avatar_url(snapshot: ProfileSnapshot | None, user: User) -> str | None:
+    if not snapshot or not snapshot.avatar_key:
+        return None
+    try:
+        return get_presigned_url_sync(user.id, snapshot.avatar_key)
+    except Exception:
+        return None
+
+
+def get_presigned_url_sync(user_id: str, key: str, expires_in: int = 3600) -> str:
+    # file_storage.get_presigned_url is async in signature but does sync boto; keep a small sync helper.
+    import uuid as _uuid
+    from backend.services.file_storage import get_s3_client
+    uid = _uuid.UUID(user_id)
+    if not key.startswith(f"profiles/{uid}/"):
+        raise PermissionError("Access denied")
+    client = get_s3_client()
+    return client.generate_presigned_url("get_object", Params={"Bucket": __import__('backend.config', fromlist=['get_settings']).get_settings().s3_bucket, "Key": key}, ExpiresIn=expires_in)
+
+
+def _personal(snapshot: ProfileSnapshot | None, user: User) -> PersonalInfo:
     if not snapshot:
         return PersonalInfo()
     return PersonalInfo(
@@ -296,6 +317,7 @@ def _personal(snapshot: ProfileSnapshot | None) -> PersonalInfo:
         website=snapshot.website,
         linkedin_url=snapshot.linkedin_url,
         github_url=snapshot.github_url,
+        avatar_url=_avatar_url(snapshot, user),
     )
 
 
@@ -336,7 +358,7 @@ async def get_snapshot_endpoint(
     return SnapshotResponse(
         id=snapshot.id if snapshot else None,
         user=_user_profile(user),
-        personal=_personal(snapshot),
+        personal=_personal(snapshot, user),
         resume_data=snapshot.resume_data if snapshot else None,
         github_data=snapshot.github_data if snapshot else None,
         linkedin_data=snapshot.linkedin_data if snapshot else None,
@@ -368,6 +390,60 @@ async def update_personal_info(
 
     await db.commit()
     await db.refresh(snapshot)
+    return await get_snapshot_endpoint(user=user, db=db)
+
+
+@router.post("/avatar", response_model=SnapshotResponse)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ct = (file.content_type or "").lower()
+    if ct not in ALLOWED_AVATAR_TYPES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only JPG, PNG, and WEBP images are supported")
+    content = await _read_upload_with_limit(file, max_bytes=MAX_AVATAR_BYTES, detail="Profile picture must be under 2MB")
+
+    ext = ALLOWED_AVATAR_TYPES[ct]
+    key = await upload_file_to_s3(uuid.UUID(user.id), f"avatar.{ext}", content)
+
+    result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
+    snapshot = result.scalar_one_or_none()
+    old_key = snapshot.avatar_key if snapshot else None
+    if snapshot:
+        snapshot.avatar_key = key
+        snapshot.computed_at = datetime.now(timezone.utc)
+    else:
+        snapshot = ProfileSnapshot(user_id=user.id, avatar_key=key)
+        db.add(snapshot)
+    await db.commit()
+    await db.refresh(snapshot)
+
+    if old_key and old_key != key:
+        try:
+            await delete_s3_file(uuid.UUID(user.id), old_key)
+        except Exception:
+            pass
+    return await get_snapshot_endpoint(user=user, db=db)
+
+
+@router.delete("/avatar", response_model=SnapshotResponse)
+async def delete_avatar(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
+    snapshot = result.scalar_one_or_none()
+    if snapshot and snapshot.avatar_key:
+        old_key = snapshot.avatar_key
+        snapshot.avatar_key = None
+        snapshot.computed_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(snapshot)
+        try:
+            await delete_s3_file(uuid.UUID(user.id), old_key)
+        except Exception:
+            pass
     return await get_snapshot_endpoint(user=user, db=db)
 
 

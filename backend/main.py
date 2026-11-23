@@ -87,7 +87,7 @@ async def _apply_lightweight_migrations(conn):
     from sqlalchemy import text
 
     await _ensure_column("users", "is_active", "BOOLEAN NOT NULL DEFAULT 1")
-    for col in ["full_name", "headline", "bio", "location", "phone", "website", "linkedin_url", "github_url"]:
+    for col in ["full_name", "headline", "bio", "location", "phone", "website", "linkedin_url", "github_url", "avatar_key"]:
         await _ensure_column("profile_snapshots", col, "TEXT")
 
 

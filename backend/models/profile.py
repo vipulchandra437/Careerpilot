@@ -20,6 +20,7 @@ class ProfileSnapshot(Base):
     website: Mapped[str | None] = mapped_column(Text, nullable=True)
     linkedin_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     github_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     resume_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     github_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     linkedin_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)

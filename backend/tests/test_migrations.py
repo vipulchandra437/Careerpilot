@@ -53,5 +53,6 @@ def test_postgres_offline_ddl_matches_model_ids(monkeypatch):
         "website",
         "linkedin_url",
         "github_url",
+        "avatar_key",
     ]:
         assert col in sql
