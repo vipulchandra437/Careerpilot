@@ -1,10 +1,13 @@
 """Mentor chat API."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import get_current_user
+from backend.config import get_settings
 from backend.database import get_db
 from backend.services.mentor import (
     create_conversation,
@@ -13,6 +16,8 @@ from backend.services.mentor import (
     list_conversations,
     send_message,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/mentor", tags=["mentor"])
 
@@ -80,6 +85,18 @@ async def create_message(req: SendRequest, user=Depends(get_current_user), db: A
         raise HTTPException(status_code=404, detail="Conversation not found")
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=502, detail="Mentor is unavailable right now. Please try again.")
+    except Exception as e:
+        logger.exception("Mentor message failed for user %s", getattr(user, "id", "?"))
+        status = getattr(e, "status_code", None) or getattr(getattr(e, "response", None), "status_code", None)
+        if not get_settings().openrouter_api_key:
+            detail = "Mentor AI is not configured. Please set OPENROUTER_API_KEY."
+        elif status == 401:
+            detail = "Mentor AI key is invalid. Please check OPENROUTER_API_KEY."
+        elif status == 402:
+            detail = "Mentor AI balance is unavailable. Please check OpenRouter credits."
+        elif status == 429:
+            detail = "Mentor is busy right now. Please try again in a moment."
+        else:
+            detail = "Mentor is unavailable right now. Please try again."
+        raise HTTPException(status_code=502, detail=detail)
     return {"conversation": _conv(conv), "user_message": _msg(user_msg), "message": _msg(assistant_msg)}
