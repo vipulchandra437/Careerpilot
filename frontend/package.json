@@ -20,8 +20,8 @@
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
-    "@reticlehq/next": "^2.13.1",
-    "@reticlehq/react": "^2.13.1",
+    "@reticlehq/next": "^3.10.11",
+    "@reticlehq/react": "^3.10.11",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

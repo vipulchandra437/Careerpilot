@@ -1,5 +1,4 @@
 import Link from "next/link";
-import GlyphPortalDemo from "@/components/glyph-portal-demo";
 import {
   Sparkles,
   BarChart3,
@@ -15,7 +14,6 @@ import {
 } from "lucide-react";
 
 const navLinks = [
-  { label: "Product", href: "#product" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
@@ -181,27 +179,6 @@ export default function Home() {
               <div className="mt-1 text-sm text-slate-400">{metric.label}</div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Product — scroll-driven type demo */}
-      <section
-        id="product"
-        className="relative mx-auto w-full max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-8"
-      >
-        <div className="mb-10 text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-brand-300">
-            Product
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-            Step inside the experience
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-pretty text-slate-400">
-            Pick a letter, then scroll to move through the word and into what comes next.
-          </p>
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-white/10 shadow-card-lg">
-          <GlyphPortalDemo />
         </div>
       </section>
 
