@@ -96,6 +96,7 @@ class Orchestrator:
             "mock_interview": "openai/gpt-4o",
             "communication_feedback": "openai/gpt-4o-mini",
             "resume_parsing": "openai/gpt-4o-mini",
+            "resume_analysis": "openai/gpt-4o-mini",
         }
         return defaults.get(feature, "openai/gpt-4o-mini")
 
@@ -113,6 +114,7 @@ class Orchestrator:
             "mock_interview": 400,
             "communication_feedback": 1200,
             "resume_parsing": 1200,
+            "resume_analysis": 1200,
         }
         return defaults.get(feature, 1000)
 
@@ -129,6 +131,7 @@ class Orchestrator:
             "mock_interview": 0.7,
             "communication_feedback": 0.4,
             "resume_parsing": 0.1,
+            "resume_analysis": 0.2,
         }
         return defaults.get(feature, 0.5)
 

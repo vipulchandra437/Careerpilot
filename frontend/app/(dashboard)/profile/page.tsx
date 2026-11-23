@@ -365,16 +365,21 @@ function ProfileContent() {
                     </span>
                   ))}
                 </div>
-                <label className="block">
-                  <span className={mutedText}>Re-analyze</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx"
-                    onChange={handleResumeUpload}
-                    className={`${inputFileClass} mt-2`}
-                    disabled={uploading}
-                  />
-                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="block">
+                    <span className={mutedText}>Re-upload</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      onChange={handleResumeUpload}
+                      className={`${inputFileClass} mt-2`}
+                      disabled={uploading}
+                    />
+                  </label>
+                  <button onClick={() => router.push("/resume-builder")} className="text-sm text-brand-300 hover:text-brand-200">
+                    Open Builder & Analyzer
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="mt-4">

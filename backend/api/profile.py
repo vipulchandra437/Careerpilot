@@ -2,15 +2,19 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from pydantic import BaseModel
+from fastapi.responses import Response
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.models.user import User
 from backend.models.profile import ProfileSnapshot
+from backend.models.target_role import TargetRoleProfile
 from backend.api.dependencies import get_current_user
 from backend.services.resume_ai import parse_resume_with_ai
+from backend.services.resume_analysis import analyze_resume
+from backend.services.resume_builder import build_resume_pdf, normalize_resume, render_resume_html
 from backend.services.github import get_github_auth_url, connect_github_account, get_github_data
 from backend.services.linkedin import parse_linkedin_import, parse_linkedin_paste
 from backend.services.profile_merge import compute_merge
@@ -46,6 +50,15 @@ class SnapshotResponse(BaseModel):
 
 class LinkedInPasteRequest(BaseModel):
     content: str
+
+
+class ResumeAnalyzeRequest(BaseModel):
+    target_role_id: str | None = None
+    job_description: str | None = Field(default=None, max_length=8000)
+
+
+class ResumeBuildRequest(BaseModel):
+    resume: dict
 
 
 @router.post("/resume", response_model=dict)
@@ -286,4 +299,56 @@ async def get_snapshot_endpoint(
             ],
         },
         computed_at=snapshot.computed_at,
+    )
+
+
+@router.post("/resume/analyze", response_model=dict)
+async def analyze_resume_endpoint(
+    req: ResumeAnalyzeRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id))
+    snapshot = result.scalar_one_or_none()
+    if not snapshot or not snapshot.resume_data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No resume found. Upload a resume first.")
+
+    target_role = None
+    if req.target_role_id:
+        role_result = await db.execute(select(TargetRoleProfile).where(TargetRoleProfile.id == req.target_role_id))
+        target_role = role_result.scalar_one_or_none()
+        if not target_role:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target role not found")
+
+    analysis = await analyze_resume(
+        db,
+        user_id=str(user.id),
+        resume_data=snapshot.resume_data,
+        target_role=target_role,
+        job_description=req.job_description,
+    )
+    return {"status": "ok", "analysis": analysis, "target_role": target_role.name if target_role else None}
+
+
+@router.post("/resume/build/preview", response_model=dict)
+async def resume_build_preview(
+    req: ResumeBuildRequest,
+    user: User = Depends(get_current_user),
+):
+    normalized = normalize_resume(req.resume)
+    return {"status": "ok", "html": render_resume_html(normalized), "resume": normalized}
+
+
+@router.post("/resume/build/export")
+async def resume_build_export(
+    req: ResumeBuildRequest,
+    user: User = Depends(get_current_user),
+):
+    pdf = build_resume_pdf(req.resume)
+    name = normalize_resume(req.resume).get("name") or "resume"
+    safe = "".join(c for c in name if c.isalnum() or c in (" ", "-", "_")).strip().replace(" ", "_") or "resume"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{safe}.pdf"'},
     )

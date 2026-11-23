@@ -10,6 +10,7 @@ import {
   User,
   Sparkles,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 
@@ -43,6 +44,12 @@ export default function DashboardPage() {
       desc: "Connect resume, GitHub & LinkedIn to build your snapshot.",
       href: "/profile",
       icon: User,
+    },
+    {
+      title: "Resume Builder",
+      desc: "Build, preview, export PDF, and get AI resume analysis.",
+      href: "/resume-builder",
+      icon: FileText,
     },
     {
       title: "Skill Gap Analysis",

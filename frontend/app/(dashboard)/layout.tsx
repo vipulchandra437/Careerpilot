@@ -9,11 +9,13 @@ import {
   MessagesSquare,
   User,
   LogOut,
+  FileText,
 } from "lucide-react";
 import { clearTokens } from "@/lib/auth";
 
 const sideItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/resume-builder", label: "Resume Builder", icon: FileText },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/practice", label: "Practice", icon: Code2 },
   { href: "/mock-interview", label: "Interviews", icon: MessagesSquare, matches: ["/mock-interview", "/interview-feedback"] },
