@@ -276,7 +276,7 @@ async def list_challenges(
     """List challenges with the user's latest attempt status for a LeetCode-like browser."""
     q = select(Challenge).order_by(Challenge.created_at.desc())
     if skill:
-        q = q.where(Challenge.skill == skill)
+        q = q.where(Challenge.skill.ilike(f"%{skill}%"))
     if difficulty and difficulty in DIFFICULTIES:
         q = q.where(Challenge.difficulty == difficulty)
     if language and language in LANGUAGES:
