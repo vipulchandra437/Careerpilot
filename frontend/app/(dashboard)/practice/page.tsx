@@ -31,6 +31,7 @@ interface ChallengeSummary {
   id: string;
   skill: string;
   difficulty: string;
+  language: string;
   title: string;
   status: "solved" | "attempted" | "unsolved";
 }
@@ -51,18 +52,13 @@ function PracticeContent() {
   const searchParams = useSearchParams();
 
   const [challenge, setChallenge] = useState<{
-    id: string;
-    title: string;
-    prompt: string;
-    function_signature: string;
-    starter_code: string;
-    difficulty: string;
-    skill: string;
-    expected_time_complexity: string | null;
+    id: string; title: string; prompt: string; function_signature: string; starter_code: string;
+    difficulty: string; skill: string; language: string; expected_time_complexity: string | null;
   } | null>(null);
   const [challenges, setChallenges] = useState<ChallengeSummary[]>([]);
   const [skillInput, setSkillInput] = useState(searchParams.get("skill") || "python");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [language, setLanguage] = useState(searchParams.get("language") || "python");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -112,7 +108,7 @@ function PracticeContent() {
       const res = await fetch("/api/challenges/generate", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", target_role_id: targetRoleId, roadmap_milestone_id: milestoneId || null }),
+        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", language, target_role_id: targetRoleId, roadmap_milestone_id: milestoneId || null }),
       });
       if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
       const data = await res.json();
@@ -120,7 +116,7 @@ function PracticeContent() {
       else setError(data.detail || "Failed to generate challenge");
     } catch { setError("Network error"); }
     finally { setGenerating(false); setLoading(false); }
-  }, [skillInput, targetRoleId, milestoneId, router, loadChallenges]);
+  }, [skillInput, language, targetRoleId, milestoneId, router, loadChallenges]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -206,6 +202,9 @@ function PracticeContent() {
               <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Problems</h2><span className="text-xs text-slate-500">{challenges.length}</span></div>
               <div className="space-y-2">
                 <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} placeholder="Skill or topic" className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
+                <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
+                  <option value="python">Python 3</option><option value="javascript">JavaScript (Node.js)</option><option value="java">Java</option><option value="cpp">C++</option>
+                </select>
                 <div className="flex gap-2">
                   <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none">
                     <option value="all">All difficulties</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
@@ -220,7 +219,7 @@ function PracticeContent() {
               {challenges.length === 0 ? <p className="p-4 text-sm text-slate-500">No challenges yet. Generate one to start.</p> : challenges.map((c) => (
                 <button key={c.id} onClick={() => void openChallenge(c.id)} className={`flex w-full items-start gap-3 border-b border-white/5 px-4 py-3 text-left hover:bg-white/5 ${challenge?.id === c.id ? "bg-brand-500/10" : ""}`}>
                   <div className="mt-0.5">{statusIcon(c.status)}</div>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-200">{c.title}</p><p className="text-xs text-slate-500">{c.skill} • <span className={diffTone(c.difficulty)}>{c.difficulty}</span></p></div>
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-200">{c.title}</p><p className="text-xs text-slate-500">{c.skill} • <span className={diffTone(c.difficulty)}>{c.difficulty}</span> • {c.language}</p></div>
                 </button>
               ))}
             </div>
@@ -235,7 +234,7 @@ function PracticeContent() {
               <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
                 <div className="flex flex-col gap-4">
                   <section className={cardClass}>
-                    <div className="mb-3 flex flex-wrap items-center gap-2"><h2 className="text-xl font-semibold">{challenge.title}</h2><span className={`text-sm font-medium ${diffTone(challenge.difficulty)}`}>{challenge.difficulty}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.skill}</span></div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2"><h2 className="text-xl font-semibold">{challenge.title}</h2><span className={`text-sm font-medium ${diffTone(challenge.difficulty)}`}>{challenge.difficulty}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.skill}</span><span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">{challenge.language}</span></div>
                     <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-200">{challenge.prompt}</pre>
                     {challenge.expected_time_complexity && <p className="mt-4 text-xs text-slate-400">Target: {challenge.expected_time_complexity}</p>}
                   </section>
@@ -248,7 +247,7 @@ function PracticeContent() {
 
                 <div className="flex flex-col gap-4">
                   <section className={cardClass}>
-                    <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Code</h2><span className="text-xs text-slate-500">Python 3</span></div>
+                    <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Code</h2><span className="text-xs text-slate-500">{({python:"Python 3",javascript:"JavaScript (Node.js)",java:"Java",cpp:"C++"} as Record<string,string>)[challenge.language] || challenge.language}</span></div>
                     <textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} className={codeEditorClass} placeholder="# Write your solution here" aria-label="Code editor" />
                   </section>
                   {results && <section className={cardClass}>

@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     sandbox_memory_limit_mb: int = 256
     judge0_base_url: str = "https://ce.judge0.com"
     judge0_auth_headers: dict = {}
-    judge0_language_id_python: int = 71
+    judge0_language_ids: dict[str, int] = {"python": 71, "javascript": 63, "java": 62, "cpp": 54}
     judge0_cpu_time_limit: int = 5
     judge0_cpu_extra_time: int = 1
     judge0_wall_time_limit: int = 10
@@ -78,7 +78,7 @@ class Settings(BaseSettings):
         "openai/gpt-4o": {"input_per_1m": 2.50, "output_per_1m": 10.00},
     }
 
-    model_config = {"env_file": ENV_FILE, "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ENV_FILE, "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache

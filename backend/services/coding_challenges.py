@@ -35,6 +35,8 @@ settings = get_settings()
 _PROMPT_PATH = Path(__file__).resolve().parent.parent / "ai" / "prompts" / "challenge_generation.txt"
 
 DIFFICULTIES = ("beginner", "intermediate", "advanced")
+LANGUAGES = ("python", "javascript", "java", "cpp")
+LANGUAGE_LABELS = {"python": "Python 3", "javascript": "JavaScript (Node.js)", "java": "Java", "cpp": "C++"}
 
 # Milestone action statuses map: a passed challenge marks a milestone's linked
 # action "done" (PRD §6.3). Challenge milestones were created with
@@ -46,12 +48,13 @@ def load_challenge_prompt() -> str:
     return _PROMPT_PATH.read_text(encoding="utf-8")
 
 
-def build_challenge_prompt(skill: str, difficulty: str, role_name: str) -> str:
+def build_challenge_prompt(skill: str, difficulty: str, role_name: str, language: str) -> str:
     template = load_challenge_prompt()
     return (
         template.replace("{skill}", skill)
         .replace("{difficulty}", difficulty)
         .replace("{role}", role_name)
+        .replace("{language}", LANGUAGE_LABELS.get(language, language))
     )
 
 
@@ -118,7 +121,7 @@ def _parse_challenge_json(text: str) -> dict | None:
             return None
 
 
-def _validate_challenge(data: dict, skill: str) -> dict | None:
+def _validate_challenge(data: dict, skill: str, language: str = "python") -> dict | None:
     """Validate a generated challenge and return a normalized dict, or None."""
     test_cases = data.get("test_cases")
     if not isinstance(test_cases, list) or not (3 <= len(test_cases) <= 6):
@@ -147,6 +150,7 @@ def _validate_challenge(data: dict, skill: str) -> dict | None:
         "test_cases": normalized_tests,
         "expected_time_complexity": data.get("expected_time_complexity") or None,
         "skill": skill,
+        "language": language,
     }
 
 
@@ -158,16 +162,13 @@ async def generate_challenge(
     difficulty: str,
     target_role_id: str,
     role_name: str,
+    language: str = "python",
     use_llm: bool = True,
 ) -> Challenge | None:
-    """Generate a challenge for a skill/difficulty/role and persist it.
-
-    Returns the persisted Challenge, or None if generation/validation failed.
-    A deterministic fallback is NOT provided (see module docstring): if the LLM
-    is unavailable we fail cleanly rather than fabricate a challenge.
-    """
+    """Generate a challenge for a skill/difficulty/role and persist it."""
     if difficulty not in DIFFICULTIES:
         difficulty = "beginner"
+    language = language if language in LANGUAGES else "python"
 
     challenge = None
     usage_row = None
@@ -178,7 +179,7 @@ async def generate_challenge(
         # a retry with an explicit corrective hint converts that variance into a
         # working challenge instead of a 502. Still never fabricates a challenge.
         for attempt in range(2):
-            prompt = build_challenge_prompt(skill, difficulty, role_name)
+            prompt = build_challenge_prompt(skill, difficulty, role_name, language)
             if attempt == 1:
                 prompt += (
                     "\n\nYour previous attempt produced invalid JSON (likely an "
@@ -193,12 +194,13 @@ async def generate_challenge(
                 )
                 parsed = _parse_challenge_json(resp.content)
                 if parsed:
-                    normalized = _validate_challenge(parsed, skill)
+                    normalized = _validate_challenge(parsed, skill, language)
                     if normalized:
                         challenge = Challenge(
                             target_role_id=target_role_id,
                             skill=skill,
                             difficulty=difficulty,
+                            language=language,
                             title=normalized["title"],
                             prompt=normalized["prompt"],
                             function_signature=normalized["function_signature"],
@@ -295,6 +297,7 @@ async def list_challenges(
         "id": c.id,
         "skill": c.skill,
         "difficulty": c.difficulty,
+        "language": getattr(c, "language", "python") or "python",
         "title": c.title,
         "created_at": c.created_at.isoformat(),
         "status": status_by_challenge.get(c.id, "unsolved"),
@@ -302,14 +305,9 @@ async def list_challenges(
 
 
 def check_solution(challenge: Challenge, code: str) -> RunResult:
-    """Run code through the sandbox and grade it WITHOUT persisting anything.
-
-    Used by the "Run" action (DESIGN.md §2.5): shows test results without
-    consuming a submission. Grading is identical to submit, but no attempt is
-    recorded and no milestone is touched.
-    """
+    """Run code through the sandbox and grade it WITHOUT persisting anything."""
     return run_code(
-        language="python",
+        language=getattr(challenge, "language", "python") or "python",
         code=code,
         tests=challenge.test_cases or [],
         timeout_seconds=float(settings.sandbox_execution_timeout),
@@ -351,7 +349,7 @@ async def submit_solution(
     # -- 1 & 2: execute in the sandbox only ---------------------------------
     result: RunResult = await asyncio.to_thread(
         run_code,
-        language="python",
+        language=getattr(challenge, "language", "python") or "python",
         code=code,
         tests=challenge.test_cases or [],
         timeout_seconds=float(settings.sandbox_execution_timeout),

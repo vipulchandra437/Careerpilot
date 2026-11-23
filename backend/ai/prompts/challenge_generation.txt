@@ -1,13 +1,13 @@
 You are a senior software engineer writing a single, self-contained coding challenge for a Computer Science student practicing the skill "{skill}" at difficulty "{difficulty}", targeting the role "{role}".
 
-The challenge must be solvable in pure Python 3 using ONLY the standard library (no external packages). It must be self-contained: it reads input from standard input (stdin) and writes the answer to standard output (stdout). Do NOT use sys.exit to signal output — just print the result.
+Write the challenge for {language}. The solution must use ONLY the standard library/built-ins available in that language (no external packages). It must be self-contained: it reads input from standard input (stdin) and writes the answer to standard output (stdout). Do not exit abruptly in a way that skips output.
 
 Output STRICT JSON only, with this exact shape:
 {
   "title": "short challenge title",
   "prompt": "A clear problem statement the student reads. State the input format, the expected output format, and 1-2 example inputs with their expected outputs. Mention the target time/space complexity.",
-  "function_signature": "def solve(): ...  (the function stub the student fills in; it reads from stdin and prints to stdout)",
-  "starter_code": "import sys\n\ndef solve():\n    # complete this\n    pass\n\nif __name__ == '__main__':\n    solve()",
+  "function_signature": "the function/method stub the student fills in for {language}; it reads from stdin and prints to stdout",
+  "starter_code": "valid starter code in {language} that reads stdin and calls the stub",
   "test_cases": [
     {"name": "example 1", "stdin": "the exact input bytes, with newlines", "expected": "the exact expected stdout, with newlines"}
   ],

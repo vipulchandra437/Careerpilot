@@ -75,10 +75,11 @@ class RunResult:
 # --- language map -----------------------------------------------------------
 
 def _language_id(language: str) -> int:
-    """Map our language name to a Judge0 language_id. Only Python is supported
-    for now; the id is config-driven so adding languages is a config change."""
-    if language == "python":
-        return settings.judge0_language_id_python
+    """Map language name to Judge0 language_id from config."""
+    lang = (language or "python").lower()
+    lang_id = (settings.judge0_language_ids or {}).get(lang)
+    if lang_id:
+        return int(lang_id)
     raise SandboxRunError(f"unsupported language: {language}")
 
 

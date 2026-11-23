@@ -25,6 +25,7 @@ from backend.services.coding_challenges import (
     check_solution,
     get_progress_for_skill,
     DIFFICULTIES,
+    LANGUAGES,
 )
 
 router = APIRouter(prefix="/challenges", tags=["coding-challenges"])
@@ -33,6 +34,7 @@ router = APIRouter(prefix="/challenges", tags=["coding-challenges"])
 class GenerateRequest(BaseModel):
     skill: str
     difficulty: str = "adaptive"
+    language: str = "python"
     target_role_id: str
     roadmap_milestone_id: str | None = None
 
@@ -46,6 +48,7 @@ class ChallengeOut(BaseModel):
     id: str
     skill: str
     difficulty: str
+    language: str = "python"
     title: str
     prompt: str
     function_signature: str
@@ -55,8 +58,8 @@ class ChallengeOut(BaseModel):
 
 @router.get("/difficulties")
 async def difficulties(user=Depends(get_current_user)):
-    """Adapter-friendly list of supported difficulties."""
-    return {"difficulties": list(DIFFICULTIES)}
+    """Adapter-friendly list of supported difficulties and languages."""
+    return {"difficulties": list(DIFFICULTIES), "languages": list(LANGUAGES)}
 
 
 @router.get("")
@@ -88,6 +91,8 @@ async def create_challenge(
     """
     if req.difficulty != "adaptive" and req.difficulty not in DIFFICULTIES:
         raise HTTPException(status_code=400, detail="Invalid difficulty")
+    if req.language not in LANGUAGES:
+        raise HTTPException(status_code=400, detail="Invalid language")
 
     if req.difficulty == "adaptive":
         progress = await get_progress_for_skill(db, user.id, req.skill)
@@ -119,6 +124,7 @@ async def create_challenge(
         difficulty=difficulty,
         target_role_id=role.id,
         role_name=role.name,
+        language=req.language,
         use_llm=True,
     )
     if challenge is None:
@@ -131,6 +137,7 @@ async def create_challenge(
         id=challenge.id,
         skill=challenge.skill,
         difficulty=challenge.difficulty,
+        language=getattr(challenge, "language", "python") or "python",
         title=challenge.title,
         prompt=challenge.prompt,
         function_signature=challenge.function_signature,
@@ -153,6 +160,7 @@ async def read_challenge(
         id=challenge.id,
         skill=challenge.skill,
         difficulty=challenge.difficulty,
+        language=getattr(challenge, "language", "python") or "python",
         title=challenge.title,
         prompt=challenge.prompt,
         function_signature=challenge.function_signature,

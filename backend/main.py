@@ -91,6 +91,7 @@ async def _apply_lightweight_migrations(conn):
     for col in ["full_name", "headline", "bio", "location", "phone", "website", "linkedin_url", "github_url", "avatar_key"]:
         await _ensure_column("profile_snapshots", col, "TEXT")
     await _ensure_column("mentor_messages", "conversation_id", "TEXT")
+    await _ensure_column("challenges", "language", "TEXT NOT NULL DEFAULT 'python'")
 
 
 @asynccontextmanager

@@ -35,12 +35,7 @@ import tempfile
 import time
 
 LANG_COMMAND = {
-    # Each value: fixed interpreter prefix for running the user's code file.
-    # The file is written as solution.<ext> in the workspace.
     "python": lambda f: [sys.executable, "-u", f],
-    # Keep dictionary of supported languages small/fixed on purpose; adding
-    # compilers/interpreters that are NOT present in the image will fail fast
-    # (subprocess exits non-zero), which is the desired safe behavior.
 }
 
 

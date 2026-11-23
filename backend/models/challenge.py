@@ -30,6 +30,7 @@ class Challenge(Base):
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     function_signature: Mapped[str] = mapped_column(Text, nullable=False)
     starter_code: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    language: Mapped[str] = mapped_column(String(32), nullable=False, default="python")
     # list of {"name", "stdin", "expected"} — deterministic expected outputs the
     # sandbox grades against. Never derived from the student's own runtime.
     test_cases: Mapped[list | None] = mapped_column(JSON, nullable=False, default=list)
