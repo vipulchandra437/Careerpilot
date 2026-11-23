@@ -51,14 +51,12 @@ function PracticeContent() {
   const [language, setLanguage] = useState(searchParams.get("language") || "all");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState<TestResult[] | null>(null);
   const [lastPassed, setLastPassed] = useState<boolean | null>(null);
   const [milestoneMarked, setMilestoneMarked] = useState(false);
 
-  const targetRoleId = searchParams.get("targetRoleId") || "";
   const milestoneId = searchParams.get("milestoneId") || "";
   const challengeIdParam = searchParams.get("challengeId") || "";
   const initRef = useRef(false);
@@ -91,24 +89,6 @@ function PracticeContent() {
     } catch { setError("Network error"); }
     finally { setLoading(false); }
   }, [router]);
-
-  const generateChallenge = useCallback(async () => {
-    setGenerating(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
-    const token = localStorage.getItem("access_token");
-    const genLang = language === "all" ? "python" : language;
-    try {
-      const res = await fetch("/api/challenges/generate", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ skill: skillInput.trim() || "python", difficulty: "adaptive", language: genLang, target_role_id: targetRoleId || null, roadmap_milestone_id: milestoneId || null }),
-      });
-      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
-      const data = await res.json();
-      if (res.ok) { setChallenge(data); setCode(data.starter_code || ""); void loadChallenges(); }
-      else setError(data.detail || "Failed to generate challenge");
-    } catch { setError("Network error"); }
-    finally { setGenerating(false); setLoading(false); }
-  }, [skillInput, language, targetRoleId, milestoneId, router, loadChallenges]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -182,14 +162,9 @@ function PracticeContent() {
         <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
       </div>
       <div className="mx-auto w-full max-w-[90rem] p-4 sm:p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Practice Problems</h1>
-            <p className="text-sm text-slate-400">Pick a question and start coding.</p>
-          </div>
-          <button onClick={() => void generateChallenge()} disabled={generating} className={primaryBtn}>
-            {generating ? <><Loader2 className="h-4 w-4 animate-spin" />Generating...</> : "Generate Question"}
-          </button>
+        <div className="mb-5">
+          <h1 className="text-2xl font-semibold tracking-tight">Practice Problems</h1>
+          <p className="text-sm text-slate-400">Pick a question and start coding.</p>
         </div>
 
         {error && <div className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"><AlertTriangle className="mr-2 inline h-4 w-4" />{error}</div>}
