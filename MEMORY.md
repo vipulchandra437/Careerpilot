@@ -56,6 +56,9 @@ Running record of cross-session decisions, known limitations, and deferred work 
 - `next dev` proxy buffers request bodies and truncates at a limit. Configured `experimental.middlewareClientMaxBodySize: "12mb"` so the backend's own 10MB check responds (`400 "File size must be under 10MB"`) instead of a generic 500.
 - This is a dev-server/single-process concern; revisit for production deployment sizing.
 
+### Dev server / build cache
+- `next dev` and `next build` share `frontend/.next`. Running a production build while the dev server is live deletes files the dev server still holds (e.g. `.next/routes-manifest.json`), producing 500s and `SegmentViewNode` / React Client Manifest errors on `/`. **Fix:** stop the dev server, `Remove-Item -Recurse -Force frontend\.next`, restart `npm run dev`. Never build while dev is running.
+
 ### Log redaction
 - uvicorn access logs echo query strings. Added `RedactSensitiveQueryParams` filter (`backend/main.py`) that blanks `code`/`state`/token params. Audit for any new endpoints logging sensitive values before shipping.
 
@@ -131,6 +134,7 @@ Running record of cross-session decisions, known limitations, and deferred work 
 
 ## Update Log
 
+- **2026-11-24: fixed local dev 500s caused by running `npm run build` while `npm run dev` was live; cleared `.next`, restarted dev, confirmed `/` and `/roadmap` return 200 with no console errors. Added the landmine above.**
 - **2026-11-24: `/roadmap` page restyled with the standalone Learning Roadmap UI, keeping backend data and actions; DESIGN.md §2.4 updated; Reticle-verified two flows.**
 - **2026-11-24: added standalone `frontend/public/learning-roadmap.html`** from the user's page spec; browser-verified search/autofill/typo/custom-domain/progress/escaping; build clean. Deployed on `main`.
 - **2026-11-24: roadmap upgraded to searchable domains + clickable Candy Crush-style level road** (`frontend/app/(dashboard)/roadmap/page.tsx`). Added `Search domains` filter, `selectedLevel` detail panel, winding SVG road with level nodes/stars; updated DESIGN.md §2.4. Reticle drove search → domain select → level detail (`verified: yes`); `tsc`, lint and build clean. Deployed after commit on `main`.
