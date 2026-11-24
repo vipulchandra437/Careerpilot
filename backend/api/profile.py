@@ -1,9 +1,10 @@
+import json
 import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -81,7 +82,7 @@ class SnapshotResponse(BaseModel):
 
 
 class LinkedInPasteRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=50_000)
 
 
 class ResumeAnalyzeRequest(BaseModel):
@@ -91,6 +92,13 @@ class ResumeAnalyzeRequest(BaseModel):
 
 class ResumeBuildRequest(BaseModel):
     resume: dict
+
+    @field_validator("resume")
+    @classmethod
+    def limit_payload(cls, value: dict) -> dict:
+        if len(json.dumps(value)) > 200_000:
+            raise ValueError("Resume data is too large")
+        return value
 
 
 @router.post("/resume", response_model=dict)

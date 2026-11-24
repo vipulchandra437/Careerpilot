@@ -1,7 +1,9 @@
 import logging
+import time
+from collections import defaultdict, deque
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,15 +15,33 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# shortcut: in-memory limiter is per process; use a shared store when running
+# multiple serverless instances or brute-force traffic can spread across them.
+_login_attempts: dict[tuple[str, str], deque[float]] = defaultdict(deque)
+
+
+def _check_login_rate(request: Request, email: str) -> None:
+    ip = request.client.host if request.client else "unknown"
+    attempts = _login_attempts[(ip, email.lower())]
+    now = time.monotonic()
+    while attempts and attempts[0] <= now - 60:
+        attempts.popleft()
+    if len(attempts) >= 10:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Try again later.",
+        )
+    attempts.append(now)
+
 
 class SignupRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(max_length=128)
 
 
 class TokenResponse(BaseModel):
@@ -64,7 +84,8 @@ async def signup(req: SignupRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(req: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    _check_login_rate(request, req.email)
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
     if not user or not user.password_hash or not verify_password(req.password, user.password_hash):

@@ -179,8 +179,8 @@ def _parse_json_export(content: str) -> LinkedInProfile:
             ]
 
         return profile
-    except json.JSONDecodeError:
-        raise ValueError("Invalid JSON format for LinkedIn data export")
+    except (json.JSONDecodeError, AttributeError, TypeError, KeyError) as exc:
+        raise ValueError("Invalid JSON format for LinkedIn data export") from exc
 
 
 def _parse_text_paste(content: str) -> LinkedInProfile:

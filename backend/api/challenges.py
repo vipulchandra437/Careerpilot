@@ -6,9 +6,10 @@ unavailable the endpoint returns 503 cleanly and NEVER executes the code here.
 """
 
 import asyncio
+import re
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,15 +33,24 @@ router = APIRouter(prefix="/challenges", tags=["coding-challenges"])
 
 
 class GenerateRequest(BaseModel):
-    skill: str
+    skill: str = Field(min_length=1, max_length=60)
     difficulty: str = "adaptive"
     language: str = "python"
     target_role_id: str | None = None
     roadmap_milestone_id: str | None = None
 
+    @field_validator("skill")
+    @classmethod
+    def limit_skill(cls, value: str) -> str:
+        # The skill is interpolated into an LLM prompt. Keep it a short skill
+        # name, not a sentence that could carry instructions.
+        if not re.fullmatch(r"[A-Za-z0-9 .+#_/-]+", value) or len(value.split()) > 4:
+            raise ValueError("Skill must be a short skill name")
+        return value
+
 
 class SubmitRequest(BaseModel):
-    code: str
+    code: str = Field(max_length=50_000)
     roadmap_milestone_id: str | None = None
 
 
