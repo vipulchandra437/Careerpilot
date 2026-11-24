@@ -1,6 +1,8 @@
 import logging
 import re
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from backend.api.health import router as health_router
@@ -147,3 +149,16 @@ app.include_router(roadmap_router, prefix="/api")
 app.include_router(challenges_router, prefix="/api")
 app.include_router(interviews_router, prefix="/api")
 app.include_router(mentor_router, prefix="/api")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    # The UI renders `detail` as text. FastAPI's default is a list of objects,
+    # which crashes React on every 422 (e.g. an over-long password on signup).
+    first = exc.errors()[0] if exc.errors() else {}
+    location = ".".join(str(p) for p in first.get("loc", ()) if p != "body")
+    message = str(first.get("msg", "Invalid request"))
+    return JSONResponse(
+        status_code=422,
+        content={"detail": f"{location}: {message}" if location else message},
+    )

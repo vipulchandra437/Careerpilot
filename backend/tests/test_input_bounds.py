@@ -19,9 +19,11 @@ async def test_password_bounds_and_bad_linkedin_json():
         assert (await client.post(
             "/api/auth/signup", json={"email": _email(), "password": ""}
         )).status_code == 422
-        assert (await client.post(
+        too_long = await client.post(
             "/api/auth/signup", json={"email": _email(), "password": "a" * 4097}
-        )).status_code == 422
+        )
+        assert too_long.status_code == 422
+        assert isinstance(too_long.json()["detail"], str)
 
         token = (await client.post(
             "/api/auth/signup",
