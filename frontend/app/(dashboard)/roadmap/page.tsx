@@ -3,23 +3,21 @@
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
   AlertTriangle,
-  Loader2,
-  Target,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  PlayCircle,
-  Flag,
-  ArrowRight,
-  Zap,
-  Brain,
   BookOpen,
+  Brain,
+  ChevronLeft,
+  Clock,
   Code,
+  ExternalLink,
+  Flag,
   Layers,
+  Loader2,
+  PlayCircle,
   RefreshCw,
   Search,
+  Target,
+  Zap,
 } from "lucide-react";
 
 interface Milestone {
@@ -53,35 +51,20 @@ interface GapReport {
   }>;
 }
 
-const cardClass =
-  "card p-6 transition-colors";
+const brand = "#3b6cf6";
+const green = "#12a36b";
 
-const cardTitleClass = "text-lg font-semibold text-white mb-1 flex items-center gap-2";
-
-const mutedText = "text-sm text-slate-400";
-
-const pillBase = "px-2 py-1 text-xs rounded-full font-medium";
-
-const pillColors: Record<string, string> = {
-  critical: "bg-red-500/15 text-red-300 border border-red-500/20",
-  important: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
-  nice_to_have: "bg-brand-500/15 text-brand-200 border border-brand-500/25",
-  none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25",
-  gray: "bg-slate-500/15 text-slate-300 border border-slate-600/30",
+const statusPills: Record<string, string> = {
+  done: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  in_progress: "border-blue-200 bg-blue-50 text-blue-700",
+  not_started: "border-slate-200 bg-slate-100 text-slate-600",
 };
 
-const primaryBtn =
-  "btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50";
-
-const darkBtn =
-  "btn-secondary focus-ring !px-4 !py-2 !text-sm";
-
-const linkClass = "text-sm text-brand-300 hover:text-brand-200 transition-colors underline-offset-2 hover:underline";
-
-const statusColors: Record<string, string> = {
-  done: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25",
-  in_progress: "bg-brand-500/15 text-brand-200 border border-brand-500/25",
-  not_started: "bg-slate-500/15 text-slate-300 border border-slate-600/30",
+const severityText: Record<string, string> = {
+  critical: "text-red-600",
+  important: "text-amber-600",
+  nice_to_have: "text-blue-600",
+  none: "text-emerald-600",
 };
 
 const actionIcons: Record<string, React.ReactNode> = {
@@ -90,34 +73,26 @@ const actionIcons: Record<string, React.ReactNode> = {
   resource: <BookOpen className="h-4 w-4" />,
 };
 
-const domainIcons: Record<string, React.ReactNode> = {
-  "Backend Engineer": <Code className="h-4 w-4" />,
-  "Frontend Engineer": <Layers className="h-4 w-4" />,
-  "ML Engineer": <Brain className="h-4 w-4" />,
-  "Full-Stack Engineer": <Zap className="h-4 w-4" />,
-};
+const lightBtn =
+  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl border border-[#e3e8f2] bg-white px-4 py-2 text-sm font-medium text-[#141b2d] transition-colors hover:border-[#b9c9f5] disabled:opacity-50";
 
-const levelNodeColors: Record<string, string> = {
-  done: "bg-emerald-400 text-emerald-950 border-emerald-100",
-  in_progress: "bg-amber-400 text-amber-950 border-amber-100",
-  not_started: "bg-slate-500 text-white border-slate-300",
-};
+const primaryBtn =
+  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50";
 
-const severityColors: Record<string, string> = {
-  critical: "text-red-400",
-  important: "text-yellow-400",
-  nice_to_have: "text-brand-400",
-  none: "text-emerald-400",
-};
+const linkClass = "text-sm font-medium text-[#3b6cf6] hover:underline";
 
 function RoadmapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
   const [gapReport, setGapReport] = useState<GapReport | null>(null);
-  const [targetRoles, setTargetRoles] = useState<Array<{id: string; name: string}>>([]);
+  const [targetRoles, setTargetRoles] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [domainQuery, setDomainQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchIndex, setSearchIndex] = useState(-1);
+  const [autofill, setAutofill] = useState<{ id: string; prefix: string } | null>(null);
+  const [suppressAutofill, setSuppressAutofill] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -167,20 +142,20 @@ function RoadmapContent() {
     setSelectedLevel(null);
     try {
       const token = localStorage.getItem("access_token");
-      
+
       // First get the gap report to find its ID
       const gapRes = await fetch(`/api/gap/report?target_role_id=${encodeURIComponent(roleId)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (gapRes.status === 401) {
         localStorage.removeItem("access_token");
         router.push("/login?reason=expired");
         return;
       }
-      
+
       if (gapRes.ok) {
         const gapData = await gapRes.json();
         setGapReport({
@@ -189,12 +164,12 @@ function RoadmapContent() {
           target_role_name: gapData.target_role_name || "Unknown",
           gaps: gapData.gaps || [],
         });
-        
+
         // Then get the roadmap
         const roadmapRes = await fetch(`/api/roadmap/${gapData.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (roadmapRes.ok) {
           const roadmapData = await roadmapRes.json();
           setRoadmap(normalizeRoadmap(roadmapData));
@@ -225,13 +200,13 @@ function RoadmapContent() {
           "Content-Type": "application/json",
         },
       });
-      
+
       if (res.status === 401) {
         localStorage.removeItem("access_token");
         router.push("/login?reason=expired");
         return;
       }
-      
+
       if (res.ok) {
         // Poll for completion
         let attempts = 0;
@@ -261,7 +236,8 @@ function RoadmapContent() {
     }
   }, [router, gapReport, roadmap]);
 
-  const selectDomain = (roleId: string) => {
+  const selectDomain = (roleId: string, name?: string) => {
+    if (name) setDomainQuery(name);
     setSelectedRoleId(roleId);
     window.history.replaceState({}, "", `/roadmap?role=${roleId}`);
     fetchRoadmap(roleId);
@@ -283,29 +259,95 @@ function RoadmapContent() {
       fetchRoadmap(roleId);
     } else if (targetRoles.length > 0) {
       setSelectedRoleId(targetRoles[0].id);
+      setDomainQuery(targetRoles[0].name);
       fetchRoadmap(targetRoles[0].id);
     }
   }, [searchParams, targetRoles, fetchRoadmap]);
 
-  const visibleRoles = targetRoles.filter((role) =>
-    role.name.toLowerCase().includes(domainQuery.trim().toLowerCase())
-  );
-  const activeMilestone =
-    selectedLevel === null || !roadmap ? null : roadmap.milestones[selectedLevel] ?? null;
+  const query = domainQuery.trim().toLowerCase();
+  const matchingRoles = targetRoles.filter((role) => role.name.toLowerCase().includes(query));
+  const options = query ? matchingRoles : targetRoles;
+  const activeMilestone = selectedLevel === null || !roadmap ? null : roadmap.milestones[selectedLevel] ?? null;
   const milestones = roadmap?.milestones ?? [];
-  // A meandering road: nodes snake left/right, joined by a smooth curve.
-  const levelOffsets = [0, -70, -120, -70, 0, 70, 120, 70];
-  const levelPoints = milestones.map((_, index) => ({
-    x: 180 + levelOffsets[index % levelOffsets.length],
-    y: 70 + index * 110,
-  }));
-  const roadHeight = 140 + Math.max(milestones.length - 1, 0) * 110;
-  const roadPath = levelPoints.reduce((path, point, index) => {
-    if (index === 0) return `M ${point.x} 20 L ${point.x} ${point.y}`;
-    const previous = levelPoints[index - 1];
-    const middleY = (previous.y + point.y) / 2;
-    return `${path} C ${previous.x} ${middleY}, ${point.x} ${middleY}, ${point.x} ${point.y}`;
-  }, "");
+  const doneCount = milestones.filter((m) => m.status === "done").length;
+  const progress = milestones.length ? Math.round((doneCount / milestones.length) * 100) : 0;
+  const hours = milestones.reduce((sum, m) => sum + (m.estimated_hours || 0), 0);
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchIndex(-1);
+  };
+
+  const acceptDomain = (role: { id: string; name: string }) => {
+    setAutofill(null);
+    setSuppressAutofill(false);
+    closeSearch();
+    selectDomain(role.id, role.name);
+  };
+
+  const onSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const raw = input.value;
+    if (suppressAutofill) {
+      setSuppressAutofill(false);
+      setAutofill(null);
+      setDomainQuery(raw);
+      return;
+    }
+    const q = raw.trim().toLowerCase();
+    const match = q ? targetRoles.find((r) => r.name.toLowerCase().startsWith(q) && r.name.toLowerCase() !== q) : undefined;
+    if (match) {
+      setDomainQuery(match.name);
+      setAutofill({ id: match.id, prefix: raw });
+      requestAnimationFrame(() => input.setSelectionRange(raw.length, match.name.length));
+    } else {
+      setDomainQuery(raw);
+      setAutofill(null);
+    }
+    setSearchOpen(true);
+    setSearchIndex(-1);
+  };
+
+  const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Backspace") {
+      if (autofill) {
+        setSuppressAutofill(true);
+        setAutofill(null);
+      }
+      setSearchOpen(true);
+      return;
+    }
+    setSuppressAutofill(false);
+    if ((event.key === "Tab" || event.key === "ArrowRight") && autofill && event.currentTarget.selectionStart !== event.currentTarget.selectionEnd) {
+      event.preventDefault();
+      const role = targetRoles.find((r) => r.id === autofill.id);
+      if (role) acceptDomain(role);
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!searchOpen) {
+        setSearchOpen(true);
+        return;
+      }
+      if (!options.length) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setSearchIndex((current) => (current < 0 ? (step === 1 ? 0 : options.length - 1) : (current + step + options.length) % options.length));
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const role = options[searchIndex >= 0 ? searchIndex : 0];
+      if (role) acceptDomain(role);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (autofill) setDomainQuery(autofill.prefix);
+      setAutofill(null);
+      closeSearch();
+    }
+  };
 
   const getSeverityForSkill = (skill: string): string => {
     return gapReport?.gaps.find((g) => g.skill === skill)?.severity || "none";
@@ -313,8 +355,8 @@ function RoadmapContent() {
 
   if (loading) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
-        <div className="flex items-center gap-3 text-slate-400">
+      <main className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-8 text-[#5c6784]">
+        <div className="flex items-center gap-3">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading roadmap...</p>
         </div>
@@ -323,279 +365,243 @@ function RoadmapContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-surface text-white">
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
-        <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
-      </div>
-
-      <div className="mx-auto w-full max-w-4xl p-6 sm:p-8">
-        <div className="mb-6 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-            aria-label="Back"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight">Learning Roadmap</h1>
-            <p className={mutedText}>Your personalized milestone plan</p>
+    <main className="min-h-screen bg-[#f5f7fb] text-[#141b2d]">
+      <header className="sticky top-0 z-20 border-b border-[#e3e8f2] bg-white">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-3 px-5 py-3 max-[560px]:flex-col max-[560px]:items-stretch">
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden="true" className="h-[30px] w-[30px] rounded-[9px] bg-gradient-to-br from-[#3b6cf6] to-[#7c4dff] shadow-[0_4px_12px_rgba(59,108,246,.28)]" />
+            <span className="text-[18px] font-bold tracking-tight">Roadmap</span>
+          </div>
+          <div className="relative w-full max-w-[440px] max-[560px]:max-w-none">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5c6784]" />
+            <input
+              value={domainQuery}
+              onChange={onSearchChange}
+              onKeyDown={onSearchKeyDown}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => window.setTimeout(closeSearch, 140)}
+              type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={searchOpen}
+              aria-controls="domain-options"
+              placeholder="Search a domain, e.g. machine learning"
+              className="focus-ring w-full rounded-xl border border-[#e3e8f2] bg-[#f5f7fb] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#3b6cf6] focus:bg-white focus:ring-4 focus:ring-[#3b6cf6]/15"
+            />
+            {searchOpen && (
+              <div
+                id="domain-options"
+                role="listbox"
+                aria-label="Domains"
+                onMouseDown={(e) => e.preventDefault()}
+                className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-[430px] overflow-y-auto rounded-xl border border-[#e3e8f2] bg-white p-1 shadow-[0_18px_46px_rgba(20,27,45,.14)]"
+              >
+                <p className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-[.13em] text-[#5c6784]">
+                  {query ? "Matching domains" : "All domains"}
+                </p>
+                {options.map((role, index) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    role="option"
+                    aria-selected={searchIndex === index}
+                    onClick={() => acceptDomain(role)}
+                    className={`block w-full rounded-lg px-3 py-2 text-left transition-colors ${searchIndex === index ? "bg-[#eef3ff]" : "hover:bg-[#eef3ff]"}`}
+                  >
+                    <span className="block text-sm font-semibold">{role.name}</span>
+                    <span className="block text-xs text-[#5c6784]">Personalized milestone roadmap</span>
+                  </button>
+                ))}
+                {!options.length && <p className="px-3 py-2 text-sm text-[#5c6784]">No domain matches. Domains are managed by your admin.</p>}
+                <p className="mt-1 border-t border-[#e3e8f2] px-3 py-2 text-[11px] text-[#5c6784]">↑↓ move · Enter select · Tab / → accept · Esc close</p>
+              </div>
+            )}
           </div>
         </div>
+      </header>
 
-        <section className="mb-8" aria-labelledby="domain-heading">
-          <h2 id="domain-heading" className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">
-            Choose your domain
-          </h2>
-          <div className="relative mb-3">
-            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              value={domainQuery}
-              onChange={(e) => setDomainQuery(e.target.value)}
-              placeholder="Search domains"
-              aria-label="Search domains"
-              className="input focus-ring w-full !pl-10"
-            />
-          </div>
-          <div role="group" aria-labelledby="domain-heading" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {visibleRoles.map((role) => {
-              const active = role.id === selectedRoleId;
-              return (
-                <button
-                  key={role.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => selectDomain(role.id)}
-                  className={`focus-ring flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
-                    active
-                      ? "border-brand-400/60 bg-brand-500/15 text-white"
-                      : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20 hover:text-white"
-                  }`}
-                >
-                  {domainIcons[role.name] ?? <Target aria-hidden="true" className="h-4 w-4" />}
-                  <span>{role.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          {visibleRoles.length === 0 && (
-            <p className="mt-3 text-sm text-slate-400">
-              No domain matches “{domainQuery}”. Domains are managed by your admin.
-            </p>
+      <div className="mx-auto grid max-w-[1240px] gap-6 px-5 py-6 min-[900px]:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0">
+          <button onClick={() => router.back()} className="focus-ring mb-4 inline-flex items-center gap-1 text-sm text-[#5c6784] hover:text-[#3b6cf6]">
+            <ChevronLeft className="h-4 w-4" /> Back
+          </button>
+
+          {error && (
+            <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{error}</p>
+            </div>
           )}
-        </section>
 
-        {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur">
-            <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 text-red-400" />
-            <p>{error}</p>
-          </div>
-        )}
-
-        {roadmap ? (
-          <>
-            <div className={`${cardClass} mb-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className={cardTitleClass}>
-                    <Target aria-hidden="true" className="h-5 w-5 text-brand-400" />
-                    {gapReport?.target_role_name || "Target Role"}
-                  </h2>
-                  <p className={mutedText}>
-                    Version {roadmap.version} • {roadmap.milestones.length} milestones •{" "}
-                    {roadmap.milestones.reduce((sum, m) => sum + (m.estimated_hours || 0), 0)}h estimated
-                  </p>
+          {roadmap ? (
+            <>
+              <section className="mb-6 flex items-center gap-5 rounded-2xl border border-[#e3e8f2] bg-white p-6 max-[560px]:gap-3.5">
+                <div
+                  className="relative grid h-[94px] w-[94px] shrink-0 place-items-center rounded-full"
+                  style={{ background: `conic-gradient(${brand} ${progress}%, #e8edf7 0)` }}
+                  role="img"
+                  aria-label={`${progress}% complete`}
+                >
+                  <span aria-hidden="true" className="absolute inset-[9px] rounded-full bg-white" />
+                  <span className="relative z-10 text-[19px] font-extrabold">{progress}%</span>
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-[23px] font-bold tracking-tight max-[560px]:text-[19px]">{gapReport?.target_role_name || "Target Role"}</h1>
+                  <p className="text-sm text-[#5c6784]">Version {roadmap.version} · {hours}h estimated</p>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[#5c6784]">
+                    <span><b className="block text-base text-[#141b2d]">{milestones.length}</b>stages</span>
+                    <span><b className="block text-base text-[#141b2d]">{milestones.length}</b>topics</span>
+                    <span><b className="block text-base text-[#141b2d]">{doneCount}</b>completed topics</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => generateRoadmap(roadmap.gap_report_id)}
                   disabled={generating}
-                  className={darkBtn}
+                  className={`${lightBtn} ml-auto shrink-0 max-[560px]:ml-0`}
                 >
-                  {generating ? (
-                    <>
-                      <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4" />
-                      Regenerate
-                    </>
-                  )}
+                  {generating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
+                  {generating ? "Regenerating..." : "Regenerate"}
+                </button>
+              </section>
+
+              {milestones.map((milestone, index) => {
+                const done = milestone.status === "done";
+                const firstUnfinished = milestones.findIndex((m) => m.status !== "done") === index;
+                return (
+                  <section key={milestone.id} className="relative pb-6 pl-[58px] max-[560px]:pl-12">
+                    {index < milestones.length - 1 && (
+                      <span aria-hidden="true" className="absolute bottom-0 left-[21px] top-[46px] w-[2px] bg-[#e3e8f2] max-[560px]:left-[18px]" />
+                    )}
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-0 grid h-11 w-11 place-items-center rounded-full border-2 bg-white text-sm font-extrabold max-[560px]:h-[38px] max-[560px]:w-[38px]"
+                      style={{
+                        borderColor: done ? green : milestone.status === "in_progress" ? brand : "#e3e8f2",
+                        color: done ? "#fff" : milestone.status === "in_progress" ? brand : "#5c6784",
+                        background: done ? green : "#fff",
+                        boxShadow: firstUnfinished ? `0 0 0 5px ${brand}24` : undefined,
+                      }}
+                    >
+                      {done ? "✓" : index + 1}
+                    </span>
+                    <div className="flex min-h-11 flex-wrap items-center gap-2.5">
+                      <h2 className="text-base font-semibold">{milestone.title}</h2>
+                      {milestone.estimated_hours != null && (
+                        <span className="text-xs text-[#5c6784]"><Clock aria-hidden="true" className="mr-1 inline h-3 w-3" />{milestone.estimated_hours}h</span>
+                      )}
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${statusPills[milestone.status]}`}>
+                        {milestone.status.replace("_", " ")}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLevel(index)}
+                        aria-pressed={selectedLevel === index}
+                        className={`focus-ring flex min-w-[190px] max-w-[340px] flex-1 items-start gap-3 rounded-xl border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#b9c9f5] hover:shadow-md max-[560px]:min-w-full ${selectedLevel === index ? "border-[#3b6cf6] ring-4 ring-[#3b6cf6]/15" : "border-[#e3e8f2]"}`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] border-2 text-xs text-white"
+                          style={done ? { background: green, borderColor: green } : { background: "#fff", borderColor: "#c9d2e3" }}
+                        >
+                          {done ? "✓" : ""}
+                        </span>
+                        <span className="min-w-0">
+                          <strong className="block text-sm">{milestone.linked_gap_skill || "Skill"}</strong>
+                          <small className="mt-0.5 block text-xs text-[#5c6784]">{milestone.linked_action_type} · Level {index + 1}</small>
+                        </span>
+                      </button>
+                    </div>
+                  </section>
+                );
+              })}
+
+              <p className="ml-[58px] flex items-center gap-2 rounded-2xl bg-[#141b2d] px-5 py-4 text-center text-sm font-semibold text-white max-[560px]:ml-12">
+                <Flag aria-hidden="true" className="h-4 w-4" /> Goal reached: {gapReport?.target_role_name || "your target role"}
+              </p>
+
+              <div className="mt-8 text-center">
+                <button onClick={() => router.push(`/gap-report?role=${selectedRoleId}`)} className={lightBtn}>
+                  Back to Gap Report <Zap aria-hidden="true" className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-
-            <div className="relative mx-auto mt-4 w-full max-w-md">
-              <div className="mb-4 text-center">
-                <span className={`${pillBase} ${pillColors.none}`}>START HERE</span>
-              </div>
-              <div className="relative" style={{ height: roadHeight }}>
-                <svg
-                  aria-hidden="true"
-                  viewBox={`0 0 360 ${roadHeight}`}
-                  preserveAspectRatio="none"
-                  className="absolute inset-0 h-full w-full"
-                >
-                  <path d={roadPath} fill="none" stroke="#0f172a" strokeWidth="38" strokeLinecap="round" />
-                  <path d={roadPath} fill="none" stroke="#f59e0b" strokeWidth="30" strokeLinecap="round" />
-                  <path d={roadPath} fill="none" stroke="#fff7ed" strokeWidth="3" strokeDasharray="9 11" strokeLinecap="round" opacity="0.85" />
-                </svg>
-                {levelPoints.map((point, index) => {
-                  const milestone = milestones[index];
-                  return (
-                    <button
-                      key={milestone.id}
-                      type="button"
-                      onClick={() => setSelectedLevel(index)}
-                      aria-pressed={selectedLevel === index}
-                      aria-label={`Level ${index + 1}: ${milestone.title}. ${milestone.status.replace("_", " ")}`}
-                      style={{ left: `${(point.x / 360) * 100}%`, top: point.y }}
-                      className={`focus-ring absolute flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 text-lg font-extrabold shadow-lg transition-transform hover:scale-110 ${levelNodeColors[milestone.status]} ${
-                        selectedLevel === index ? "ring-4 ring-brand-300/70" : ""
-                      }`}
-                    >
-                      {milestone.status === "done" ? (
-                        <CheckCircle2 aria-hidden="true" className="h-7 w-7" />
-                      ) : (
-                        index + 1
-                      )}
-                      <span aria-hidden="true" className="absolute -bottom-4 text-[10px] tracking-widest text-amber-300">
-                        {milestone.status === "done"
-                          ? "★★★"
-                          : milestone.status === "in_progress"
-                            ? "★☆☆"
-                            : "☆☆☆"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-300">
-                <Flag aria-hidden="true" className="h-4 w-4 text-brand-300" />
-                Goal: {gapReport?.target_role_name || "your target role"}
-              </div>
-              {activeMilestone ? (
-                <div className={`${cardClass} mt-6`}>
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <span className={`text-xs font-semibold uppercase tracking-widest ${severityColors[getSeverityForSkill(activeMilestone.linked_gap_skill)]}`}>
-                      Level {(selectedLevel ?? 0) + 1} of {milestones.length}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLevel(null)}
-                      aria-label="Close level details"
-                      className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className={`${pillBase} ${statusColors[activeMilestone.status]} capitalize`}>
-                      {activeMilestone.status.replace("_", " ")}
-                    </span>
-                    {activeMilestone.estimated_hours && (
-                      <span className={`${pillBase} ${pillColors.gray}`}>
-                        <Clock className="mr-1 inline h-3 w-3" />
-                        {activeMilestone.estimated_hours}h
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mb-1 text-lg font-semibold text-white">{activeMilestone.title}</h3>
-                  <p className={`${mutedText} mb-4`}>
-                    Addresses: <span className="font-medium text-slate-200">{activeMilestone.linked_gap_skill}</span>
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-sm text-slate-300">
-                      {actionIcons[activeMilestone.linked_action_type]}
-                      <span className="capitalize">{activeMilestone.linked_action_type}</span>
-                    </span>
-                    {activeMilestone.linked_action_type === "resource" && (
-                      <a href={activeMilestone.linked_action_id} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Open
-                      </a>
-                    )}
-                    {activeMilestone.linked_action_type === "challenge" && (
-                      <button
-                        onClick={() => {
-                          const params = new URLSearchParams({
-                            skill: activeMilestone.linked_gap_skill || "",
-                            targetRoleId: selectedRoleId,
-                            milestoneId: activeMilestone.id,
-                          });
-                          router.push(`/practice?${params.toString()}`);
-                        }}
-                        className={linkClass}
-                        disabled={activeMilestone.status === "done"}
-                      >
-                        <PlayCircle className="h-3.5 w-3.5" />
-                        {activeMilestone.status === "done" ? "Done" : "Start"}
-                      </button>
-                    )}
-                    {activeMilestone.linked_action_type === "interview" && (
-                      <button
-                        onClick={() => router.push("/mock-interview")}
-                        className={linkClass}
-                        disabled={activeMilestone.status === "done"}
-                      >
-                        <PlayCircle className="h-3.5 w-3.5" />
-                        {activeMilestone.status === "done" ? "Done" : "Start"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-6 text-center text-sm text-slate-400">Tap a level on the road to see its details.</p>
-              )}
-            </div>
-
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => router.push(`/gap-report?role=${selectedRoleId}`)}
-                className={darkBtn}
-              >
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Back to Gap Report
+            </>
+          ) : gapReport ? (
+            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
+              <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+              <h2 className="mb-2 text-xl font-semibold">No roadmap generated yet</h2>
+              <p className="mb-6 text-sm text-[#5c6784]">Generate a personalized learning roadmap based on your skill gaps.</p>
+              <button onClick={() => generateRoadmap(gapReport.id)} disabled={generating} style={{ background: brand }} className={primaryBtn}>
+                {generating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Layers aria-hidden="true" className="h-4 w-4" />}
+                {generating ? "Generating..." : "Generate Roadmap"}
               </button>
-            </div>
-          </>
-        ) : gapReport ? (
-          <div className={`${cardClass} text-center py-12`}>
-            <Flag className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No roadmap generated yet</h3>
-            <p className={`${mutedText} mb-6`}>
-              Generate a personalized learning roadmap based on your skill gaps.
-            </p>
-            <button
-              onClick={() => generateRoadmap(gapReport.id)}
-              disabled={generating}
-              className={primaryBtn}
-            >
-              {generating ? (
-                <>
-                  <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Layers className="h-4 w-4" />
-                  Generate Roadmap
-                </>
-              )}
-            </button>
-          </div>
-        ) : (
-          <div className={`${cardClass} text-center py-12`}>
-            <Target className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Select a target role</h3>
-            <p className={`${mutedText} mb-4`}>
-              Choose a role to view or generate your learning roadmap.
-            </p>
-          </div>
-        )}
+            </section>
+          ) : (
+            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
+              <Target aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+              <h2 className="mb-2 text-xl font-semibold">Select a target role</h2>
+              <p className="text-sm text-[#5c6784]">Choose a role to view or generate your learning roadmap.</p>
+            </section>
+          )}
+        </div>
+
+        <aside aria-live="polite" className="order-first rounded-2xl border border-[#e3e8f2] bg-white p-6 min-[900px]:sticky min-[900px]:top-[84px] min-[900px]:order-none">
+          {activeMilestone ? (
+            <>
+              <p className="text-xs font-extrabold uppercase tracking-[.1em]" style={{ color: brand }}>
+                Stage {selectedLevel! + 1} · {activeMilestone.estimated_hours ?? 0}h
+              </p>
+              <h2 className="mt-3 text-[21px] font-bold tracking-tight">{activeMilestone.title}</h2>
+              <p className="text-sm text-[#5c6784]">Addresses: {activeMilestone.linked_gap_skill}</p>
+              <div className="mt-5">
+                <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-[#5c6784]">What you&apos;ll cover</p>
+                <ul className="list-disc space-y-1 pl-5 text-sm">
+                  <li className={`font-medium capitalize ${severityText[getSeverityForSkill(activeMilestone.linked_gap_skill)]}`}>
+                    Gap severity: {getSeverityForSkill(activeMilestone.linked_gap_skill).replace("_", " ")}
+                  </li>
+                  <li>Status: {activeMilestone.status.replace("_", " ")}</li>
+                  <li>{actionIcons[activeMilestone.linked_action_type]} <span className="capitalize">{activeMilestone.linked_action_type}</span> action</li>
+                </ul>
+              </div>
+              <div className="mt-5 border-t border-[#e3e8f2] pt-4">
+                {activeMilestone.linked_action_type === "resource" && (
+                  <a href={activeMilestone.linked_action_id} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                    <ExternalLink aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" /> Open resource
+                  </a>
+                )}
+                {activeMilestone.linked_action_type === "challenge" && (
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        skill: activeMilestone.linked_gap_skill || "",
+                        targetRoleId: selectedRoleId,
+                        milestoneId: activeMilestone.id,
+                      });
+                      router.push(`/practice?${params.toString()}`);
+                    }}
+                    disabled={activeMilestone.status === "done"}
+                    className={linkClass}
+                  >
+                    <PlayCircle aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" />
+                    {activeMilestone.status === "done" ? "Done" : "Start"}
+                  </button>
+                )}
+                {activeMilestone.linked_action_type === "interview" && (
+                  <button onClick={() => router.push("/mock-interview")} disabled={activeMilestone.status === "done"} className={linkClass}>
+                    <PlayCircle aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" />
+                    {activeMilestone.status === "done" ? "Done" : "Start"}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xs font-extrabold uppercase tracking-[.1em]" style={{ color: brand }}>Topic details</h2>
+              <p className="py-7 text-center text-sm text-[#5c6784]">Select a topic on the roadmap to see what you will cover.</p>
+            </>
+          )}
+        </aside>
       </div>
     </main>
   );
@@ -604,8 +610,8 @@ function RoadmapContent() {
 export default function RoadmapPage() {
   return (
     <Suspense fallback={
-      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
-        <div className="flex items-center gap-3 text-slate-400">
+      <main className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-8 text-[#5c6784]">
+        <div className="flex items-center gap-3">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>
         </div>

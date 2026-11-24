@@ -31,9 +31,9 @@
 
 ### 2.4 Roadmap View
 
-- Domain chooser at the top: a search box plus one button per target role. Search filters the list so any available domain can be found even when it is not visible; a no-match message explains domains are admin-managed. Selecting one loads that domain's roadmap and keeps `?role=` in the URL.
-- Milestones are game-style levels on a cartoonish winding road: a START HERE marker, a smooth amber road with a dashed centre line, and numbered circular nodes that snake left/right. Node colour and stars show status (done / in progress / not started); a Goal marker ends the trail.
-- Clicking a level opens its detail card: level number, status, hours, title, gap skill addressed, and the matching CTA ("Start Challenge" / "Practice Interview" / "Read Resource"). Completed levels stay on the road with a checkmark (don't hide progress — it's motivating to see what's done).
+- Domain chooser is a sticky white header with a gradient logo and an autocomplete search box (matching the standalone `/learning-roadmap.html` look). Focus shows all admin-managed roles, typing shows only matches, and a no-match message says domains are admin-managed. Autofill completes a role name; Tab or → accepts, Backspace deletes, arrows move, Enter selects, Escape closes. Selecting one loads that domain's roadmap and keeps `?role=` in the URL.
+- Milestones are numbered circles on a vertical connector, with a checkmark for done stages and a blue ring on the first unfinished stage. Status is also shown as text and colour (done / in progress / not started). An overview card shows the progress ring, role name, hours, stage/topic/completed counts, and Regenerate; a dark "Goal reached" card ends the trail.
+- Clicking a stage opens the sticky detail panel: stage number, hours, title, gap skill addressed, gap severity, status, action type, and the matching CTA ("Start Challenge" / "Practice Interview" / "Open resource"). Completed stages stay on the road with a checkmark (don't hide progress — it's motivating to see what's done). Below 900px the detail panel stacks above the trail; below 560px the search bar takes its own row.
 
 ### 2.5 Coding Practice
 
