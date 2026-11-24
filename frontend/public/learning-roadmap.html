@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Learning Roadmap</title>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --brand: #3b6cf6;
+    --green: #12a36b;
+    --ink: #141b2d;
+    --muted: #5c6784;
+    --line: #e3e8f2;
+    --soft: #eef3ff;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.5; }
+  button, input { font: inherit; }
+  button { color: inherit; }
+
+  header { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 1px solid var(--line); }
+  .hdr { max-width: 1240px; margin: auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 750; letter-spacing: -.02em; }
+  .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #3b6cf6, #7c4dff); box-shadow: 0 4px 12px rgba(59,108,246,.28); }
+  .search-wrap { position: relative; flex: 0 1 440px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 17px; }
+  #search { width: 100%; padding: 11px 14px 11px 38px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); outline: none; transition: border-color .18s, box-shadow .18s; }
+  #search:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(59,108,246,.13); background: #fff; }
+  .dropdown { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; max-height: 430px; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 18px 46px rgba(20,27,45,.14); z-index: 60; }
+  .dropdown.open { display: block; }
+  .group-title { padding: 11px 14px 5px; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); }
+  .option { display: flex; flex-direction: column; gap: 1px; margin: 1px 6px; padding: 9px 10px; border-radius: 9px; cursor: pointer; }
+  .option:hover, .option.hi { background: var(--soft); }
+  .option .name { font-size: 14px; font-weight: 650; }
+  .option .sub { font-size: 12px; color: var(--muted); }
+  .hint { padding: 9px 14px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); background: #fbfcff; }
+
+  .layout { max-width: 1240px; margin: 24px auto 60px; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+  .detail { position: sticky; top: 84px; }
+  .overview { display: flex; align-items: center; gap: 22px; margin-bottom: 24px; }
+  .ring { position: relative; width: 94px; height: 94px; flex: 0 0 94px; border-radius: 50%; background: conic-gradient(var(--brand) var(--p, 0%), #e8edf7 0); display: grid; place-items: center; }
+  .ring::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: #fff; }
+  .ring span { position: relative; z-index: 1; font-size: 19px; font-weight: 800; }
+  .overview h1 { margin: 0 0 5px; font-size: 23px; letter-spacing: -.02em; }
+  .overview p { margin: 0; color: var(--muted); font-size: 14px; max-width: 56ch; }
+  .counts { display: flex; gap: 18px; margin-top: 12px; flex-wrap: wrap; }
+  .counts div { font-size: 12px; color: var(--muted); }
+  .counts b { display: block; font-size: 17px; color: var(--ink); }
+
+  .stage { position: relative; padding: 0 0 24px 58px; }
+  .stage::before { content: ""; position: absolute; left: 21px; top: 46px; bottom: -2px; width: 2px; background: var(--line); }
+  .stage:last-of-type::before { display: none; }
+  .num { position: absolute; left: 0; top: 0; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid var(--line); font-weight: 800; color: var(--muted); transition: all .2s; }
+  .stage.current .num { border-color: var(--brand); color: var(--brand); box-shadow: 0 0 0 5px rgba(59,108,246,.14); }
+  .stage.done .num { background: var(--green); border-color: var(--green); color: #fff; }
+  .stage-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 44px; }
+  .stage-head h3 { margin: 0; font-size: 16px; }
+  .time { font-size: 12px; color: var(--muted); }
+  .badge { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; background: #fff3e0; color: #a45b00; }
+  .items { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 11px; }
+  .item-card { flex: 1 1 220px; max-width: 340px; min-width: 190px; display: flex; gap: 11px; align-items: flex-start; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; cursor: pointer; transition: border-color .18s, box-shadow .18s, transform .18s; }
+  .item-card:hover { transform: translateY(-2px); border-color: #b9c9f5; box-shadow: 0 8px 22px rgba(20,27,45,.07); }
+  .item-card.sel { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(59,108,246,.14); }
+  .mini-check { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 2px; border: 2px solid #c9d2e3; border-radius: 5px; background: #fff; }
+  .item-card.done .mini-check { background: var(--green); border-color: var(--green); box-shadow: inset 0 0 0 3px #fff; }
+  .item-card strong { display: block; font-size: 14px; }
+  .item-card small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+  .goal { margin: 4px 0 0 58px; padding: 18px; border-radius: 14px; background: var(--ink); color: #fff; text-align: center; font-weight: 700; letter-spacing: .01em; }
+
+  .detail h2 { margin: 0 0 4px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--brand); }
+  .detail h3 { margin: 12px 0 6px; font-size: 21px; letter-spacing: -.02em; }
+  .detail .desc { margin: 0; color: var(--muted); font-size: 14px; }
+  .detail .block-title { margin: 20px 0 8px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .detail ul { margin: 0; padding-left: 19px; font-size: 14px; }
+  .detail li { margin: 4px 0; }
+  .detail a { display: block; margin: 6px 0; color: var(--brand); font-size: 14px; text-decoration: none; }
+  .detail a:hover { text-decoration: underline; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+  .switch { position: relative; width: 46px; height: 26px; flex: 0 0 46px; border: 0; border-radius: 99px; background: #cbd4e4; cursor: pointer; transition: background .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .switch[aria-checked="true"] { background: var(--green); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); }
+  .placeholder { color: var(--muted); font-size: 14px; padding: 28px 0; text-align: center; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .detail { position: static; order: -1; }
+  }
+  @media (max-width: 560px) {
+    .hdr { padding: 10px 14px; }
+    .search-wrap { flex: 1 0 100%; order: 2; }
+    .layout { padding: 0 14px; margin-top: 16px; }
+    .overview { gap: 14px; }
+    .overview h1 { font-size: 19px; }
+    .stage { padding-left: 48px; }
+    .num { width: 38px; height: 38px; }
+    .stage::before { left: 18px; }
+    .goal { margin-left: 48px; }
+    .item-card { min-width: 100%; max-width: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><span>Roadmap</span></div>
+    <div class="search-wrap">
+      <span class="search-icon" aria-hidden="true">&#9906;</span>
+      <input id="search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dropdown" autocomplete="off" placeholder="Search a domain, e.g. machine learning" />
+      <div id="dropdown" class="dropdown" role="listbox" aria-label="Domains"></div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="road-column">
+    <div class="card overview" id="overview"></div>
+    <div id="roadmap"></div>
+  </div>
+  <aside class="card detail" id="detail" aria-live="polite"></aside>
+</div>
+
+<script>
+"use strict";
+const DOMAINS = {
+  ai: {
+    name: "AI / ML",
+    desc: "Go from Python and math to shipping real machine learning and deep learning models.",
+    tags: ["machine learning", "deep learning", "neural networks", "artificial intelligence", "ml"],
+    stages: [
+      { name: "Python", time: "3 weeks", items: [
+        { t: "Python fundamentals", d: "Syntax, data structures and clean scripts.", topics: ["Variables and types", "Lists, dicts and sets", "Functions and modules", "Virtual environments"], links: [["Python docs", "https://docs.python.org/3/"]] },
+        { t: "Object-oriented Python", d: "Classes and structure for larger projects.", topics: ["Classes and objects", "Inheritance", "Packages"], links: [["Python classes", "https://docs.python.org/3/tutorial/classes.html"]] }
+      ] },
+      { name: "Math", time: "3 weeks", choice: true, items: [
+        { t: "Linear Algebra", d: "Vectors, matrices and the geometry behind models.", topics: ["Vectors and matrices", "Dot products", "Eigenvalues"], links: [["Khan Academy", "https://www.khanacademy.org/math/linear-algebra"]] },
+        { t: "Probability & Statistics", d: "Uncertainty, distributions and inference.", topics: ["Probability rules", "Distributions", "Hypothesis testing"], links: [["Khan Academy", "https://www.khanacademy.org/math/statistics-probability"]] }
+      ] },
+      { name: "NumPy & Pandas", time: "2 weeks", items: [
+        { t: "NumPy arrays", d: "Fast vectorised numerical computing.", topics: ["ndarray basics", "Broadcasting", "Linear algebra ops"], links: [["NumPy docs", "https://numpy.org/doc/stable/"]] },
+        { t: "Pandas dataframes", d: "Clean, explore and reshape tabular data.", topics: ["Series and DataFrames", "Grouping", "Missing data"], links: [["Pandas docs", "https://pandas.pydata.org/docs/"]] }
+      ] },
+      { name: "scikit-learn", time: "3 weeks", items: [
+        { t: "Supervised learning", d: "Train, validate and tune classic models.", topics: ["Train/test split", "Regression", "Classification", "Cross-validation"], links: [["scikit-learn docs", "https://scikit-learn.org/stable/user_guide.html"]] },
+        { t: "Unsupervised learning", d: "Find structure without labels.", topics: ["Clustering", "Dimensionality reduction"], links: [["scikit-learn tutorials", "https://scikit-learn.org/stable/tutorial/index.html"]] }
+      ] },
+      { name: "Deep Learning", time: "4 weeks", choice: true, items: [
+        { t: "PyTorch", d: "Build and train neural networks in Python.", topics: ["Tensors", "Autograd", "Training loops"], links: [["PyTorch tutorials", "https://pytorch.org/tutorials/"]] },
+        { t: "TensorFlow / Keras", d: "Model building with a high-level API.", topics: ["Layers", "Compiling models", "Callbacks"], links: [["Keras docs", "https://keras.io/"]] }
+      ] },
+      { name: "Specialization", time: "4 weeks", choice: true, items: [
+        { t: "Computer Vision", d: "Convolutional networks for image tasks.", topics: ["CNNs", "Augmentation", "Transfer learning"], links: [["PyTorch vision", "https://pytorch.org/vision/stable/index.html"]] },
+        { t: "NLP & LLMs", d: "Text models, embeddings and transformers.", topics: ["Tokenisation", "Embeddings", "Transformers"], links: [["Hugging Face docs", "https://huggingface.co/docs"]] }
+      ] },
+      { name: "Portfolio project", time: "3 weeks", items: [
+        { t: "End-to-end ML project", d: "A clean repo with data, model and results.", topics: ["Problem framing", "Baseline model", "Evaluation", "README"], links: [["scikit-learn examples", "https://scikit-learn.org/stable/auto_examples/index.html"]] }
+      ] },
+      { name: "Job readiness", time: "2 weeks", items: [
+        { t: "Explain and defend your work", d: "Communicate trade-offs and results.", topics: ["Model cards", "Interview stories", "Code review"], links: [["Python docs", "https://docs.python.org/3/"]] }
+      ] }
+    ]
+  },
+  web: {
+    name: "Web Development",
+    desc: "Build complete web applications from semantic HTML through to a deployed full-stack capstone.",
+    tags: ["web development", "frontend", "backend", "full stack", "javascript", "react"],
+    stages: [
+      { name: "HTML", time: "1 week", items: [
+        { t: "Semantic HTML", d: "Structure pages with meaning and accessibility.", topics: ["Document structure", "Forms", "Accessibility basics"], links: [["MDN HTML", "https://developer.mozilla.org/en-US/docs/Web/HTML"]] }
+      ] },
+      { name: "CSS", time: "2 weeks", items: [
+        { t: "Modern CSS", d: "Layout, responsiveness and design tokens.", topics: ["Flexbox", "Grid", "Media queries", "Custom properties"], links: [["MDN CSS", "https://developer.mozilla.org/en-US/docs/Web/CSS"]] }
+      ] },
+      { name: "JavaScript", time: "4 weeks", items: [
+        { t: "JavaScript essentials", d: "The language and the browser APIs.", topics: ["Functions and scope", "DOM events", "Fetch and async", "ES modules"], links: [["MDN JavaScript", "https://developer.mozilla.org/en-US/docs/Web/JavaScript"]] }
+      ] },
+      { name: "Frontend framework", time: "3 weeks", choice: true, items: [
+        { t: "React", d: "Component-driven user interfaces.", topics: ["Components", "State and effects", "Hooks"], links: [["React docs", "https://react.dev/learn"]] },
+        { t: "Vue", d: "Progressive framework with a gentle learning curve.", topics: ["Templates", "Reactivity", "Components"], links: [["Vue docs", "https://vuejs.org/guide/introduction.html"]] }
+      ] },
+      { name: "Backend", time: "4 weeks", choice: true, items: [
+        { t: "Node.js", d: "JavaScript servers and APIs.", topics: ["HTTP servers", "Routing", "Middleware"], links: [["Node.js docs", "https://nodejs.org/en/learn"]] },
+        { t: "Python FastAPI / Django", d: "Batteries-included Python web backends.", topics: ["Request handling", "Data models", "Authentication"], links: [["FastAPI docs", "https://fastapi.tiangolo.com/"]] }
+      ] },
+      { name: "Data", time: "2 weeks", choice: true, items: [
+        { t: "SQL", d: "Relational modelling and queries.", topics: ["SELECT and joins", "Indexes", "Normalisation"], links: [["SQLBolt", "https://sqlbolt.com/"]] },
+        { t: "MongoDB", d: "Document storage and queries.", topics: ["Documents", "Query operators", "Aggregation"], links: [["MongoDB docs", "https://www.mongodb.com/docs/manual/"]] }
+      ] },
+      { name: "Git & deployment", time: "2 weeks", items: [
+        { t: "Git and CI", d: "Version control and automated checks.", topics: ["Branching", "Pull requests", "CI pipelines"], links: [["Git docs", "https://git-scm.com/doc"]] }
+      ] },
+      { name: "Full-stack capstone", time: "4 weeks", items: [
+        { t: "Ship an application", d: "A deployed app with tests and a README.", topics: ["Architecture", "Authentication", "Testing", "Deployment"], links: [["MDN web docs", "https://developer.mozilla.org/"]] }
+      ] }
+    ]
+  },
+  data: {
+    name: "Data Science",
+    desc: "Turn raw data into decisions with SQL, Python, statistics and a case-study portfolio.",
+    tags: ["data science", "analytics", "sql", "statistics", "visualisation"],
+    stages: [
+      { name: "SQL", time: "2 weeks", items: [
+        { t: "Querying data", d: "Join, aggregate and clean relational data.", topics: ["Joins", "Aggregates", "Window functions"], links: [["SQLBolt", "https://sqlbolt.com/"]] }
+      ] },
+      { name: "Python for data", time: "3 weeks", items: [
+        { t: "Pandas workflows", d: "Load, clean and analyse datasets.", topics: ["Reading data", "Cleaning", "Reshaping"], links: [["Pandas docs", "https://pandas.pydata.org/docs/"]] }
+      ] },
+      { name: "Statistics", time: "3 weeks", items: [
+        { t: "Applied statistics", d: "Distributions, confidence and testing.", topics: ["Descriptive stats", "Distributions", "Hypothesis tests"], links: [["Khan Academy", "https://www.khanacademy.org/math/statistics-probability"]] }
+      ] },
+      { name: "Communication", time: "2 weeks", choice: true, items: [
+        { t: "Matplotlib / Seaborn", d: "Code-first charts for exploration.", topics: ["Line and bar charts", "Heatmaps", "Figure styling"], links: [["Matplotlib docs", "https://matplotlib.org/stable/contents.html"]] },
+        { t: "Power BI / Tableau", d: "Interactive dashboards for stakeholders.", topics: ["Data models", "Dashboards", "Sharing"], links: [["Power BI docs", "https://learn.microsoft.com/power-bi/"]] }
+      ] },
+      { name: "Machine learning", time: "4 weeks", items: [
+        { t: "Predictive models", d: "Train, validate and explain models.", topics: ["Features", "Validation", "Metrics"], links: [["scikit-learn docs", "https://scikit-learn.org/stable/user_guide.html"]] }
+      ] },
+      { name: "Case-study portfolio", time: "3 weeks", items: [
+        { t: "Write a case study", d: "Question, method, result and limitation.", topics: ["Problem framing", "Analysis narrative", "Reproducible notebook"], links: [["Jupyter docs", "https://docs.jupyter.org/"]] }
+      ] }
+    ]
+  },
+  cyber: {
+    name: "Cybersecurity",
+    desc: "Learn networking, Linux and security fundamentals, then specialise and prove your skills in labs.",
+    tags: ["cybersecurity", "security", "networking", "linux", "ctf", "infosec"],
+    stages: [
+      { name: "Networking", time: "3 weeks", items: [
+        { t: "Network fundamentals", d: "TCP/IP, DNS and how packets move.", topics: ["OSI model", "TCP and UDP", "DNS and HTTP"], links: [["MDN HTTP", "https://developer.mozilla.org/en-US/docs/Web/HTTP"]] }
+      ] },
+      { name: "Linux", time: "3 weeks", items: [
+        { t: "Linux essentials", d: "Shell, permissions and processes.", topics: ["Shell commands", "File permissions", "Processes"], links: [["Linux docs", "https://www.kernel.org/doc/"]] }
+      ] },
+      { name: "Security fundamentals", time: "3 weeks", items: [
+        { t: "Core security concepts", d: "Threat models, crypto and identity.", topics: ["CIA triad", "Encryption basics", "Authentication"], links: [["OWASP", "https://owasp.org/"]] }
+      ] },
+      { name: "Specialization", time: "4 weeks", choice: true, items: [
+        { t: "Web app security", d: "Find and fix common web vulnerabilities.", topics: ["OWASP Top 10", "Injection", "Session security"], links: [["OWASP Top 10", "https://owasp.org/www-project-top-ten/"]] },
+        { t: "Network security", d: "Secure networks and analyse traffic.", topics: ["Firewalls", "Packet capture", "IDS basics"], links: [["Wireshark docs", "https://www.wireshark.org/docs/"]] }
+      ] },
+      { name: "Hands-on labs (CTFs)", time: "4 weeks", items: [
+        { t: "Capture the flag practice", d: "Solve challenges and write notes.", topics: ["Web challenges", "Crypto challenges", "Write-ups"], links: [["OWASP Juice Shop", "https://owasp.org/www-project-juice-shop/"]] }
+      ] },
+      { name: "Certification and interviews", time: "3 weeks", items: [
+        { t: "Prove your skills", d: "Pick a certification and prepare.", topics: ["Study plan", "Labs review", "Interview practice"], links: [["OWASP", "https://owasp.org/"]] }
+      ] }
+    ]
+  },
+  cloud: {
+    name: "Cloud & DevOps",
+    desc: "Automate infrastructure with Linux, containers, Kubernetes and CI/CD pipelines.",
+    tags: ["cloud", "devops", "docker", "kubernetes", "ci cd", "infrastructure"],
+    stages: [
+      { name: "Linux", time: "2 weeks", items: [
+        { t: "Linux for operators", d: "Shell comfort for servers and scripts.", topics: ["Shell", "Permissions", "Services"], links: [["Linux docs", "https://www.kernel.org/doc/"]] }
+      ] },
+      { name: "Scripting", time: "2 weeks", items: [
+        { t: "Automation scripting", d: "Small scripts for repeatable tasks.", topics: ["Bash", "Python scripting", "Error handling"], links: [["Python docs", "https://docs.python.org/3/"]] }
+      ] },
+      { name: "Git", time: "1 week", items: [
+        { t: "Git workflows", d: "Branch, review and release code.", topics: ["Branches", "Merging", "Tags"], links: [["Git docs", "https://git-scm.com/doc"]] }
+      ] },
+      { name: "Docker", time: "2 weeks", items: [
+        { t: "Containers", d: "Build images and run containers.", topics: ["Dockerfile", "Images", "Volumes"], links: [["Docker docs", "https://docs.docker.com/"]] }
+      ] },
+      { name: "Kubernetes", time: "4 weeks", items: [
+        { t: "Orchestration", d: "Deploy and scale containerised apps.", topics: ["Pods", "Deployments", "Services"], links: [["Kubernetes docs", "https://kubernetes.io/docs/home/"]] }
+      ] },
+      { name: "CI/CD and cloud", time: "3 weeks", choice: true, items: [
+        { t: "CI/CD", d: "Automated test and release pipelines.", topics: ["Pipelines", "Environments", "Rollbacks"], links: [["GitHub Actions docs", "https://docs.github.com/actions"]] },
+        { t: "Cloud platform", d: "Deploy to a managed cloud provider.", topics: ["Compute", "Storage", "IAM"], links: [["AWS docs", "https://docs.aws.amazon.com/"]] }
+      ] }
+    ]
+  }
+};
+
+const $ = (sel) => document.querySelector(sel);
+const input = $("#search");
+const dropdown = $("#dropdown");
+const state = { domain: null, completed: new Set(), selected: null, options: [], hi: -1, open: false, autofill: null, suppressAutofill: false };
+const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const itemKey = (domain, stage, item) => domain + "|" + stage + "|" + item;
+
+function levenshtein(a, b) {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+function domainStats(domainKey) {
+  const d = DOMAINS[domainKey];
+  const topics = d.stages.reduce((n, s) => n + s.items.length, 0);
+  const done = d.stages.reduce((n, s, si) => n + s.items.filter((_, ii) => state.completed.has(itemKey(domainKey, si, ii))).length, 0);
+  return { topics, done, percent: topics ? Math.round((done / topics) * 100) : 0 };
+}
+
+function renderOverview() {
+  const host = $("#overview");
+  if (!state.domain) {
+    host.innerHTML = '<div class="placeholder">Choose a domain from the search bar to begin.</div>';
+    return;
+  }
+  const d = DOMAINS[state.domain];
+  const s = domainStats(state.domain);
+  host.innerHTML =
+    '<div class="ring" style="--p:' + s.percent + '%" role="img" aria-label="' + s.percent + '% complete"><span>' + s.percent + '%</span></div>' +
+    '<div><h1>' + esc(d.name) + '</h1><p>' + esc(d.desc) + '</p><div class="counts">' +
+    '<div><b>' + d.stages.length + '</b>stages</div><div><b>' + s.topics + '</b>topics</div><div><b>' + s.done + '</b>completed topics</div>' +
+    '</div></div>';
+}
+
+function renderRoadmap() {
+  const host = $("#roadmap");
+  if (!state.domain) { host.innerHTML = ""; return; }
+  const d = DOMAINS[state.domain];
+  const isDone = (si, ii) => state.completed.has(itemKey(state.domain, si, ii));
+  let current = d.stages.findIndex((_, si) => d.stages[si].items.some((_, ii) => !isDone(si, ii)));
+  if (current === -1) current = d.stages.length - 1;
+  let html = "";
+  d.stages.forEach((stage, si) => {
+    const stageDone = stage.items.every((_, ii) => isDone(si, ii));
+    html += '<section class="stage ' + (stageDone ? "done" : "") + " " + (si === current ? "current" : "") + '">' +
+      '<div class="num" aria-hidden="true">' + (stageDone ? "&#10003;" : (si + 1)) + '</div>' +
+      '<div class="stage-head"><h3>' + esc(stage.name) + '</h3><span class="time">' + esc(stage.time) + '</span>' +
+      (stage.choice ? '<span class="badge">Choose one</span>' : "") + '</div><div class="items">';
+    stage.items.forEach((item, ii) => {
+      const done = isDone(si, ii);
+      const sel = state.selected && state.selected.si === si && state.selected.ii === ii;
+      html += '<button type="button" class="item-card ' + (done ? "done" : "") + " " + (sel ? "sel" : "") + '" data-si="' + si + '" data-ii="' + ii + '" aria-pressed="' + !!sel + '">' +
+        '<span class="mini-check" role="checkbox" aria-checked="' + done + '" data-check="' + si + ':' + ii + '" aria-label="Mark ' + esc(item.t) + ' complete"></span>' +
+        '<span><strong>' + esc(item.t) + '</strong><small>' + esc(item.d) + '</small></span></button>';
+    });
+    html += '</div></section>';
+  });
+  html += '<div class="goal">Goal reached &#127881;</div>';
+  host.innerHTML = html;
+}
+
+function renderDetail() {
+  const host = $("#detail");
+  if (!state.selected || !state.domain) {
+    host.innerHTML = '<h2>Topic details</h2><div class="placeholder">Select a topic on the roadmap to see what you will cover.</div>';
+    return;
+  }
+  const stage = DOMAINS[state.domain].stages[state.selected.si];
+  const item = stage.items[state.selected.ii];
+  const done = state.completed.has(itemKey(state.domain, state.selected.si, state.selected.ii));
+  host.innerHTML =
+    '<h2>Stage ' + (state.selected.si + 1) + ' &middot; ' + esc(stage.time) + '</h2>' +
+    '<h3>' + esc(item.t) + '</h3><p class="desc">' + esc(item.d) + '</p>' +
+    '<div class="block-title">What you\'ll cover</div><ul>' + item.topics.map((t) => '<li>' + esc(t) + '</li>').join("") + '</ul>' +
+    (item.links.length ? '<div class="block-title">Resources</div>' + item.links.map((l) => '<a href="' + esc(l[1]) + '" target="_blank" rel="noopener noreferrer">' + esc(l[0]) + ' &#8599;</a>').join("") : "") +
+    '<div class="toggle-row"><span>Mark complete</span><button type="button" class="switch" role="switch" aria-checked="' + done + '" aria-label="Mark ' + esc(item.t) + ' complete"></button></div>';
+}
+
+function render() { renderOverview(); renderRoadmap(); renderDetail(); }
+
+function selectDomain(key) {
+  if (!DOMAINS[key]) return;
+  state.domain = key;
+  state.selected = null;
+  input.value = DOMAINS[key].name;
+  state.open = false;
+  state.autofill = null;
+  render();
+  renderDropdown();
+}
+
+function createDomain(text) {
+  const name = text.trim();
+  if (!name) return;
+  const slug = "custom-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now().toString(36);
+  const stages = ["Foundations", "Core tools", "Guided projects", "Intermediate skills", "Real-world project", "Job readiness"];
+  DOMAINS[slug] = {
+    name: name,
+    desc: "A six-stage starter path to learn " + name + " step by step.",
+    tags: [name],
+    stages: stages.map((stage) => ({
+      name: stage,
+      time: "2 weeks",
+      items: [{ t: stage + " in " + name, d: "Build " + name + " skills through " + stage.toLowerCase() + ".", topics: ["Key concepts", "Guided practice", "Review"], links: [["MDN Web Docs", "https://developer.mozilla.org/"]] }]
+    }))
+  };
+  selectDomain(slug);
+}
+
+function toggleDone(si, ii) {
+  const key = itemKey(state.domain, si, ii);
+  if (state.completed.has(key)) state.completed.delete(key); else state.completed.add(key);
+  render();
+}
+
+$("#roadmap").addEventListener("click", (e) => {
+  const check = e.target.closest("[data-check]");
+  if (check) {
+    const parts = check.getAttribute("data-check").split(":");
+    toggleDone(Number(parts[0]), Number(parts[1]));
+    return;
+  }
+  const card = e.target.closest(".item-card");
+  if (!card) return;
+  state.selected = { si: Number(card.dataset.si), ii: Number(card.dataset.ii) };
+  render();
+});
+
+$("#detail").addEventListener("click", (e) => {
+  if (!e.target.closest(".switch") || !state.selected) return;
+  toggleDone(state.selected.si, state.selected.ii);
+});
+
+function typoMatch(q, words) {
+  const queryWords = q.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4);
+  return queryWords.some((a) => words.some((b) => b.length >= 4 && levenshtein(a, b) <= 2));
+}
+
+function rank(domain, q) {
+  const name = domain.name.toLowerCase();
+  const words = name.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const tags = domain.tags.map((t) => t.toLowerCase());
+  const tagWords = tags.reduce((all, t) => all.concat(t.split(/[^\p{L}\p{N}]+/u).filter(Boolean)), []);
+  if (name === q) return 100;
+  if (name.startsWith(q)) return 90;
+  if (words.some((w) => w.startsWith(q))) return 80;
+  if (name.includes(q)) return 65;
+  if (tags.some((t) => t === q || t.startsWith(q))) return 55;
+  if (tags.some((t) => t.includes(q))) return 40;
+  if (typoMatch(q, words)) return 30;
+  if (typoMatch(q, tagWords)) return 25;
+  return 0;
+}
+
+function buildGroups(raw) {
+  const q = raw.trim().toLowerCase();
+  const all = Object.entries(DOMAINS);
+  const subtitle = (d) => d.desc + " · " + d.stages.length + " stages";
+  if (!q) return [{ title: "All domains", items: all.map(([k, d]) => ({ type: "domain", k, label: d.name, sub: subtitle(d) })) }];
+  const scored = all.map(([k, d]) => ({ k, d, r: rank(d, q) })).filter((x) => x.r > 0).sort((a, b) => b.r - a.r);
+  const matching = scored.filter((x) => x.r >= 40);
+  const groups = [];
+  groups.push({ title: "Matching domains", items: matching.map((x) => ({ type: "domain", k: x.k, label: x.d.name, sub: subtitle(x.d) })) });
+  const similar = [];
+  const best = matching[0];
+  const seen = new Set(matching.map((x) => x.k));
+  const bestTags = best ? new Set(best.d.tags.map((t) => t.toLowerCase())) : new Set();
+  all.forEach(([k, d]) => {
+    if (seen.has(k)) return;
+    const shared = d.tags.some((t) => bestTags.has(t.toLowerCase()));
+    if (shared || rank(d, q) >= 25) similar.push({ type: "domain", k, label: d.name, sub: subtitle(d) });
+  });
+  if (similar.length) groups.push({ title: "Similar domains", items: similar });
+  const exact = all.some(([, d]) => d.name.toLowerCase() === q);
+  if (!exact) groups.push({ title: "Create new", items: [{ type: "create", label: '+ Create "' + raw.trim() + '"', sub: "Generate a six-stage starter path" }] });
+  return groups.filter((g) => g.items.length);
+}
+
+function renderDropdown() {
+  state.options = [];
+  if (!state.open) {
+    dropdown.classList.remove("open");
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    return;
+  }
+  const groups = buildGroups(input.value);
+  groups.forEach((g) => { state.options = state.options.concat(g.items); });
+  if (state.hi >= state.options.length) state.hi = -1;
+  let html = "";
+  let index = 0;
+  groups.forEach((g) => {
+    html += '<div class="group-title">' + esc(g.title) + '</div>';
+    g.items.forEach((opt) => {
+      const i = index++;
+      html += '<div class="option ' + (i === state.hi ? "hi" : "") + '" id="opt-' + i + '" role="option" aria-selected="' + (i === state.hi) + '" data-index="' + i + '">' +
+        '<span class="name">' + esc(opt.label) + '</span><span class="sub">' + esc(opt.sub) + '</span></div>';
+    });
+  });
+  html += '<div class="hint">↑↓ move &middot; Enter select &middot; Tab / → accept &middot; Esc close</div>';
+  dropdown.innerHTML = html;
+  dropdown.classList.add("open");
+  input.setAttribute("aria-expanded", "true");
+  if (state.hi >= 0) input.setAttribute("aria-activedescendant", "opt-" + state.hi); else input.removeAttribute("aria-activedescendant");
+}
+
+function choose(option) {
+  if (!option) return;
+  if (option.type === "domain") selectDomain(option.k);
+  else createDomain(input.value);
+}
+
+function findAutofill(raw) {
+  const q = raw.trim().toLowerCase();
+  if (!q) return null;
+  let best = null;
+  Object.entries(DOMAINS).forEach(([k, d]) => {
+    const name = d.name.toLowerCase();
+    if (name.startsWith(q) && (!best || name.length < best.name.length)) best = { k, name, full: d.name };
+  });
+  return best;
+}
+
+input.addEventListener("focus", () => {
+  state.open = true;
+  state.hi = -1;
+  renderDropdown();
+});
+input.addEventListener("blur", () => {
+  window.setTimeout(() => { state.open = false; state.hi = -1; renderDropdown(); }, 140);
+});
+input.addEventListener("input", () => {
+  if (state.suppressAutofill) { state.suppressAutofill = false; state.autofill = null; renderDropdown(); return; }
+  const raw = input.value;
+  const af = findAutofill(raw);
+  if (af && af.name !== raw.trim().toLowerCase()) {
+    input.value = af.full;
+    input.setSelectionRange(raw.length, af.full.length);
+    state.autofill = { key: af.k, prefix: raw };
+  } else {
+    state.autofill = null;
+  }
+  state.hi = -1;
+  state.open = true;
+  renderDropdown();
+});
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Backspace") {
+    if (state.autofill) { state.suppressAutofill = true; state.autofill = null; }
+    state.open = true;
+    return;
+  }
+  state.suppressAutofill = false;
+  if ((e.key === "Tab" || e.key === "ArrowRight") && state.autofill && input.selectionStart !== input.selectionEnd) {
+    e.preventDefault();
+    const key = state.autofill.key;
+    input.value = DOMAINS[key].name;
+    input.setSelectionRange(input.value.length, input.value.length);
+    state.autofill = null;
+    choose({ type: "domain", k: key });
+    return;
+  }
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (!state.open) { state.open = true; renderDropdown(); }
+    if (!state.options.length) return;
+    const step = e.key === "ArrowDown" ? 1 : -1;
+    state.hi = state.hi < 0 ? (step === 1 ? 0 : state.options.length - 1) : (state.hi + step + state.options.length) % state.options.length;
+    renderDropdown();
+    return;
+  }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (!state.open) { state.open = true; renderDropdown(); }
+    choose(state.options[state.hi >= 0 ? state.hi : 0]);
+    return;
+  }
+  if (e.key === "Escape") {
+    e.preventDefault();
+    if (state.autofill) { input.value = state.autofill.prefix; state.autofill = null; }
+    state.open = false;
+    state.hi = -1;
+    renderDropdown();
+  }
+});
+dropdown.addEventListener("mousedown", (e) => { e.preventDefault(); });
+dropdown.addEventListener("click", (e) => {
+  const option = e.target.closest("[data-index]");
+  if (!option) return;
+  choose(state.options[Number(option.dataset.index)]);
+});
+
+render();
+</script>
+</body>
+</html>
