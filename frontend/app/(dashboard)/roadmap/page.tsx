@@ -89,6 +89,13 @@ const actionIcons: Record<string, React.ReactNode> = {
   resource: <BookOpen className="h-4 w-4" />,
 };
 
+const domainIcons: Record<string, React.ReactNode> = {
+  "Backend Engineer": <Code className="h-4 w-4" />,
+  "Frontend Engineer": <Layers className="h-4 w-4" />,
+  "ML Engineer": <Brain className="h-4 w-4" />,
+  "Full-Stack Engineer": <Zap className="h-4 w-4" />,
+};
+
 const severityColors: Record<string, string> = {
   critical: "text-red-400",
   important: "text-yellow-400",
@@ -145,6 +152,9 @@ function RoadmapContent() {
   const fetchRoadmap = useCallback(async (roleId: string) => {
     setLoading(true);
     setError("");
+    // A different domain must never show the previous domain's milestones.
+    setRoadmap(null);
+    setGapReport(null);
     try {
       const token = localStorage.getItem("access_token");
       
@@ -241,6 +251,12 @@ function RoadmapContent() {
     }
   }, [router, gapReport, roadmap]);
 
+  const selectDomain = (roleId: string) => {
+    setSelectedRoleId(roleId);
+    window.history.replaceState({}, "", `/roadmap?role=${roleId}`);
+    fetchRoadmap(roleId);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -284,36 +300,46 @@ function RoadmapContent() {
       </div>
 
       <div className="mx-auto w-full max-w-4xl p-6 sm:p-8">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-              aria-label="Back"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight">Learning Roadmap</h1>
-              <p className={mutedText}>Your personalized milestone plan</p>
-            </div>
-          </div>
-          <select
-            value={selectedRoleId}
-            onChange={(e) => {
-              const roleId = e.target.value;
-              window.history.replaceState({}, "", `/roadmap?role=${roleId}`);
-              fetchRoadmap(roleId);
-            }}
-            className="input focus-ring max-w-full"
+        <div className="mb-6 flex items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Back"
           >
-            {targetRoles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight">Learning Roadmap</h1>
+            <p className={mutedText}>Your personalized milestone plan</p>
+          </div>
         </div>
+
+        <section className="mb-8" aria-labelledby="domain-heading">
+          <h2 id="domain-heading" className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Choose your domain
+          </h2>
+          <div role="group" aria-labelledby="domain-heading" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {targetRoles.map((role) => {
+              const active = role.id === selectedRoleId;
+              return (
+                <button
+                  key={role.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => selectDomain(role.id)}
+                  className={`focus-ring flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
+                    active
+                      ? "border-brand-400/60 bg-brand-500/15 text-white"
+                      : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20 hover:text-white"
+                  }`}
+                >
+                  {domainIcons[role.name] ?? <Target aria-hidden="true" className="h-4 w-4" />}
+                  <span>{role.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         {error && (
           <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur">
@@ -356,33 +382,33 @@ function RoadmapContent() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="relative mt-2 pb-2">
+              <div
+                aria-hidden="true"
+                className="absolute bottom-10 left-4 top-4 w-px border-l-2 border-dashed border-brand-400/25 md:left-1/2"
+              />
+              <div className="mb-6 ml-10 md:ml-[calc(50%+2.5rem)]">
+                <span className={`${pillBase} ${pillColors.none}`}>START HERE</span>
+              </div>
               {roadmap.milestones.map((milestone, index) => {
                 const severity = getSeverityForSkill(milestone.linked_gap_skill);
-                const isLast = index === roadmap.milestones.length - 1;
-                
+                const onRight = index % 2 === 1;
+
                 return (
-                  <div
-                    key={milestone.id}
-                    className={`relative ${cardClass} group ${!isLast ? "after:absolute after:left-7 after:top-12 after:bottom-0 after:w-0.5 after:bg-gradient-to-b after:from-white/5 after:to-transparent" : ""}`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="relative flex-shrink-0">
-                        <div
-                          className={`w-3 h-3 rounded-full border-2 ${statusColors[milestone.status]}`}
-                        />
-                        {!isLast && (
-                          <div
-                            className={`absolute left-[6px] top-3 bottom-[-24px] w-0.5 ${
-                              milestone.status === "done"
-                                ? "bg-emerald-500/50"
-                                : "bg-white/5"
-                            }`}
-                          />
-                        )}
+                  <div key={milestone.id} className="relative pb-6 md:pb-10">
+                    <div
+                      className={`relative pl-12 md:pl-0 ${
+                        onRight ? "md:ml-1/2 md:pl-10" : "md:w-1/2 md:pr-10"
+                      }`}
+                    >
+                      <div
+                        aria-hidden="true"
+                        className={`absolute left-2 top-4 flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold md:left-1/2 md:-translate-x-1/2 ${statusColors[milestone.status]}`}
+                      >
+                        {index + 1}
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
+                      <div className={`${cardClass} group transition-transform hover:-translate-y-0.5`}>
+                        <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
@@ -459,10 +485,15 @@ function RoadmapContent() {
                           </div>
                         </div>
                       </div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
+              <div className="ml-10 mt-1 flex items-center gap-2 text-xs text-slate-400 md:ml-[calc(50%+2.5rem)]">
+                <Flag aria-hidden="true" className="h-4 w-4 text-brand-300" />
+                Goal: {gapReport?.target_role_name || "your target role"}
+              </div>
             </div>
 
             <div className="mt-8 text-center">

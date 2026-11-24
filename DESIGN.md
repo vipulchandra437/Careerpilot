@@ -31,7 +31,8 @@
 
 ### 2.4 Roadmap View
 
-- Vertical ordered list of milestones, each showing status, linked gap skill, and a CTA matching its action type ("Start Challenge" / "Practice Interview" / "Read Resource").
+- Domain chooser at the top: one button per target role; selecting one loads that domain's roadmap and keeps `?role=` in the URL.
+- Milestones form a footpath: numbered stepping stones alternating along a dashed trail, with START HERE and a Goal marker. Each stop shows status (colour + text/icon), linked gap skill, and a CTA matching its action type ("Start Challenge" / "Practice Interview" / "Read Resource").
 - Completed milestones collapse but remain visible (don't hide progress — it's motivating to see what's done).
 
 ### 2.5 Coding Practice
