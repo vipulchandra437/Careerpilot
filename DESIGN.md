@@ -31,9 +31,9 @@
 
 ### 2.4 Roadmap View
 
-- Domain chooser at the top: one button per target role; selecting one loads that domain's roadmap and keeps `?role=` in the URL.
-- Milestones form a footpath: numbered stepping stones alternating along a dashed trail, with START HERE and a Goal marker. Each stop shows status (colour + text/icon), linked gap skill, and a CTA matching its action type ("Start Challenge" / "Practice Interview" / "Read Resource").
-- Completed milestones collapse but remain visible (don't hide progress — it's motivating to see what's done).
+- Domain chooser at the top: a search box plus one button per target role. Search filters the list so any available domain can be found even when it is not visible; a no-match message explains domains are admin-managed. Selecting one loads that domain's roadmap and keeps `?role=` in the URL.
+- Milestones are game-style levels on a cartoonish winding road: a START HERE marker, a smooth amber road with a dashed centre line, and numbered circular nodes that snake left/right. Node colour and stars show status (done / in progress / not started); a Goal marker ends the trail.
+- Clicking a level opens its detail card: level number, status, hours, title, gap skill addressed, and the matching CTA ("Start Challenge" / "Practice Interview" / "Read Resource"). Completed levels stay on the road with a checkmark (don't hide progress — it's motivating to see what's done).
 
 ### 2.5 Coding Practice
 
