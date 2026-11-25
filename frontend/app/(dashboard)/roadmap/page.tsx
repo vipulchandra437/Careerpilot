@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -94,6 +94,7 @@ function RoadmapContent() {
   const [autofill, setAutofill] = useState<{ id: string; prefix: string } | null>(null);
   const [suppressAutofill, setSuppressAutofill] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const detailRef = useRef<HTMLElement>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -276,6 +277,14 @@ function RoadmapContent() {
   const closeSearch = () => {
     setSearchOpen(false);
     setSearchIndex(-1);
+  };
+
+  const selectLevel = (index: number) => {
+    setSelectedLevel(index);
+    // On mobile the detail panel sits above the trail, so bring it into view.
+    if (window.matchMedia("(max-width: 899px)").matches) {
+      window.requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
   };
 
   const acceptDomain = (role: { id: string; name: string }) => {
@@ -484,35 +493,39 @@ function RoadmapContent() {
                     >
                       {done ? "✓" : index + 1}
                     </span>
-                    <div className="flex min-h-11 flex-wrap items-center gap-2.5">
-                      <h2 className="text-base font-semibold">{milestone.title}</h2>
-                      {milestone.estimated_hours != null && (
-                        <span className="text-xs text-[#5c6784]"><Clock aria-hidden="true" className="mr-1 inline h-3 w-3" />{milestone.estimated_hours}h</span>
-                      )}
-                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${statusPills[milestone.status]}`}>
-                        {milestone.status.replace("_", " ")}
+                    <button
+                      type="button"
+                      onClick={() => selectLevel(index)}
+                      aria-pressed={selectedLevel === index}
+                      className={`focus-ring block w-full rounded-xl p-1 text-left transition-colors hover:bg-[#f8faff] ${selectedLevel === index ? "bg-[#f8faff]" : ""}`}
+                    >
+                      <span className="flex min-h-11 flex-wrap items-center gap-2.5">
+                        <span role="heading" aria-level={2} className="text-base font-semibold">{milestone.title}</span>
+                        {milestone.estimated_hours != null && (
+                          <span className="text-xs text-[#5c6784]"><Clock aria-hidden="true" className="mr-1 inline h-3 w-3" />{milestone.estimated_hours}h</span>
+                        )}
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${statusPills[milestone.status]}`}>
+                          {milestone.status.replace("_", " ")}
+                        </span>
                       </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLevel(index)}
-                        aria-pressed={selectedLevel === index}
-                        className={`focus-ring flex min-w-[190px] max-w-[340px] flex-1 items-start gap-3 rounded-xl border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#b9c9f5] hover:shadow-md max-[560px]:min-w-full ${selectedLevel === index ? "border-[#3b6cf6] ring-4 ring-[#3b6cf6]/15" : "border-[#e3e8f2]"}`}
-                      >
+                      <span className="mt-3 flex flex-wrap gap-2.5">
                         <span
-                          aria-hidden="true"
-                          className="mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] border-2 text-xs text-white"
-                          style={done ? { background: green, borderColor: green } : { background: "#fff", borderColor: "#c9d2e3" }}
+                          className={`flex min-w-[190px] max-w-[340px] flex-1 items-start gap-3 rounded-xl border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#b9c9f5] hover:shadow-md max-[560px]:min-w-full ${selectedLevel === index ? "border-[#3b6cf6] ring-4 ring-[#3b6cf6]/15" : "border-[#e3e8f2]"}`}
                         >
-                          {done ? "✓" : ""}
+                          <span
+                            aria-hidden="true"
+                            className="mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] border-2 text-xs text-white"
+                            style={done ? { background: green, borderColor: green } : { background: "#fff", borderColor: "#c9d2e3" }}
+                          >
+                            {done ? "✓" : ""}
+                          </span>
+                          <span className="min-w-0">
+                            <strong className="block text-sm">{milestone.linked_gap_skill || "Skill"}</strong>
+                            <small className="mt-0.5 block text-xs text-[#5c6784]">{milestone.linked_action_type} · Level {index + 1}</small>
+                          </span>
                         </span>
-                        <span className="min-w-0">
-                          <strong className="block text-sm">{milestone.linked_gap_skill || "Skill"}</strong>
-                          <small className="mt-0.5 block text-xs text-[#5c6784]">{milestone.linked_action_type} · Level {index + 1}</small>
-                        </span>
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   </section>
                 );
               })}
@@ -546,7 +559,7 @@ function RoadmapContent() {
           )}
         </div>
 
-        <aside aria-live="polite" className="order-first rounded-2xl border border-[#e3e8f2] bg-white p-6 min-[900px]:sticky min-[900px]:top-[84px] min-[900px]:order-none">
+        <aside ref={detailRef} aria-live="polite" className="order-first rounded-2xl border border-[#e3e8f2] bg-white p-6 min-[900px]:sticky min-[900px]:top-[84px] min-[900px]:order-none">
           {activeMilestone ? (
             <>
               <p className="text-xs font-extrabold uppercase tracking-[.1em]" style={{ color: brand }}>

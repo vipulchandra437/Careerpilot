@@ -134,6 +134,7 @@ Running record of cross-session decisions, known limitations, and deferred work 
 
 ## Update Log
 
+- **2026-11-25: fixed `/roadmap` stage-trail click target.** Only the small skill chip was clickable, so clicking a stage title did nothing; the whole stage row now selects the detail panel, and on mobile the panel scrolls into view. Browser-harness verified: clicking "React state" opened "Stage 3 · 8h" with the correct gap/action and zero app console errors; `tsc --noEmit` and lint clean. Reticle MCP was unavailable this session, so the verdict is a real DOM assertion, not a Reticle verdict.
 - **2026-11-24: fixed local dev 500s caused by running `npm run build` while `npm run dev` was live; cleared `.next`, restarted dev, confirmed `/` and `/roadmap` return 200 with no console errors. Added the landmine above.**
 - **2026-11-24: `/roadmap` page restyled with the standalone Learning Roadmap UI, keeping backend data and actions; DESIGN.md §2.4 updated; Reticle-verified two flows.**
 - **2026-11-24: added standalone `frontend/public/learning-roadmap.html`** from the user's page spec; browser-verified search/autofill/typo/custom-domain/progress/escaping; build clean. Deployed on `main`.
