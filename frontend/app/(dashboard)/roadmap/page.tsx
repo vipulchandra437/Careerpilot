@@ -164,6 +164,10 @@ function RoadmapContent() {
     lastFetchedRoleRef.current = roleId;
     const requestId = ++requestRef.current;
     const isCurrent = () => requestId === requestRef.current;
+    // A failed load must stay retryable by reselecting the same role.
+    const clearRetryGuard = () => {
+      if (isCurrent() && lastFetchedRoleRef.current === roleId) lastFetchedRoleRef.current = "";
+    };
     setLoading(true);
     setGenerating(false);
     setError("");
@@ -179,6 +183,7 @@ function RoadmapContent() {
       });
       if (!isCurrent()) return;
       if (gapRes.status === 401) {
+        clearRetryGuard();
         localStorage.removeItem("access_token");
         router.push("/login?reason=expired");
         return;
@@ -189,6 +194,7 @@ function RoadmapContent() {
       }
       if (!gapRes.ok) {
         const err = await gapRes.json().catch(() => ({}));
+        clearRetryGuard();
         setError(err.detail || "Could not load your gap report.");
         return;
       }
@@ -212,9 +218,11 @@ function RoadmapContent() {
         setRoadmap(null);
       } else {
         const err = await roadmapRes.json().catch(() => ({}));
+        clearRetryGuard();
         setError(err.detail || "Could not load your roadmap.");
       }
     } catch {
+      clearRetryGuard();
       if (isCurrent()) setError("Network error");
     } finally {
       if (isCurrent()) setLoading(false);
@@ -595,9 +603,11 @@ function RoadmapContent() {
                 );
               })}
 
-              <p className="ml-[58px] flex items-center gap-2 rounded-2xl bg-[#141b2d] px-5 py-4 text-center text-sm font-semibold text-white max-[560px]:ml-12">
-                <Flag aria-hidden="true" className="h-4 w-4" /> Goal reached: {gapReport?.target_role_name || "your target role"}
-              </p>
+              {doneCount === milestones.length && (
+                <p className="ml-[58px] flex items-center gap-2 rounded-2xl bg-[#141b2d] px-5 py-4 text-center text-sm font-semibold text-white max-[560px]:ml-12">
+                  <Flag aria-hidden="true" className="h-4 w-4" /> Goal reached: {gapReport?.target_role_name || "your target role"}
+                </p>
+              )}
 
               <div className="mt-8 text-center">
                 <button onClick={() => router.push(`/gap-report?role=${selectedRoleId}`)} className={lightBtn}>
@@ -676,7 +686,20 @@ function RoadmapContent() {
                   </button>
                 )}
                 {activeMilestone.linked_action_type === "interview" && (
-                  <button onClick={() => router.push("/mock-interview")} disabled={activeMilestone.status === "done"} className={linkClass}>
+                  <button
+                    onClick={() => {
+                      const rawType = activeMilestone.linked_action_id || "";
+                      const interviewType = ["technical", "behavioral", "hr"].includes(rawType) ? rawType : "behavioral";
+                      const params = new URLSearchParams({
+                        type: interviewType,
+                        role: selectedRoleId,
+                        milestoneId: activeMilestone.id,
+                      });
+                      router.push(`/mock-interview?${params.toString()}`);
+                    }}
+                    disabled={activeMilestone.status === "done"}
+                    className={linkClass}
+                  >
                     <PlayCircle aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" />
                     {activeMilestone.status === "done" ? "Done" : "Start"}
                   </button>

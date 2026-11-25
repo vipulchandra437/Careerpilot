@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
@@ -88,6 +88,7 @@ function GapReportContent() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
+  const fetchedRoleRef = useRef("");
 
   const fetchTargetRoles = useCallback(async () => {
     try {
@@ -117,6 +118,9 @@ function GapReportContent() {
   }, [router]);
 
   const fetchGapReport = useCallback(async (roleId: string) => {
+    // Never show another role's gaps while this role is loading or failed.
+    setSelectedRoleId(roleId);
+    setGapReport(null);
     setLoading(true);
     setError("");
     try {
@@ -136,7 +140,7 @@ function GapReportContent() {
         setGapReport(data);
         setSelectedRoleId(roleId);
       } else {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         setError(err.detail || "Failed to load gap report");
       }
     } catch {
@@ -147,6 +151,7 @@ function GapReportContent() {
   }, [router]);
 
   const analyzeGap = useCallback(async (roleId: string) => {
+    setSelectedRoleId(roleId);
     setAnalyzing(true);
     setError("");
     try {
@@ -189,12 +194,11 @@ function GapReportContent() {
   }, [router, fetchTargetRoles]);
 
   useEffect(() => {
-    const roleId = searchParams.get("role");
-    if (roleId) {
-      fetchGapReport(roleId);
-    } else if (targetRoles.length > 0) {
-      fetchGapReport(targetRoles[0].id);
-    }
+    // Roles resolve after the deep link; fetch once for the winning role only.
+    const roleId = searchParams.get("role") || (targetRoles.length > 0 ? targetRoles[0].id : "");
+    if (!roleId || fetchedRoleRef.current === roleId) return;
+    fetchedRoleRef.current = roleId;
+    fetchGapReport(roleId);
   }, [searchParams, targetRoles, fetchGapReport]);
 
   if (loading && !gapReport) {
@@ -234,6 +238,7 @@ function GapReportContent() {
             value={selectedRoleId}
             onChange={(e) => {
               const roleId = e.target.value;
+              fetchedRoleRef.current = roleId;
               window.history.replaceState({}, "", `/gap-report?role=${roleId}`);
               fetchGapReport(roleId);
             }}
@@ -363,7 +368,7 @@ function GapReportContent() {
               Select a target role and run an analysis to see your skill gaps.
             </p>
             <button
-              onClick={() => targetRoles[0] && analyzeGap(targetRoles[0].id)}
+              onClick={() => selectedRoleId && analyzeGap(selectedRoleId)}
               className={primaryBtn}
             >
               <Brain className="h-4 w-4" />

@@ -470,6 +470,12 @@ def _deterministic_feedback(
     }
 
 
+def _skill_from_topic(topic: str) -> str:
+    """Make an LLM weak topic safe to use as a challenge skill (API contract)."""
+    cleaned = re.sub(r"[^A-Za-z0-9 .+#_/-]+", " ", topic).strip()
+    return " ".join(cleaned.split()[:4])[:60] or "communication"
+
+
 async def _link_weak_topics_to_roadmap(
     db: AsyncSession,
     user_id: str,
@@ -536,8 +542,17 @@ async def _link_weak_topics_to_roadmap(
     target_role_id = session.target_role_id or None
 
     for topic in distinct:
-        if topic.lower() in existing:
-            actions.append({"topic": topic, "created": False, "reason": "already on roadmap"})
+        skill = _skill_from_topic(topic)
+        if skill.lower() in existing:
+            actions.append({
+                "topic": topic,
+                "skill": skill,
+                "created": False,
+                "challenge_id": None,
+                "milestone_id": None,
+                "status": None,
+                "reason": "already on roadmap",
+            })
             continue
 
         challenge_id: str | None = None
@@ -546,7 +561,7 @@ async def _link_weak_topics_to_roadmap(
                 challenge = await generate_challenge(
                     db,
                     user_id=user_id,
-                    skill=topic,
+                    skill=skill,
                     difficulty="beginner",
                     target_role_id=target_role_id,
                     role_name=session.target_role_name or "the target role",
@@ -557,26 +572,30 @@ async def _link_weak_topics_to_roadmap(
             except Exception:
                 challenge_id = None  # never block feedback on challenge gen
 
+        milestone_id: str | None = None
         if latest is not None:
-            db.add(
-                RoadmapMilestone(
-                    roadmap_id=latest.id,
-                    title=f"Practice {topic} (from mock interview)",
-                    linked_gap_skill=topic,
-                    status="not_started",
-                    linked_action_type="challenge",
-                    linked_action_id=challenge_id or f"practice:{topic}",
-                    order_index=900 + len(existing) + len(actions),
-                    estimated_hours=3,
-                )
+            milestone = RoadmapMilestone(
+                roadmap_id=latest.id,
+                title=f"Practice {topic} (from mock interview)",
+                linked_gap_skill=skill,
+                status="not_started",
+                linked_action_type="challenge",
+                linked_action_id=challenge_id or f"practice:{skill}",
+                order_index=900 + len(existing) + len(actions),
+                estimated_hours=3,
             )
-            existing.add(topic.lower())
+            db.add(milestone)
+            await db.flush()
+            milestone_id = milestone.id
+            existing.add(skill.lower())
 
         actions.append(
             {
                 "topic": topic,
+                "skill": skill,
                 "created": latest is not None,
                 "challenge_id": challenge_id,
+                "milestone_id": milestone_id,
                 "status": None,
             }
         )
@@ -591,6 +610,25 @@ def _safe_score(value, default: int = 3) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _validate_question_scores(values, student_by_id: dict[str, str]) -> list[dict]:
+    """Drop fabricated turn IDs so every score links to a real student answer."""
+    if not isinstance(values, list):
+        return []
+    out = []
+    for item in values:
+        if not isinstance(item, dict):
+            continue
+        turn_id = item.get("turn_id")
+        if turn_id not in student_by_id:
+            continue
+        out.append({
+            "turn_id": turn_id,
+            "score": max(1, min(5, _safe_score(item.get("score")))),
+            "justification": str(item.get("justification") or "")[:500],
+        })
+    return out
 
 
 async def generate_feedback(
@@ -645,7 +683,7 @@ async def generate_feedback(
                     "overall_score": max(1, min(5, _safe_score(parsed.get("overall_score"), score))),
                     "strengths": [str(x) for x in parsed.get("strengths", []) if str(x).strip()][:5],
                     "weaknesses": [str(x) for x in parsed.get("weaknesses", []) if str(x).strip()][:5],
-                    "question_scores": parsed.get("question_scores", []) if isinstance(parsed.get("question_scores"), list) else [],
+                    "question_scores": _validate_question_scores(parsed.get("question_scores"), student_by_id),
                     "weak_topics": parsed.get("weak_topics", []) if isinstance(parsed.get("weak_topics"), list) else [],
                     "structure_notes": str(parsed.get("structure_notes") or "").strip(),
                     "conciseness_notes": str(parsed.get("conciseness_notes") or "").strip(),
@@ -675,6 +713,10 @@ async def generate_feedback(
     )
     db.add(feedback)
     weak_topics = data.get("weak_topics", [])
+    # Regenerating feedback replaces its weak topics instead of stacking them.
+    await db.execute(
+        delete(InterviewWeakTopic).where(InterviewWeakTopic.session_id == session.id)
+    )
     for item in weak_topics:
         if not isinstance(item, dict) or not str(item.get("topic", "")).strip():
             continue

@@ -55,6 +55,7 @@ function MockInterviewContent() {
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type") || "";
   const initialRoleId = searchParams.get("role") || "";
+  const milestoneIdParam = searchParams.get("milestoneId") || "";
 
   // Deep links start in "pick" so a failed auto-start still leaves a usable
   // screen; startInterview moves to "chat" only on success.
@@ -193,7 +194,7 @@ function MockInterviewContent() {
       if (res.ok) {
         const data = await res.json();
         setTranscript(data.transcript);
-        router.push(`/interview-feedback?sessionId=${sessionId}`);
+        router.push(`/interview-feedback?sessionId=${sessionId}${milestoneIdParam ? `&milestoneId=${encodeURIComponent(milestoneIdParam)}` : ""}`);
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.detail || "Could not finish the interview");

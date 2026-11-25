@@ -38,8 +38,10 @@ interface Feedback {
   feedback_items: FeedbackItem[];
   remedial_actions: {
     topic: string;
+    skill?: string;
     created: boolean;
     challenge_id: string | null;
+    milestone_id?: string | null;
     status?: string | null;
   }[];
 }
@@ -57,6 +59,7 @@ function InterviewFeedbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId") || "";
+  const milestoneIdParam = searchParams.get("milestoneId") || "";
 
   const [transcript, setTranscript] = useState<Turn[]>([]);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -66,6 +69,7 @@ function InterviewFeedbackContent() {
   const [error, setError] = useState("");
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
   const turnRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const milestoneMarkedRef = useRef(false);
 
   const ensureFeedback = useCallback(async () => {
     // Feedback is generated lazily: try GET, and if not generated yet, create it.
@@ -101,6 +105,27 @@ function InterviewFeedbackContent() {
     return data.feedback;
   }, [sessionId, router]);
 
+  const markMilestoneDone = useCallback(async () => {
+    // The roadmap stage is completed by the backend after this interview's
+    // feedback exists, not by a local progress toggle.
+    if (!milestoneIdParam || milestoneMarkedRef.current) return;
+    milestoneMarkedRef.current = true;
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`/api/roadmap/milestones/${encodeURIComponent(milestoneIdParam)}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" }),
+      });
+      if (res.status === 401) {
+        localStorage.removeItem("access_token");
+        router.push("/login?reason=expired");
+      }
+    } catch {
+      milestoneMarkedRef.current = false; // allow a retry on reload
+    }
+  }, [milestoneIdParam, router]);
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -130,14 +155,15 @@ function InterviewFeedbackContent() {
         const data = await res.json();
         setTranscript(data.transcript);
         setTargetRoleId(data.session?.target_role_id || "");
-        await ensureFeedback();
+        const loadedFeedback = await ensureFeedback();
+        if (loadedFeedback) await markMilestoneDone();
       } catch {
         setError("Network error");
       } finally {
         setLoading(false);
       }
     })();
-  }, [sessionId, router, ensureFeedback]);
+  }, [sessionId, router, ensureFeedback, markMilestoneDone]);
 
   const jumpToTurn = (turnId: string) => {
     const node = turnRefs.current.get(turnId);
@@ -274,7 +300,8 @@ function InterviewFeedbackContent() {
                 </p>
                 <ul className="space-y-2">
                   {feedback.remedial_actions.map((item) => {
-                    const canPractice = item.challenge_id && targetRoleId;
+                    const skill = item.skill || item.topic;
+                    const canPractice = !!item.challenge_id && !!skill && !!targetRoleId;
                     return (
                       <li key={item.topic} className="flex flex-wrap items-center gap-3 text-sm">
                         <span className="font-medium text-white">{item.topic}</span>
@@ -286,9 +313,12 @@ function InterviewFeedbackContent() {
                         <button
                           onClick={() => {
                             if (canPractice) {
-                              router.push(`/practice?skill=${encodeURIComponent(item.topic)}&targetRoleId=${encodeURIComponent(targetRoleId)}`);
+                              const params = new URLSearchParams({ skill, targetRoleId });
+                              if (item.challenge_id) params.set("challengeId", item.challenge_id);
+                              if (item.milestone_id) params.set("milestoneId", item.milestone_id);
+                              router.push(`/practice?${params.toString()}`);
                             } else {
-                              router.push("/roadmap");
+                              router.push(`/roadmap${targetRoleId ? `?role=${encodeURIComponent(targetRoleId)}` : ""}`);
                             }
                           }}
                           className="btn-primary focus-ring ml-auto !h-auto !px-3 !py-1.5 text-xs"

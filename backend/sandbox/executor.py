@@ -33,6 +33,7 @@ settings = get_settings()
 # Judge0 CE submission status ids (unchanged across CE versions).
 _STATUS_PROCESSING = {1, 2}          # In Queue, Processing
 _STATUS_ACCEPTED = 3
+_STATUS_WRONG_ANSWER = 4
 _STATUS_TLE = 5
 _STATUS_COMPILE_ERROR = 6
 _STATUS_RUNTIME = {7, 8, 9, 10, 11, 12}  # SIGSEGV, SIGXFSZ, SIGFPE, SIGABRT, NZEC, other
@@ -229,8 +230,9 @@ def _render_tests(results: list[dict], tests: list[dict], elapsed_ms_total: int)
         passed, timed_out = _map_status(status_id)
         stdout = _decode(r.get("stdout")) or ""
         expected = t.get("expected") or ""
-        # Judge0 compares bytes exactly; accept common trailing-newline/CRLF differences.
-        if not passed and not timed_out:
+        # Judge0 compares bytes exactly; accept trailing-newline/CRLF differences
+        # only for a real Wrong Answer, never for a crash with matching stdout.
+        if not passed and not timed_out and status_id == _STATUS_WRONG_ANSWER:
             if stdout.replace("\r\n", "\n").rstrip("\n") == str(expected).replace("\r\n", "\n").rstrip("\n"):
                 passed = True
         stderr_parts = []

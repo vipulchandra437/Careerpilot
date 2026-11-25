@@ -25,6 +25,7 @@ from backend.models import (  # noqa: F401 (register tables)
     InterviewTurn,
     LLMUsageLog,
     InterviewFeedback,
+    InterviewWeakTopic,
 )
 from backend.models.gap import GapReport
 from backend.models.roadmap import Roadmap, RoadmapMilestone
@@ -133,7 +134,14 @@ async def test_link_with_no_roadmap_returns_recommendations(db):
             db, "user-1", session,
             [{"topic": "binary search trees", "confidence": 4, "evidence": "vague"}],
         )
-    assert actions == [{"topic": "binary search trees", "created": False, "challenge_id": "chal-1", "status": None}]
+    assert actions == [{
+        "topic": "binary search trees",
+        "skill": "binary search trees",
+        "created": False,
+        "challenge_id": "chal-1",
+        "milestone_id": None,
+        "status": None,
+    }]
     rows = (await db.execute(select(RoadmapMilestone))).scalars().all()
     assert rows == []
 
@@ -266,3 +274,121 @@ async def test_roadmap_regeneration_keeps_progress_and_bumps_version(db):
     assert roadmap.version == "v2.0"
     assert len(rows) == 1
     assert rows[0].status == "done"  # progress survived regeneration
+
+
+@pytest.mark.asyncio
+async def test_regeneration_does_not_copy_done_to_a_different_action(db):
+    roadmap_id = await _make_roadmap(db)
+    db.add(
+        RoadmapMilestone(
+            roadmap_id=roadmap_id,
+            title="Old SQL challenge",
+            linked_gap_skill="sql",
+            linked_action_type="challenge",
+            linked_action_id="sql-queries",
+            status="done",
+        )
+    )
+    await db.commit()
+
+    from backend.services.roadmap import _upsert_roadmap
+
+    report_id = (await db.execute(select(GapReport))).scalars().first().id
+    await _upsert_roadmap(
+        db,
+        user_id="user-1",
+        gap_report_id=report_id,
+        milestones_data=[{
+            "title": "Read SQL docs",
+            "linked_gap_skill": "sql",
+            "linked_action_type": "resource",
+            "linked_action_id": "https://example.com/sql",
+            "status": "not_started",
+        }],
+    )
+    row = (await db.execute(select(RoadmapMilestone))).scalars().one()
+    assert row.linked_action_type == "resource"
+    assert row.status == "not_started"
+
+
+@pytest.mark.asyncio
+async def test_regeneration_keeps_saved_challenge_id(db):
+    roadmap_id = await _make_roadmap(db)
+    saved_id = "11111111-2222-3333-4444-555555555555"
+    db.add(
+        RoadmapMilestone(
+            roadmap_id=roadmap_id,
+            title="Old SQL challenge",
+            linked_gap_skill="sql",
+            linked_action_type="challenge",
+            linked_action_id=saved_id,
+            status="done",
+        )
+    )
+    await db.commit()
+
+    from backend.services.roadmap import _upsert_roadmap
+
+    report_id = (await db.execute(select(GapReport))).scalars().first().id
+    await _upsert_roadmap(
+        db,
+        user_id="user-1",
+        gap_report_id=report_id,
+        milestones_data=[{
+            "title": "New SQL practice",
+            "linked_gap_skill": "sql",
+            "linked_action_type": "challenge",
+            "linked_action_id": "sql-window-functions",
+            "status": "not_started",
+        }],
+    )
+    row = (await db.execute(select(RoadmapMilestone))).scalars().one()
+    assert row.status == "done"
+    assert row.linked_action_id == saved_id
+
+
+@pytest.mark.asyncio
+async def test_remedial_action_carries_valid_skill_and_milestone_id(db):
+    await _make_roadmap(db)
+    session, _ = await _ended_session(db, target_role_id="role-1")
+    topic = "explaining system design trade-offs clearly and concisely"
+    with patch("backend.services.interviews.generate_challenge", new=AsyncMock(return_value=FakeChallenge())):
+        actions = await _link_weak_topics_to_roadmap(
+            db, "user-1", session, [{"topic": topic, "confidence": 4, "evidence": "vague"}]
+        )
+    action = actions[0]
+    assert action["topic"] == topic
+    assert action["skill"] == "explaining system design trade-offs"
+    row = (await db.execute(select(RoadmapMilestone))).scalars().one()
+    assert row.linked_gap_skill == action["skill"]
+    assert action["milestone_id"] == row.id
+
+
+@pytest.mark.asyncio
+async def test_regenerating_feedback_does_not_duplicate_weak_topics(db):
+    session, student_ids = await _ended_session(db, target_role_id="role-1")
+    payload = _feedback_payload(student_ids, weak_topics=(("recursion", 3),))
+    with patch("backend.services.interviews.orchestrator") as orch:
+        orch.call_llm = AsyncMock(return_value=_resp(payload))
+        with patch("backend.services.interviews.generate_challenge", new=AsyncMock(return_value=FakeChallenge())):
+            await generate_feedback(db, session.id, "user-1")
+            await generate_feedback(db, session.id, "user-1")
+    rows = (
+        await db.execute(
+            select(InterviewWeakTopic).where(InterviewWeakTopic.session_id == session.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+
+
+def test_question_scores_drop_fabricated_turn_ids():
+    from backend.services.interviews import _validate_question_scores
+
+    scores = _validate_question_scores(
+        [
+            {"turn_id": "real", "score": 9, "justification": "Deep enough."},
+            {"turn_id": "fabricated", "score": 5, "justification": "Invented."},
+        ],
+        {"real": "A real answer"},
+    )
+    assert scores == [{"turn_id": "real", "score": 5, "justification": "Deep enough."}]

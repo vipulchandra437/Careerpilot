@@ -109,7 +109,7 @@
     <div class="brand"><span class="logo" aria-hidden="true"></span><span>Roadmap</span></div>
     <div class="search-wrap">
       <span class="search-icon" aria-hidden="true">&#9906;</span>
-      <input id="search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dropdown" autocomplete="off" placeholder="Search a domain, e.g. machine learning" />
+      <input id="search" type="text" role="combobox" aria-label="Search domains" aria-autocomplete="list" aria-expanded="false" aria-controls="dropdown" autocomplete="off" placeholder="Search a domain, e.g. machine learning" />
       <div id="dropdown" class="dropdown" role="listbox" aria-label="Domains"></div>
     </div>
   </div>
@@ -340,7 +340,8 @@ function renderRoadmap() {
     });
     html += '</div></section>';
   });
-  html += '<div class="goal">Goal reached &#127881;</div>';
+  const stats = domainStats(state.domain);
+  if (stats.done === stats.topics) html += '<div class="goal">Goal reached &#127881;</div>';
   host.innerHTML = html;
 }
 
