@@ -6,12 +6,16 @@ here (it requires Docker) — it is covered by the manual security test.
 """
 
 
+from fastapi import HTTPException
+
+from backend.api.challenges import _ensure_milestone_matches_skill
 from backend.services.coding_challenges import (
     DIFFICULTIES,
     _validate_challenge,
     apply_adaptive_result,
     next_difficulty,
 )
+from types import SimpleNamespace
 
 
 class FakeProgress:
@@ -185,3 +189,26 @@ def test_validate_keeps_literal_edge_case():
         {"name": "single", "stdin": "1\n", "expected": "1\n"},      # single element
     ]
     assert _validate_challenge(data, skill="python") is not None
+
+
+# --- roadmap milestone linkage ------------------------------------------------
+
+def test_challenge_must_match_milestone_skill():
+    milestone = SimpleNamespace(linked_action_type="challenge", linked_gap_skill="SQL")
+    _ensure_milestone_matches_skill(milestone, "sql")  # case-insensitive match
+    try:
+        _ensure_milestone_matches_skill(milestone, "docker")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+    else:
+        raise AssertionError("an unrelated challenge must not complete the milestone")
+
+
+def test_non_challenge_milestone_cannot_be_completed_by_challenge():
+    milestone = SimpleNamespace(linked_action_type="resource", linked_gap_skill="SQL")
+    try:
+        _ensure_milestone_matches_skill(milestone, "sql")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+    else:
+        raise AssertionError("only challenge milestones can be completed by code submissions")

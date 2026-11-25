@@ -53,7 +53,10 @@ async def analyze(
 ):
     """Run (or re-run, updating) the skill gap analysis for the user's snapshot."""
     snapshot_result = await db.execute(
-        select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id)
+        select(ProfileSnapshot)
+        .where(ProfileSnapshot.user_id == user.id)
+        .order_by(ProfileSnapshot.computed_at.desc())
+        .limit(1)
     )
     snapshot = snapshot_result.scalar_one_or_none()
     if not snapshot:
@@ -91,7 +94,10 @@ async def get_report(
 ):
     """Fetch the latest gap report for the user + target role (404 if none yet)."""
     snapshot_result = await db.execute(
-        select(ProfileSnapshot).where(ProfileSnapshot.user_id == user.id)
+        select(ProfileSnapshot)
+        .where(ProfileSnapshot.user_id == user.id)
+        .order_by(ProfileSnapshot.computed_at.desc())
+        .limit(1)
     )
     snapshot = snapshot_result.scalar_one_or_none()
     if not snapshot:

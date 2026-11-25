@@ -81,6 +81,37 @@ def test_validate_discards_missing_action_id():
     assert _validate_milestones(milestones, GAPS) == []
 
 
+def test_validate_discards_non_url_resource_action():
+    # A slug like "fastapi-docs" would render as a broken relative link.
+    milestones = [
+        {
+            "title": "Read the FastAPI docs",
+            "linked_gap_skill": "sql",
+            "status": "not_started",
+            "linked_action_type": "resource",
+            "linked_action_id": "fastapi-docs",
+            "order_index": 0,
+        }
+    ]
+    assert _validate_milestones(milestones, GAPS) == []
+
+
+def test_validate_normalizes_unknown_status():
+    milestones = [
+        {
+            "title": "Deepen SQL",
+            "linked_gap_skill": "sql",
+            "status": "completed",          # not an allowed backend status
+            "linked_action_type": "challenge",
+            "linked_action_id": "sql-queries",
+            "order_index": 0,
+        }
+    ]
+    valid = _validate_milestones(milestones, GAPS)
+    assert len(valid) == 1
+    assert valid[0]["status"] == "not_started"
+
+
 def test_validate_handles_paraphrased_skill():
     # Paraphrasing ("sql database") must NOT match an exact gap skill "sql".
     milestones = [
@@ -100,9 +131,9 @@ def test_validate_defaults_estimated_hours_by_severity():
     # Critical gap -> defaults to 8h; important -> stays if provided.
     milestones = [
         {"title": "SQL", "linked_gap_skill": "sql", "status": "not_started",
-         "linked_action_type": "resource", "linked_action_id": "u", "order_index": 0},
+         "linked_action_type": "resource", "linked_action_id": "https://example.com/sql", "order_index": 0},
         {"title": "Git", "linked_gap_skill": "git", "status": "not_started",
-         "linked_action_type": "resource", "linked_action_id": "u", "order_index": 1,
+         "linked_action_type": "resource", "linked_action_id": "https://example.com/git", "order_index": 1,
          "estimated_hours": 3},
     ]
     valid = _validate_milestones(milestones, GAPS)

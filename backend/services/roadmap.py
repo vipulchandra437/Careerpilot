@@ -7,6 +7,7 @@ roadmap prompt.
 
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -91,9 +92,18 @@ def _validate_milestones(milestones: list[dict], gaps: list[dict]) -> list[dict]
         # Must have action type
         if not action_type or action_type not in ("challenge", "interview", "resource"):
             continue
-        # Must have action id
+        # Must have action id; resource actions must be real links, not slugs.
         if not action_id:
             continue
+        if action_type == "resource":
+            parsed = urlparse(str(action_id))
+            if parsed.scheme not in ("http", "https") or not parsed.netloc:
+                continue
+
+        # LLM-supplied statuses are untrusted; unknown values must not break pills.
+        status = m.get("status", "not_started")
+        if status not in ("not_started", "in_progress", "done"):
+            status = "not_started"
 
         # Default estimated hours based on severity if not provided
         estimated_hours = m.get("estimated_hours")
@@ -104,7 +114,7 @@ def _validate_milestones(milestones: list[dict], gaps: list[dict]) -> list[dict]
         valid.append({
             "title": m.get("title", "")[:200],
             "linked_gap_skill": linked_skill,
-            "status": m.get("status", "not_started"),
+            "status": status,
             "linked_action_type": action_type,
             "linked_action_id": action_id,
             "order_index": m.get("order_index", i),
@@ -197,18 +207,19 @@ async def run_roadmap_generation(
                 prompt=prompt,
                 user_id=user_id,
             )
+            # Every model call is logged, even when its output fails validation.
+            usage_row = LLMUsageLog(
+                user_id=user_id,
+                feature="roadmap",
+                model=resp.model,
+                tokens_in=resp.tokens_in,
+                tokens_out=resp.tokens_out,
+                cost_usd=resp.cost_usd,
+            )
             parsed = _parse_roadmap_json(resp.content)
             if parsed and "milestones" in parsed:
                 # Validate milestones against actual gap skills
                 llm_milestones = _validate_milestones(parsed["milestones"], gaps)
-                usage_row = LLMUsageLog(
-                    user_id=user_id,
-                    feature="roadmap",
-                    model=resp.model,
-                    tokens_in=resp.tokens_in,
-                    tokens_out=resp.tokens_out,
-                    cost_usd=resp.cost_usd,
-                )
         except Exception:
             # LLM transport/failure or unparseable output -> fallback to deterministic
             llm_milestones = None

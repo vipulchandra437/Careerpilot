@@ -66,6 +66,28 @@ class ChallengeOut(BaseModel):
     expected_time_complexity: str | None = None
 
 
+async def _owned_milestone(db: AsyncSession, user_id: str, milestone_id: str) -> RoadmapMilestone:
+    result = await db.execute(
+        select(RoadmapMilestone)
+        .join(Roadmap, RoadmapMilestone.roadmap_id == Roadmap.id)
+        .where(RoadmapMilestone.id == milestone_id)
+        .where(Roadmap.user_id == user_id)
+    )
+    milestone = result.scalar_one_or_none()
+    if milestone is None:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    return milestone
+
+
+def _ensure_milestone_matches_skill(milestone: RoadmapMilestone, skill: str) -> None:
+    # A passed challenge may only complete the milestone it was generated for.
+    if (
+        milestone.linked_action_type != "challenge"
+        or (milestone.linked_gap_skill or "").strip().lower() != (skill or "").strip().lower()
+    ):
+        raise HTTPException(status_code=400, detail="Challenge does not match this roadmap milestone")
+
+
 @router.get("/difficulties")
 async def difficulties(user=Depends(get_current_user)):
     """Adapter-friendly list of supported difficulties and languages."""
@@ -121,12 +143,8 @@ async def create_challenge(
         role_name, target_role_id = role.name, role.id
 
     if req.roadmap_milestone_id:
-        owner = await db.execute(
-            select(RoadmapMilestone).join(Roadmap, RoadmapMilestone.roadmap_id == Roadmap.id)
-            .where(RoadmapMilestone.id == req.roadmap_milestone_id).where(Roadmap.user_id == user.id)
-        )
-        if owner.scalar_one_or_none() is None:
-            raise HTTPException(status_code=404, detail="Milestone not found")
+        milestone = await _owned_milestone(db, user.id, req.roadmap_milestone_id)
+        _ensure_milestone_matches_skill(milestone, req.skill)
 
     challenge = await generate_challenge(
         db, user_id=user.id, skill=req.skill, difficulty=difficulty,
@@ -222,14 +240,8 @@ async def submit(
         raise HTTPException(status_code=404, detail="Challenge not found")
 
     if req.roadmap_milestone_id:
-        owner = await db.execute(
-            select(RoadmapMilestone)
-            .join(Roadmap, RoadmapMilestone.roadmap_id == Roadmap.id)
-            .where(RoadmapMilestone.id == req.roadmap_milestone_id)
-            .where(Roadmap.user_id == user.id)
-        )
-        if owner.scalar_one_or_none() is None:
-            raise HTTPException(status_code=404, detail="Milestone not found")
+        milestone = await _owned_milestone(db, user.id, req.roadmap_milestone_id)
+        _ensure_milestone_matches_skill(milestone, challenge.skill)
 
     try:
         attempt = await submit_solution(

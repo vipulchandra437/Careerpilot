@@ -59,20 +59,32 @@ class RedactSensitiveQueryParams(logging.Filter):
 
 
 async def _apply_lightweight_migrations(conn):
-    """Idempotent, non-destructive column migrations for pre-existing dev DBs.
+    """Idempotent, non-destructive column migrations for pre-existing DBs.
 
     The project relies on `Base.metadata.create_all`, which creates missing
-    TABLES but never ALTERs an existing table. When a column is later added to
-    a model, an existing dev DB keeps the old shape and every query that
-    references the new column fails. Since production will use proper Alembic
-    migrations (not built yet), this covers the SQLite dev DB non-destructively.
+    TABLES but never ALTERs an existing table. This keeps an older dev or
+    deployed database usable after a model column changes.
 
     Current migrations:
       - users.is_active (added for PRD §6.7 enable/disable)
+      - roadmap_milestones.linked_action_id widened to TEXT (resource URLs)
     """
+    from sqlalchemy import text
 
-    # This compatibility helper is SQLite-only. PostgreSQL schema changes belong
-    # in Alembic and must not receive SQLite PRAGMA statements.
+    # create_all cannot widen an existing Postgres VARCHAR; SQLite ignores the
+    # length, so only Postgres needs the ALTER here.
+    if conn.dialect.name == "postgresql":
+        row = (await conn.execute(text(
+            "SELECT data_type FROM information_schema.columns "
+            "WHERE table_name = 'roadmap_milestones' AND column_name = 'linked_action_id'"
+        ))).first()
+        if row and str(row[0]).lower() != "text":
+            await conn.execute(text(
+                "ALTER TABLE roadmap_milestones ALTER COLUMN linked_action_id TYPE TEXT"
+            ))
+            logger.info("Migration: widened roadmap_milestones.linked_action_id to TEXT")
+        return
+
     if conn.dialect.name != "sqlite":
         return
 
@@ -86,8 +98,6 @@ async def _apply_lightweight_migrations(conn):
         if not exists:
             await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
             logger.info("Migration: added %s.%s", table, column)
-
-    from sqlalchemy import text
 
     await _ensure_column("users", "is_active", "BOOLEAN NOT NULL DEFAULT 1")
     for col in ["full_name", "headline", "bio", "location", "phone", "website", "linkedin_url", "github_url", "avatar_key"]:

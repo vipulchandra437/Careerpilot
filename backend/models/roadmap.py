@@ -1,7 +1,7 @@
 """Roadmap models (architecture.md §3.5)."""
 
 import uuid
-from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, func
+from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from backend.database import Base
@@ -26,7 +26,7 @@ class RoadmapMilestone(Base):
     linked_gap_skill = Column(String(100), nullable=True)
     status = Column(String(20), nullable=False, default="not_started")
     linked_action_type = Column(String(30), nullable=True)
-    linked_action_id = Column(String(36), nullable=True)
+    linked_action_id = Column(Text, nullable=True)
     order_index = Column(Integer, nullable=False, default=0)
     estimated_hours = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

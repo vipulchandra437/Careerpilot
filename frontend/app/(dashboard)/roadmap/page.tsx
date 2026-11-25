@@ -114,7 +114,10 @@ function RoadmapContent() {
   const [autofill, setAutofill] = useState<{ id: string; prefix: string } | null>(null);
   const [suppressAutofill, setSuppressAutofill] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const [needsAnalysis, setNeedsAnalysis] = useState(false);
   const detailRef = useRef<HTMLElement>(null);
+  const requestRef = useRef(0);
+  const lastFetchedRoleRef = useRef("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -155,63 +158,76 @@ function RoadmapContent() {
   }, [router]);
 
   const fetchRoadmap = useCallback(async (roleId: string) => {
+    // History updates and roles loading can both trigger the same fetch; an
+    // older response must never overwrite the domain currently on screen.
+    if (lastFetchedRoleRef.current === roleId) return;
+    lastFetchedRoleRef.current = roleId;
+    const requestId = ++requestRef.current;
+    const isCurrent = () => requestId === requestRef.current;
     setLoading(true);
+    setGenerating(false);
     setError("");
-    // A different domain must never show the previous domain's milestones.
+    setNeedsAnalysis(false);
     setRoadmap(null);
     setGapReport(null);
     setSelectedLevel(null);
     try {
       const token = localStorage.getItem("access_token");
 
-      // First get the gap report to find its ID
       const gapRes = await fetch(`/api/gap/report?target_role_id=${encodeURIComponent(roleId)}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
+      if (!isCurrent()) return;
       if (gapRes.status === 401) {
         localStorage.removeItem("access_token");
         router.push("/login?reason=expired");
         return;
       }
+      if (gapRes.status === 404) {
+        setNeedsAnalysis(true);
+        return;
+      }
+      if (!gapRes.ok) {
+        const err = await gapRes.json().catch(() => ({}));
+        setError(err.detail || "Could not load your gap report.");
+        return;
+      }
+      const gapData = await gapRes.json();
+      setGapReport({
+        id: gapData.id,
+        target_role_id: gapData.target_role_id,
+        target_role_name: gapData.target_role_name || "Unknown",
+        gaps: gapData.gaps || [],
+      });
 
-      if (gapRes.ok) {
-        const gapData = await gapRes.json();
-        setGapReport({
-          id: gapData.id,
-          target_role_id: gapData.target_role_id,
-          target_role_name: gapData.target_role_name || "Unknown",
-          gaps: gapData.gaps || [],
-        });
-
-        // Then get the roadmap
-        const roadmapRes = await fetch(`/api/roadmap/${gapData.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (roadmapRes.ok) {
-          const roadmapData = await roadmapRes.json();
-          setRoadmap(normalizeRoadmap(roadmapData));
-        } else if (roadmapRes.status === 404) {
-          // No roadmap yet - will show generate button
-          setRoadmap(null);
-        }
+      const roadmapRes = await fetch(`/api/roadmap/${gapData.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!isCurrent()) return;
+      if (roadmapRes.ok) {
+        const next = normalizeRoadmap(await roadmapRes.json());
+        if (!isCurrent()) return;
+        setRoadmap(next);
+      } else if (roadmapRes.status === 404) {
+        setRoadmap(null);
+      } else {
+        const err = await roadmapRes.json().catch(() => ({}));
+        setError(err.detail || "Could not load your roadmap.");
       }
     } catch {
-      setError("Network error");
+      if (isCurrent()) setError("Network error");
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [router]);
 
   const generateRoadmap = useCallback(async (roleId: string) => {
     if (!gapReport) return;
+    const requestId = ++requestRef.current;
+    const isCurrent = () => requestId === requestRef.current;
+    const previousVersion = roadmap?.version;
     setGenerating(true);
     setError("");
-    // Generation replaces milestones in place; their IDs tell us when it is done.
-    const previousIds = (roadmap?.milestones || []).map((m) => m.id).join(",");
     try {
       const token = localStorage.getItem("access_token");
       const res = await fetch(`/api/roadmap/${gapReport.id}/regenerate`, {
@@ -221,7 +237,7 @@ function RoadmapContent() {
           "Content-Type": "application/json",
         },
       });
-
+      if (!isCurrent()) return;
       if (res.status === 401) {
         localStorage.removeItem("access_token");
         router.push("/login?reason=expired");
@@ -229,37 +245,42 @@ function RoadmapContent() {
       }
 
       if (res.ok) {
-        // Poll for completion
+        // Regeneration bumps the version even when there are zero milestones,
+        // so polling on version avoids a fake 20-second timeout on a no-gap report.
         let attempts = 0;
         while (attempts < 10) {
           await new Promise((r) => setTimeout(r, 2000));
+          if (!isCurrent()) return;
           const roadmapRes = await fetch(`/api/roadmap/${gapReport.id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
+          if (!isCurrent()) return;
           if (roadmapRes.ok) {
             const next = normalizeRoadmap(await roadmapRes.json());
+            if (!isCurrent()) return;
             setRoadmap(next);
-            if (next.milestones.map((m) => m.id).join(",") !== previousIds) break;
+            if (next.version !== previousVersion) break;
           }
           attempts++;
         }
-        if (attempts >= 10) {
+        if (attempts >= 10 && isCurrent()) {
           setError("Generation is taking longer than expected; refresh to check later.");
         }
       } else {
-        const err = await res.json();
-        setError(err.detail || "Generation failed");
+        const err = await res.json().catch(() => ({}));
+        if (isCurrent()) setError(err.detail || "Generation failed");
       }
     } catch {
-      setError("Network error");
+      if (isCurrent()) setError("Network error");
     } finally {
-      setGenerating(false);
+      if (isCurrent()) setGenerating(false);
     }
   }, [router, gapReport, roadmap]);
 
   const selectDomain = (roleId: string, name?: string) => {
     if (name) setDomainQuery(name);
     setSelectedRoleId(roleId);
+    setNeedsAnalysis(false);
     window.history.replaceState({}, "", `/roadmap?role=${roleId}`);
     fetchRoadmap(roleId);
   };
@@ -274,15 +295,18 @@ function RoadmapContent() {
   }, [router, fetchTargetRoles]);
 
   useEffect(() => {
-    const roleId = searchParams.get("role");
-    if (roleId) {
-      setSelectedRoleId(roleId);
-      fetchRoadmap(roleId);
-    } else if (targetRoles.length > 0) {
+    const requestedRole = searchParams.get("role");
+    if (targetRoles.length === 0) return;
+    const roleId = requestedRole || targetRoles[0].id;
+    if (requestedRole) {
+      setSelectedRoleId(requestedRole);
+      const role = targetRoles.find((r) => r.id === requestedRole);
+      if (role) setDomainQuery(role.name);
+    } else {
       setSelectedRoleId(targetRoles[0].id);
       setDomainQuery(targetRoles[0].name);
-      fetchRoadmap(targetRoles[0].id);
     }
+    fetchRoadmap(roleId);
   }, [searchParams, targetRoles, fetchRoadmap]);
 
   const query = domainQuery.trim().toLowerCase();
@@ -419,6 +443,8 @@ function RoadmapContent() {
               aria-autocomplete="list"
               aria-expanded={searchOpen}
               aria-controls="domain-options"
+              aria-label="Search domains"
+              aria-activedescendant={searchOpen && searchIndex >= 0 ? `domain-option-${options[searchIndex]?.id}` : undefined}
               placeholder="Search a domain, e.g. machine learning"
               className="focus-ring w-full rounded-xl border border-[#e3e8f2] bg-[#f5f7fb] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#3b6cf6] focus:bg-white focus:ring-4 focus:ring-[#3b6cf6]/15"
             />
@@ -436,6 +462,7 @@ function RoadmapContent() {
                 {options.map((role, index) => (
                   <button
                     key={role.id}
+                    id={`domain-option-${role.id}`}
                     type="button"
                     role="option"
                     aria-selected={searchIndex === index}
@@ -467,7 +494,20 @@ function RoadmapContent() {
             </div>
           )}
 
-          {roadmap ? (
+          {roadmap && milestones.length === 0 ? (
+            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
+              <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+              <h2 className="mb-2 text-xl font-semibold">No gaps to build a roadmap from</h2>
+              <p className="mb-6 text-sm text-[#5c6784]">Your profile currently matches this role. Update your profile or re-run gap analysis, then regenerate.</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button onClick={() => generateRoadmap(roadmap.gap_report_id)} disabled={generating} style={{ background: brand }} className={primaryBtn}>
+                  {generating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
+                  {generating ? "Regenerating..." : "Regenerate"}
+                </button>
+                <button onClick={() => router.push(`/gap-report?role=${selectedRoleId}`)} className={lightBtn}>Back to Gap Report</button>
+              </div>
+            </section>
+          ) : roadmap ? (
             <>
               <section className="mb-6 flex items-center gap-5 rounded-2xl border border-[#e3e8f2] bg-white p-6 max-[560px]:gap-3.5">
                 <div
@@ -565,6 +605,15 @@ function RoadmapContent() {
                 </button>
               </div>
             </>
+          ) : needsAnalysis ? (
+            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
+              <Target aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+              <h2 className="mb-2 text-xl font-semibold">Run gap analysis first</h2>
+              <p className="mb-6 text-sm text-[#5c6784]">This role has no gap report yet, so there is nothing to build a roadmap from.</p>
+              <button onClick={() => router.push(`/gap-report?role=${selectedRoleId}`)} style={{ background: brand }} className={primaryBtn}>
+                <Zap aria-hidden="true" className="mr-2 inline h-4 w-4" /> Run gap analysis
+              </button>
+            </section>
           ) : gapReport ? (
             <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
               <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
@@ -615,6 +664,7 @@ function RoadmapContent() {
                         skill: activeMilestone.linked_gap_skill || "",
                         targetRoleId: selectedRoleId,
                         milestoneId: activeMilestone.id,
+                        challengeId: activeMilestone.linked_action_id || "",
                       });
                       router.push(`/practice?${params.toString()}`);
                     }}

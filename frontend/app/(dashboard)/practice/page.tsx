@@ -92,15 +92,52 @@ function PracticeContent() {
     finally { setLoading(false); }
   }, [router]);
 
+  const openRoadmapChallenge = useCallback(async (id: string) => {
+    setLoading(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
+    const token = localStorage.getItem("access_token");
+    try {
+      const res = await fetch(`/api/challenges/${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) { localStorage.removeItem("access_token"); router.push("/login?reason=expired"); return; }
+      if (res.ok) {
+        const data = await res.json();
+        setChallenge(data); setCode(data.starter_code || "");
+        return;
+      }
+      // Roadmap fallback milestones carry slugs, not persisted challenge IDs.
+      const skill = searchParams.get("skill") || "";
+      const milestone = searchParams.get("milestoneId") || "";
+      if (res.status !== 404 || !skill || !milestone) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || "Could not open this practice challenge");
+        return;
+      }
+      const genRes = await fetch("/api/challenges/generate", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skill,
+          difficulty: "adaptive",
+          language: "python",
+          target_role_id: searchParams.get("targetRoleId") || null,
+          roadmap_milestone_id: milestone,
+        }),
+      });
+      const data = await genRes.json().catch(() => ({}));
+      if (!genRes.ok) { setError(data.detail || "Could not generate a practice challenge"); return; }
+      setChallenge(data); setCode(data.starter_code || "");
+    } catch { setError("Network error"); }
+    finally { setLoading(false); }
+  }, [router, searchParams]);
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) { router.push("/login"); return; }
     if (initRef.current) return;
     initRef.current = true;
     void loadChallenges(searchParams.get("skill") || "", "all", "all");
-    if (challengeIdParam) { void openChallenge(challengeIdParam); return; }
+    if (challengeIdParam) { void openRoadmapChallenge(challengeIdParam); return; }
     setLoading(false);
-  }, [challengeIdParam, loadChallenges, openChallenge, router, searchParams]);
+  }, [challengeIdParam, loadChallenges, openRoadmapChallenge, router, searchParams]);
 
   const runCode = useCallback(async (submit: boolean) => {
     if (!challenge) return;
