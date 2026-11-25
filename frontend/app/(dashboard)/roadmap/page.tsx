@@ -81,6 +81,26 @@ const primaryBtn =
 
 const linkClass = "text-sm font-medium text-[#3b6cf6] hover:underline";
 
+// Roles stay admin-managed; these aliases only make natural queries findable.
+const roleAliases: Record<string, string[]> = {
+  "ml engineer": ["machine learning", "artificial intelligence", "ai", "deep learning"],
+  "frontend engineer": ["front end", "web development", "web"],
+  "backend engineer": ["back end", "server side"],
+  "full stack r": ["r programming", "r language"],
+};
+
+const normalizeSearch = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+const roleSearchTexts = (role: { name: string }) => [
+  normalizeSearch(role.name),
+  ...(roleAliases[normalizeSearch(role.name)] || []).map(normalizeSearch),
+];
+
+const matchesRole = (role: { name: string }, query: string) => {
+  const tokens = normalizeSearch(query).split(" ").filter(Boolean);
+  return tokens.length === 0 || roleSearchTexts(role).some((text) => tokens.every((token) => text.includes(token)));
+};
+
 function RoadmapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -266,7 +286,7 @@ function RoadmapContent() {
   }, [searchParams, targetRoles, fetchRoadmap]);
 
   const query = domainQuery.trim().toLowerCase();
-  const matchingRoles = targetRoles.filter((role) => role.name.toLowerCase().includes(query));
+  const matchingRoles = targetRoles.filter((role) => matchesRole(role, domainQuery));
   const options = query ? matchingRoles : targetRoles;
   const activeMilestone = selectedLevel === null || !roadmap ? null : roadmap.milestones[selectedLevel] ?? null;
   const milestones = roadmap?.milestones ?? [];
@@ -303,8 +323,13 @@ function RoadmapContent() {
       setDomainQuery(raw);
       return;
     }
-    const q = raw.trim().toLowerCase();
-    const match = q ? targetRoles.find((r) => r.name.toLowerCase().startsWith(q) && r.name.toLowerCase() !== q) : undefined;
+    const q = normalizeSearch(raw);
+    const match = q
+      ? targetRoles.find((r) => {
+          const name = normalizeSearch(r.name);
+          return name.startsWith(q) && name !== q;
+        })
+      : undefined;
     if (match) {
       setDomainQuery(match.name);
       setAutofill({ id: match.id, prefix: raw });
