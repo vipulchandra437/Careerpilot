@@ -58,3 +58,13 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     coverage,
   };
 }
+
+/** Dashboard score: both groups are 0-100; a missing group contributes 0. */
+export function computeDashboardReadiness(input: {
+  resumeScore?: number | null;
+  interviewScore?: number | null;
+}): number {
+  const score = (value: number | null | undefined) =>
+    typeof value === "number" && Number.isFinite(value) ? clamp(value, 100) : 0;
+  return Math.round(0.4 * score(input.resumeScore) + 0.6 * score(input.interviewScore));
+}

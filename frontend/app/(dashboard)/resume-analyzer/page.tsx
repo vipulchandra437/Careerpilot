@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileSearch, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
+import { recordFeatureProgress } from "@/app/actions/dashboard";
 
 export default function ResumeAnalyzerPage() {
   const router = useRouter();
@@ -39,6 +40,11 @@ export default function ResumeAnalyzerPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || "Analysis failed");
       setAnalysis(data.analysis);
+      void recordFeatureProgress(localStorage.getItem("access_token") || "", {
+        featureKey: "resume-analysis",
+        score: Math.round(Number(data.analysis?.overall_score) || 0),
+        status: "complete",
+      });
     } catch (e: any) { setError(e.message || "Analysis failed"); }
     setBusy(false);
   }

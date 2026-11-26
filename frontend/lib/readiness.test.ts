@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeReadiness } from "./readiness";
+import { computeDashboardReadiness, computeReadiness } from "./readiness";
 
 describe("computeReadiness", () => {
   it("weights the interview at 60% and the resume at 40%", () => {
@@ -34,5 +34,26 @@ describe("computeReadiness", () => {
   it("clamps out-of-range scores", () => {
     expect(computeReadiness({ interviewScore: 12 }).score).toBe(100);
     expect(computeReadiness({ resumeScore: 200 }).score).toBe(100);
+  });
+});
+
+describe("computeDashboardReadiness", () => {
+  it("returns zero when both groups are missing", () => {
+    expect(computeDashboardReadiness({})).toBe(0);
+    expect(computeDashboardReadiness({ resumeScore: 0, interviewScore: 0 })).toBe(0);
+  });
+
+  it("weights interview 60% and resume 40% on 0-100 scores", () => {
+    expect(computeDashboardReadiness({ resumeScore: 70, interviewScore: 80 })).toBe(76);
+    expect(computeDashboardReadiness({ resumeScore: 35, interviewScore: 90 })).toBe(68);
+  });
+
+  it("treats a missing group as zero", () => {
+    expect(computeDashboardReadiness({ resumeScore: 70 })).toBe(28);
+    expect(computeDashboardReadiness({ interviewScore: 80 })).toBe(48);
+  });
+
+  it("clamps scores to 0-100", () => {
+    expect(computeDashboardReadiness({ resumeScore: 200, interviewScore: -5 })).toBe(40);
   });
 });

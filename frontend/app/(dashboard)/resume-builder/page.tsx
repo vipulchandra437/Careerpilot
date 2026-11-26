@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Loader2, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
+import { recordFeatureProgress } from "@/app/actions/dashboard";
 
 type ResumeData = {
   name: string; headline: string; summary: string;
@@ -87,6 +88,13 @@ export default function ResumeBuilderPage() {
       const blob = await res.blob(); const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = `${(resume.name || "resume").replace(/[^a-z0-9_-]+/gi, "_")}.pdf`; a.click();
       URL.revokeObjectURL(url);
+      const sections = [resume.name, resume.summary, resume.skills.length, resume.experience.length, resume.education.length, resume.projects.length];
+      const score = Math.round((sections.filter(Boolean).length / sections.length) * 100);
+      void recordFeatureProgress(localStorage.getItem("access_token") || "", {
+        featureKey: "resume-builder",
+        score,
+        status: score === 100 ? "complete" : "in_progress",
+      });
     } catch (e: any) { setError(e.message || "Export failed"); }
     setBusy("");
   }

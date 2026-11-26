@@ -66,6 +66,17 @@ Plan — one commit per step; lint + typecheck + tests after each step:
 
 **Exit criteria — DONE (2026-11-26):** lint, typecheck and 20 Vitest tests pass after each step. Live API smoke test proved 401 without a token, bank fallback for turns, and a saved/readable report. Reticle `verified: yes` for all six driven steps: lobby opens from `/mock-interview`, Start is disabled until consent is checked, starting shows Maya's first question with typed-answer fallback, sending an answer advances to Question 2, ending navigates to `/interview/[sessionId]`, and the report shows verdict, Top fixes, Your answers and Readiness. No failed app requests (only a pre-existing `/favicon.ico` 404). Voice audio, camera frames and browser coaching cues are not sent to the server; only answer text reaches the LLM. Not separately asserted in the browser: actual speech recognition/synthesis output (headless lease has no microphone), animated mouth during speech, and camera-based cues without a real webcam.
 
+## Phase 4.5 — Student dashboard (2026-11-26)
+
+**Goal:** one signed-in page showing readiness and progress across all CareerPilot features.
+- [x] Extend the existing `/dashboard` route with a server page, client token gate and verified, Zod-validated server action; every query scoped to the JWT `sub`.
+- [x] Add `FeatureProgress` to both Prisma schemas plus a portable migration; derive interview/target/weekly practice from existing Prisma records.
+- [x] Add `computeDashboardReadiness` with unit tests for all zeros, mixed scores and missing groups.
+- [x] Build the three summary cards, feature grid and suggested-next-step panel with inline SVG/CSS charts, empty states, keyboard focus and reduced-motion support.
+- [x] Record progress from the resume analyzer, builder export and challenge submit success paths.
+- [x] Update DESIGN.md and MEMORY.md.
+**Exit criteria — DONE (2026-11-26):** `npm run lint`, `npm run typecheck` and `npm test` pass (26 tests); both Prisma schemas validate and the portable migration applies locally. Reticle `verified: yes` for signed-out redirect to `/login`, empty state, full data (76/100 readiness, 7 complete/1 in-progress, 2 sessions this week), user isolation (a second user showed only 18/100, 30 interview, 1 session and none of the first user's values), and 375px/1280px layouts with reduced motion. The three progress-write flows replayed `ok` and `npx @reticlehq/server gate --since 74c8e9a` passes; DB rows confirmed resume-analysis 73/complete, resume-builder 50/in_progress and coding-tests 50/in_progress. No commit or push was made.
+
 ## Phase 5 — Admin Console & Polish
 **Goal:** Make the platform operable and presentable without a developer.
 - [x] **Backend:** Admin CRUD for `target_role_profiles` (`backend/api/roles.py`) and the challenge topic bank (`backend/models/topic.py` + `backend/api/admin_topics.py`). Admin bootstrap via out-of-band `backend/seed_admin.py`.

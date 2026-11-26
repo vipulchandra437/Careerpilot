@@ -51,3 +51,15 @@ model TargetPreference {
   companyIds   String
   updatedAt    DateTime @updatedAt
 }
+
+// Dashboard progress. One row per user + feature; userId is the verified JWT sub.
+model FeatureProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  featureKey String
+  score      Int
+  status     String // planned | in_progress | complete
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, featureKey])
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Loader2, Play, Send, CheckCircle2, XCircle, Clock, AlertTriangle, Code2 } from "lucide-react";
+import { recordFeatureProgress } from "@/app/actions/dashboard";
 
 interface TestResult {
   name: string;
@@ -168,6 +169,17 @@ function PracticeContent() {
       if (res.ok) {
         setResults(data.tests || []);
         setLastPassed(!!data.passed);
+        if (submit) {
+          const tests: TestResult[] = data.tests || [];
+          const score = data.passed
+            ? 100
+            : Math.round((tests.filter((test) => test.passed).length / (tests.length || 1)) * 100);
+          void recordFeatureProgress(token || "", {
+            featureKey: "coding-tests",
+            score,
+            status: data.passed ? "complete" : "in_progress",
+          });
+        }
         if (submit && data.milestone_marked_done) {
           setMilestoneMarked(true);
         }

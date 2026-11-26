@@ -18,10 +18,12 @@
 
 ### 2.2 Dashboard
 
-- Top: profile completeness indicator (resume ✓ / GitHub ✓ or skip / LinkedIn optional).
-- Middle: top 3 gaps by severity, each with a one-line reason.
-- Bottom: "next roadmap action" card — the single next thing to do, with a direct CTA (not a link to a list).
-- Empty state (first visit): replaces the above with a single prompt to complete onboarding.
+- Header: CareerPilot name plus a short greeting; signed-in students only.
+- Top row (three cards on desktop, stacked on mobile): job readiness (0–100 with a status tag and the "resume 40% / mock interview 60%" note), feature status donut (complete / in progress / planned counts), and weekly practice bars (sessions per day for the last 7 days in the student's timezone).
+- Feature grid: one card per feature with its name, one-line description, 0–100 score, progress bar, status text and a link.
+- Bottom: one "Suggested next step" panel with a single CTA. With no data it tells the student what to do first (for example, "Upload your resume to get your first score.").
+- Charts use inline SVG/CSS (no chart library); each chart has an `aria-label` containing the numbers. Status is always text plus colour, never colour alone.
+- Dark tokens used here come from `app/globals.css` and `tailwind.config.js` (the approved artifact required sign-in, so these are the app's existing tokens): canvas `#0b0f1a`, surface `#111726`, raised surface `#181f33`, border `rgb(148 163 184 / 0.12)`, primary text `#e2e8f0`, secondary `#94a3b8`, muted `#64748b`, indigo accent `#6366f1`, status colours emerald `#34d399` / amber `#fbbf24` / slate `#475569`, card radius `0.875rem`.
 
 ### 2.3 Skill Gap Report
 
