@@ -21,7 +21,7 @@ CS students preparing for jobs juggle separate tools for resume review, intervie
 - Salary negotiation or offer analysis
 - Employer-facing recruiting tools
 - Native mobile apps (responsive web only)
-- Audio/video-based communication feedback (text transcript only in v1)
+- Audio/video-based communication feedback (text transcript only in v1), except browser-only live coaching cues for the voice mock interview (§6.4) — no recording or upload
 
 ## 5. Target Users
 
@@ -72,6 +72,7 @@ CS students preparing for jobs juggle separate tools for resume review, intervie
 - Session types: technical (DSA/system design) and behavioral.
 - Adaptive follow-ups: the LLM sees the running transcript and asks a follow-up based on the actual answer (e.g., vague answer → "can you give a specific example?").
 - Transcript persisted in full (question, answer, timestamp) for the Communication Feedback module.
+- Voice call option: HR (Maya), Technical (Dev) or Mixed (Sam) interviewer at Easy/Standard/Tough difficulty; spoken questions with follow-ups, voice answers with a typing fallback, and browser-only camera/mic coaching cues. No video or audio is recorded or uploaded; only answer text reaches the LLM. A post-call report feeds the readiness score (interview 60%, resume 40%).
 
 **Acceptance criteria:** a session of at least 5 exchanges produces a coherent, non-repetitive line of questioning (verify via the evaluation set in RULES.md §4).
 

@@ -26,7 +26,8 @@
 - **Frontend:** Next.js (React) + Tailwind CSS + shadcn/ui components.
 - **Backend:** FastAPI (Python 3.11+) — async endpoints throughout, since most requests wait on LLM/API calls.
 - **Database:** PostgreSQL via SQLAlchemy + Alembic for migrations.
-- **AI Layer:** OpenRouter — single orchestration module, model selection configurable per feature (see §5).
+- **AI Layer:** OpenRouter — single orchestration module, model selection configurable per feature (see §5). The Phase 4 voice interview uses the sanctioned Next.js chain in `frontend/lib/llm.ts` (Groq → Gemini → OpenRouter free), keys server-side only.
+- **Voice interview data (Phase 4 extension):** a separate Prisma DB (`INTERVIEW_DATABASE_URL`: SQLite locally, Neon Postgres in production) holds only interview sessions, answers and reports. No audio, video or transcript media is sent to or stored by the server; the existing JWT and SQLAlchemy data stay authoritative for auth and all other features.
 - **File storage:** S3-compatible bucket (e.g., Cloudflare R2 or AWS S3), private by default.
 - **Auth:** JWT access + refresh tokens; GitHub OAuth for the GitHub connection feature (reuse for login too, optional).
 - **Code execution:** Firecracker/gVisor-style microVM or Docker-in-Docker sandbox, network-disabled, CPU/memory/time limits enforced.

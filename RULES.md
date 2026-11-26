@@ -4,7 +4,7 @@ Every rule here explains why, not just what — an AI agent (or human) should be
 
 ## 1. LLM / OpenRouter Usage
 
-- **Rule:** All LLM calls go through `backend/ai/orchestrator.py` (architecture.md §5.1) — never call OpenRouter directly from a feature service. **Why:** without a single choke point, swapping a model, adding cost logging, or enforcing a rate limit means hunting through every feature file instead of editing one place.
+- **Rule:** All FastAPI feature LLM calls go through `backend/ai/orchestrator.py` (architecture.md §5.1) — never call OpenRouter directly from a feature service. The Next.js voice interview is the one sanctioned exception: its provider chain lives in `frontend/lib/llm.ts` (P8-14), with keys server-side only. **Why:** without a single choke point, swapping a model, adding cost logging, or enforcing a rate limit means hunting through every feature file instead of editing one place; the voice interview needs the chain in the Next.js route that owns its session, and keeps the same single-entry-point discipline there.
 - **Rule:** Every LLM-generated output shown to a user (roadmap, feedback, challenge, interview question) is logged to `llm_usage_log` with the prompt template version + model used. **Why:** this is the only way to debug "why did it say that" later, and it's required for the credit-based billing in PROMPT.md.
 - **Rule:** Never send a full resume/PII payload to a model without checking that specific OpenRouter provider's data-retention policy. **Why:** OpenRouter routes to multiple underlying providers with different data policies — "OpenRouter is fine" isn't a real answer, the underlying model matters.
 - **Rule:** Prompts live in versioned files under `backend/ai/prompts/`, one file per feature — never as inline strings scattered through the codebase. **Why:** a prompt tweak should be a single-file diff you can review and roll back, not a hunt through business logic.
@@ -77,7 +77,7 @@ response = openrouter_client.chat.completions.create(model="...", messages=[{"ro
 ## 5. What NOT to Do
 
 - Don't scrape LinkedIn — manual import/paste only (ToS + legal risk; see PRD.md §6.6).
-- Don't hardcode a specific LLM model/provider anywhere outside the orchestration module.
+- Don't hardcode a specific LLM model/provider anywhere outside an orchestration module (`backend/ai/orchestrator.py`, or `frontend/lib/llm.ts` for the voice interview).
 - Don't add a feature not listed in PRD.md without updating PRD.md first — scope drift is how student side-projects never ship.
 - Don't skip the sandbox for code execution "just this once," even in a demo/dev environment.
 - Don't build multi-tenant UI or B2B admin features in v1 (see PROMPT.md) — the architecture should allow it later, but building it now is wasted effort against an unconfirmed buyer.

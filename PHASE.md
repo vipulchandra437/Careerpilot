@@ -50,6 +50,22 @@ Each phase lists concrete tasks and exit criteria that must be *demonstrated*, n
 - [x] **User browser verification of /mock-interview + /interview-feedback (SIGNED OFF by user, 2026-08-30).**
 **Exit criteria — DONE (user signed off in-browser + security check):** a full 5+ exchange mock interview session produces a non-repetitive transcript and feedback that quotes or references at least one specific answer; user personally verified chat UI, feedback↔transcript display, and narrow-width usability, plus the non-admin 403 rejection.
 
+### Phase 4 extension — real-time voice interviewer (2026-11-26)
+
+The signed-off text interview stays available as the typing fallback. This extension adds the call-style UI; it is additive to the existing FastAPI interview flow and uses a separate Prisma DB (no change to JWT auth, SQLAlchemy data, resume or builder features).
+
+Plan — one commit per step; lint + typecheck + tests after each step:
+1. `[Phase 4] plan voice interviewer and align rules` — this plan; RULES.md §1/§5 and architecture.md §2 amended for the frontend LLM chain; PRD.md §4/§6.4 amended for browser-only coaching.
+2. `[Phase 4] add typed question banks and rule analysis` — `lib/interview/questions.ts`, `lib/interview/analyze.ts`, Vitest tests.
+3. `[Phase 4] add Prisma interview schema and provider chain` — Prisma schema/migration, `lib/llm.ts`, env template, dependencies, local MediaPipe model files.
+4. `[Phase 4] add authenticated interview API` — `app/api/interview/turn/route.ts` with Zod, JWT ownership, Groq→Gemini→OpenRouter chain, question-bank fallback, session/report save.
+5. `[Phase 4] build lobby and SVG interviewer` — lobby, consent, live preview, `components/interview/Interviewer.tsx`.
+6. `[Phase 4] build live call with speech and coaching` — speech synthesis/recognition, controls, transcript drawer, MediaPipe cues, cleanup.
+7. `[Phase 4] add report page and readiness score` — `/interview/[sessionId]`, `lib/readiness.ts` + test.
+8. `[Phase 4] verify voice interview and update memory` — browser verdicts, MEMORY.md/PHASE.md final state.
+
+**Exit criteria:** logged-in user starts HR/Technical/Mixed at Easy/Standard/Tough; interviewer speaks with animated mouth and follows up; voice or typed answers work; live camera/mic cues appear with nothing sent to the server; ending saves the session and shows `/interview/[sessionId]`; no Groq key falls back to the bank; readiness updates; lint, typecheck and tests pass.
+
 ## Phase 5 — Admin Console & Polish
 **Goal:** Make the platform operable and presentable without a developer.
 - [x] **Backend:** Admin CRUD for `target_role_profiles` (`backend/api/roles.py`) and the challenge topic bank (`backend/models/topic.py` + `backend/api/admin_topics.py`). Admin bootstrap via out-of-band `backend/seed_admin.py`.
