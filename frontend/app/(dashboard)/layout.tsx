@@ -9,6 +9,7 @@ import {
   User,
   LogOut,
   FileText,
+  FileSearch,
   Bot,
 } from "lucide-react";
 import { clearTokens } from "@/lib/auth";
@@ -16,6 +17,7 @@ import { clearTokens } from "@/lib/auth";
 const sideItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/resume-builder", label: "Resume Builder", icon: FileText },
+  { href: "/resume-analyzer", label: "Resume Analyzer", icon: FileSearch },
   { href: "/practice", label: "Practice", icon: Code2 },
   { href: "/mock-interview", label: "Interviews", icon: MessagesSquare, matches: ["/mock-interview", "/interview-feedback"] },
   { href: "/mentor", label: "Mentor", icon: Bot },

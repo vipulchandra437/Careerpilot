@@ -1,0 +1,88 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FileSearch, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/ui";
+
+export default function ResumeAnalyzerPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
+  const [targetRoleId, setTargetRoleId] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [error, setError] = useState("");
+
+  const tokenHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("access_token")}` });
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/login"); return; }
+    (async () => {
+      try {
+        const res = await fetch("/api/gap/roles", { headers: tokenHeader() });
+        if (res.ok) setRoles(await res.json());
+      } catch { /* empty */ }
+      setLoading(false);
+    })();
+  }, [router]);
+
+  async function analyze() {
+    setBusy(true); setError("");
+    try {
+      const res = await fetch("/api/profile/resume/analyze", {
+        method: "POST", headers: { "Content-Type": "application/json", ...tokenHeader() },
+        body: JSON.stringify({ target_role_id: targetRoleId || null, job_description: jobDescription || null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Analysis failed");
+      setAnalysis(data.analysis);
+    } catch (e: any) { setError(e.message || "Analysis failed"); }
+    setBusy(false);
+  }
+
+  const input = "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-brand-500/50 focus:outline-none";
+  const label = "mb-1 block text-xs font-medium text-slate-400";
+  const card = "card p-5";
+
+  if (loading) return <main className="flex min-h-screen items-center justify-center bg-surface text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /></main>;
+
+  return (
+    <main className="min-h-screen bg-surface p-6 sm:p-8">
+      <div className="mx-auto max-w-4xl">
+        <PageHeader title="Resume Analyzer" subtitle="Get AI scoring, ATS checks, and concrete fixes for your saved resume.">
+          <button onClick={analyze} disabled={busy} className="btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSearch className="h-4 w-4" />} Analyze Resume
+          </button>
+        </PageHeader>
+        {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
+
+        <section className={card}>
+          <p className="mb-3 text-sm text-slate-400">Analyzes your saved/uploaded resume. Save or upload the latest resume on the Profile page before analyzing.</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div><label className={label}>Target role (optional)</label><select className={input} value={targetRoleId} onChange={e => setTargetRoleId(e.target.value)}><option value="">General CS resume</option>{roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
+            <div className="sm:col-span-2"><label className={label}>Job description (optional)</label><textarea className={input} rows={4} value={jobDescription} onChange={e => setJobDescription(e.target.value)} placeholder="Paste a JD for keyword/fit analysis" /></div>
+          </div>
+
+          {analysis && (
+            <div className="mt-5 space-y-4 border-t border-white/10 pt-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg bg-white/[0.03] p-3"><div className="text-xs text-slate-400">Overall</div><div className="text-2xl font-bold text-white">{analysis.overall_score}<span className="text-sm text-slate-500">/100</span></div></div>
+                <div className="rounded-lg bg-white/[0.03] p-3"><div className="text-xs text-slate-400">ATS</div><div className="text-2xl font-bold text-white">{analysis.ats_score}<span className="text-sm text-slate-500">/100</span></div></div>
+                <div className="rounded-lg bg-white/[0.03] p-3 sm:col-span-1"><div className="text-xs text-slate-400">Summary</div><div className="text-sm text-slate-200">{analysis.summary}</div></div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div><div className="mb-1 text-xs font-medium text-emerald-300">Strengths</div><ul className="space-y-1 text-sm text-slate-300">{(analysis.strengths||[]).map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>
+                <div><div className="mb-1 text-xs font-medium text-amber-300">Needs work</div><ul className="space-y-1 text-sm text-slate-300">{(analysis.weaknesses||[]).map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>
+              </div>
+              {(analysis.action_items||[]).length > 0 && <div><div className="mb-1 text-xs font-medium text-brand-300">Action items</div><ul className="space-y-1 text-sm text-slate-300">{analysis.action_items.map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>}
+              {(analysis.bullet_improvements||[]).length > 0 && <div><div className="mb-2 text-xs font-medium text-white">Bullet improvements</div><div className="space-y-2">{analysis.bullet_improvements.map((b:any,i:number)=><div key={i} className="rounded-lg bg-white/[0.03] p-3 text-sm"><div className="text-slate-500">Before: {b.original || "—"}</div><div className="text-slate-200">After: {b.improved}</div>{b.reason && <div className="text-xs text-slate-400">{b.reason}</div>}</div>)}</div></div>}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}

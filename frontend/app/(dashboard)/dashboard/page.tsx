@@ -10,6 +10,7 @@ import {
   Sparkles,
   ChevronRight,
   FileText,
+  FileSearch,
   Bot,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
@@ -47,9 +48,15 @@ export default function DashboardPage() {
     },
     {
       title: "Resume Builder",
-      desc: "Build, preview, export PDF, and get AI resume analysis.",
+      desc: "Build, preview, and export your resume as a PDF.",
       href: "/resume-builder",
       icon: FileText,
+    },
+    {
+      title: "Resume Analyzer",
+      desc: "Get AI scoring, ATS checks, and concrete resume fixes.",
+      href: "/resume-analyzer",
+      icon: FileSearch,
     },
     {
       title: "Skill Gap Analysis",
