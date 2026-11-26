@@ -43,29 +43,16 @@ const typeMeta: Record<string, { icon: typeof Code2; title: string; desc: string
   },
 };
 
-const domains = [
-  ["sde", "Software engineering"],
-  ["web", "Web / full-stack"],
-  ["ml_ai", "ML / AI"],
-  ["mobile", "Mobile"],
-  ["data", "Data"],
-  ["systems", "Systems"],
-] as const;
-
 function MockInterviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type") || "";
-  const initialRoleId = searchParams.get("role") || "";
   const milestoneIdParam = searchParams.get("milestoneId") || "";
 
   // Deep links start in "pick" so a failed auto-start still leaves a usable
   // screen; startInterview moves to "chat" only on success.
   const [stage, setStage] = useState<"pick" | "chat">("pick");
   const [type, setType] = useState<string>(initialType || "");
-  const [targetRoleId, setTargetRoleId] = useState("");
-  const [targetRoles, setTargetRoles] = useState<{ id: string; name: string }[]>([]);
-  const [domain, setDomain] = useState("sde");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<Turn[]>([]);
@@ -75,7 +62,6 @@ function MockInterviewContent() {
   const [error, setError] = useState("");
   const [showTimer, setShowTimer] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [rolesLoaded, setRolesLoaded] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
   const autoStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -92,27 +78,12 @@ function MockInterviewContent() {
       router.push("/login");
       return;
     }
-    // Wait for roles so a deep link keeps its target-role context, and guard
-    // against StrictMode's second mount starting a duplicate session.
-    if (!initialType || !rolesLoaded || autoStarted.current) return;
+    // Guard against StrictMode's second mount starting a duplicate session.
+    if (!initialType || autoStarted.current) return;
     autoStarted.current = true;
-    void startInterview(initialType, initialRoleId || targetRoleId);
+    void startInterview(initialType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialType, initialRoleId, rolesLoaded, router]);
-
-  useEffect(() => {
-    void fetch("/api/gap/roles", { headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        const roles = Array.isArray(data) ? data : [];
-        setTargetRoles(roles);
-        if (initialRoleId && roles.some((r) => r.id === initialRoleId)) {
-          setTargetRoleId(initialRoleId);
-        }
-        setRolesLoaded(true);
-      })
-      .catch(() => setRolesLoaded(true));
-  }, [initialRoleId]);
+  }, [initialType, router]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -122,7 +93,7 @@ function MockInterviewContent() {
     return <VoiceInterview onExit={() => setShowVoice(false)} />;
   }
 
-  const startInterview = async (t: string, roleId: string = targetRoleId) => {
+  const startInterview = async (t: string) => {
     const token = localStorage.getItem("access_token");
     setWaiting(true);
     setError("");
@@ -130,7 +101,7 @@ function MockInterviewContent() {
       const res = await fetch("/api/interviews/sessions", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ type: t, target_role_id: roleId || null, domain }),
+        body: JSON.stringify({ type: t, target_role_id: null, domain: "sde" }),
       });
       if (res.status === 401) {
         localStorage.removeItem("access_token");
@@ -295,21 +266,6 @@ function MockInterviewContent() {
               </span>
               <span className="text-sm font-semibold text-brand-300 group-hover:text-brand-200">Start voice interview →</span>
             </button>
-            <div className="card mb-5 grid gap-4 p-5 sm:grid-cols-2">
-              <label className="text-sm text-slate-300">
-                Target role
-                <select value={targetRoleId} onChange={(e) => setTargetRoleId(e.target.value)} className="input mt-2">
-                  <option value="">Choose a role (optional)</option>
-                  {targetRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-                </select>
-              </label>
-              <label className="text-sm text-slate-300">
-                CS domain
-                <select value={domain} onChange={(e) => setDomain(e.target.value)} className="input mt-2">
-                  {domains.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-              </label>
-            </div>
             <div className="grid gap-4 md:grid-cols-3">
             {Object.entries(typeMeta).map(([key, meta]) => {
               const Icon = meta.icon;

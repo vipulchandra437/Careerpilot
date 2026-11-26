@@ -692,7 +692,6 @@ function RoadmapContent() {
                       const interviewType = ["technical", "behavioral", "hr"].includes(rawType) ? rawType : "behavioral";
                       const params = new URLSearchParams({
                         type: interviewType,
-                        role: selectedRoleId,
                         milestoneId: activeMilestone.id,
                       });
                       router.push(`/mock-interview?${params.toString()}`);
