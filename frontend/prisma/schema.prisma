@@ -1,0 +1,45 @@
+// Separate interview DB — no shared tables with the FastAPI/SQLAlchemy app.
+// Local: SQLite. Production: change provider to "postgresql" and point
+// INTERVIEW_DATABASE_URL at Neon (P8-14). The migration SQL is portable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("INTERVIEW_DATABASE_URL")
+}
+
+model InterviewSession {
+  id           String            @id @default(uuid())
+  userId       String
+  type         String
+  difficulty   String
+  startedAt    DateTime          @default(now())
+  endedAt      DateTime?
+  overallScore Float?
+  verdict      String?
+  answers      InterviewAnswer[]
+  report       InterviewReport?
+}
+
+model InterviewAnswer {
+  id        String           @id @default(uuid())
+  sessionId String
+  index     Int
+  question  String
+  text      String
+  metrics   String // JSON encoded: Prisma has no Json scalar on SQLite
+  score     Float
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model InterviewReport {
+  id        String           @id @default(uuid())
+  sessionId String           @unique
+  json      String // JSON encoded report
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
