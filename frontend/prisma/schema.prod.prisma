@@ -1,0 +1,43 @@
+// Production interview DB (Vercel + Neon Postgres). Mirrors schema.prisma;
+// only the provider differs, because Prisma cannot switch it via env().
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("INTERVIEW_DATABASE_URL")
+}
+
+model InterviewSession {
+  id           String            @id @default(uuid())
+  userId       String
+  type         String
+  difficulty   String
+  startedAt    DateTime          @default(now())
+  endedAt      DateTime?
+  overallScore Float?
+  verdict      String?
+  answers      InterviewAnswer[]
+  report       InterviewReport?
+}
+
+model InterviewAnswer {
+  id        String           @id @default(uuid())
+  sessionId String
+  index     Int
+  question  String
+  text      String
+  metrics   String
+  score     Float
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model InterviewReport {
+  id        String           @id @default(uuid())
+  sessionId String           @unique
+  json      String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
