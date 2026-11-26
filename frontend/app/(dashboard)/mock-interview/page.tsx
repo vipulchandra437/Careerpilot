@@ -8,10 +8,12 @@ import {
   Code2,
   Users,
   Loader2,
+  Mic,
   Send,
   Square,
   Timer,
 } from "lucide-react";
+import { VoiceInterview } from "@/components/interview/VoiceInterview";
 
 interface Turn {
   id: string;
@@ -74,6 +76,7 @@ function MockInterviewContent() {
   const [showTimer, setShowTimer] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [rolesLoaded, setRolesLoaded] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
   const autoStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -114,6 +117,10 @@ function MockInterviewContent() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [transcript, waiting]);
+
+  if (showVoice) {
+    return <VoiceInterview onExit={() => setShowVoice(false)} />;
+  }
 
   const startInterview = async (t: string, roleId: string = targetRoleId) => {
     const token = localStorage.getItem("access_token");
@@ -270,6 +277,24 @@ function MockInterviewContent() {
 
         {stage === "pick" ? (
           <div>
+            <button
+              type="button"
+              onClick={() => setShowVoice(true)}
+              className="group card card-hover focus-ring mb-5 flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left"
+            >
+              <span className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+                  <Mic className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block font-semibold text-white">Voice call — new</span>
+                  <span className="mt-0.5 block text-sm text-slate-400">
+                    Spoken questions, live browser-only coaching and a post-call report.
+                  </span>
+                </span>
+              </span>
+              <span className="text-sm font-semibold text-brand-300 group-hover:text-brand-200">Start voice interview →</span>
+            </button>
             <div className="card mb-5 grid gap-4 p-5 sm:grid-cols-2">
               <label className="text-sm text-slate-300">
                 Target role
