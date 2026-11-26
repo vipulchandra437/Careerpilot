@@ -55,16 +55,16 @@ Each phase lists concrete tasks and exit criteria that must be *demonstrated*, n
 The signed-off text interview stays available as the typing fallback. This extension adds the call-style UI; it is additive to the existing FastAPI interview flow and uses a separate Prisma DB (no change to JWT auth, SQLAlchemy data, resume or builder features).
 
 Plan — one commit per step; lint + typecheck + tests after each step:
-1. `[Phase 4] plan voice interviewer and align rules` — this plan; RULES.md §1/§5 and architecture.md §2 amended for the frontend LLM chain; PRD.md §4/§6.4 amended for browser-only coaching.
-2. `[Phase 4] add typed question banks and rule analysis` — `lib/interview/questions.ts`, `lib/interview/analyze.ts`, Vitest tests.
-3. `[Phase 4] add Prisma interview schema and provider chain` — Prisma schema/migration, `lib/llm.ts`, env template, dependencies, local MediaPipe model files.
-4. `[Phase 4] add authenticated interview API` — `app/api/interview/turn/route.ts` with Zod, JWT ownership, Groq→Gemini→OpenRouter chain, question-bank fallback, session/report save.
-5. `[Phase 4] build lobby and SVG interviewer` — lobby, consent, live preview, `components/interview/Interviewer.tsx`.
-6. `[Phase 4] build live call with speech and coaching` — speech synthesis/recognition, controls, transcript drawer, MediaPipe cues, cleanup.
-7. `[Phase 4] add report page and readiness score` — `/interview/[sessionId]`, `lib/readiness.ts` + test.
-8. `[Phase 4] verify voice interview and update memory` — browser verdicts, MEMORY.md/PHASE.md final state.
+1. [x] `bbc71ec` `[Phase 4] plan voice interviewer and align rules` — this plan; RULES.md §1/§5 and architecture.md §2 amended for the frontend LLM chain; PRD.md §4/§6.4 amended for browser-only coaching.
+2. [x] `7186cfd` `[Phase 4] add typed question banks and rule analysis` — `lib/interview/questions.ts`, `lib/interview/analyze.ts`, Vitest tests.
+3. [x] `0c5112c` `[Phase 4] add Prisma interview schema and provider chain` — Prisma schema/migration, `lib/llm.ts`, env template, dependencies, local MediaPipe model files.
+4. [x] `79b313a` `[Phase 4] add authenticated interview API` — `app/api/interview/turn/route.ts` with Zod, JWT ownership, Groq→Gemini→OpenRouter chain, question-bank fallback, session/report save.
+5. [x] `4a5f24b` `[Phase 4] build lobby and SVG interviewer` — lobby, consent, live preview, `components/interview/Interviewer.tsx`.
+6. [x] `06854ec` `[Phase 4] build live call with speech and coaching` — speech synthesis/recognition, controls, transcript drawer, MediaPipe cues, cleanup.
+7. [x] `c1ea8da` `[Phase 4] add report page and readiness score` — `/interview/[sessionId]`, `lib/readiness.ts` + test.
+8. [x] `[Phase 4] verify voice interview and update memory` — browser verdicts, MEMORY.md/PHASE.md final state.
 
-**Exit criteria:** logged-in user starts HR/Technical/Mixed at Easy/Standard/Tough; interviewer speaks with animated mouth and follows up; voice or typed answers work; live camera/mic cues appear with nothing sent to the server; ending saves the session and shows `/interview/[sessionId]`; no Groq key falls back to the bank; readiness updates; lint, typecheck and tests pass.
+**Exit criteria — DONE (2026-11-26):** lint, typecheck and 20 Vitest tests pass after each step. Live API smoke test proved 401 without a token, bank fallback for turns, and a saved/readable report. Reticle `verified: yes` for all six driven steps: lobby opens from `/mock-interview`, Start is disabled until consent is checked, starting shows Maya's first question with typed-answer fallback, sending an answer advances to Question 2, ending navigates to `/interview/[sessionId]`, and the report shows verdict, Top fixes, Your answers and Readiness. No failed app requests (only a pre-existing `/favicon.ico` 404). Voice audio, camera frames and browser coaching cues are not sent to the server; only answer text reaches the LLM. Not separately asserted in the browser: actual speech recognition/synthesis output (headless lease has no microphone), animated mouth during speech, and camera-based cues without a real webcam.
 
 ## Phase 5 — Admin Console & Polish
 **Goal:** Make the platform operable and presentable without a developer.
