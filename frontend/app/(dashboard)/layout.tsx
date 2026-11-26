@@ -21,7 +21,7 @@ const sideItems = [
   { href: "/resume-analyzer", label: "Resume Analyzer", icon: FileSearch },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/practice", label: "Practice", icon: Code2 },
-  { href: "/mock-interview", label: "Interviews", icon: MessagesSquare, matches: ["/mock-interview", "/interview-feedback"] },
+  { href: "/mock-interview", label: "Interviews", icon: MessagesSquare, matches: ["/mock-interview", "/interview-feedback", "/interview"] },
   { href: "/mentor", label: "Mentor", icon: Bot },
   { href: "/profile", label: "Profile", icon: User },
 ];

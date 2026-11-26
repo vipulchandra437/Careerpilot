@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
 import { z } from "zod";
+import { AuthError, requireUser } from "@/lib/interview/auth";
 import { prisma } from "@/lib/interview/db";
 import { callInterviewLLM } from "@/lib/llm";
 import {
@@ -16,26 +16,6 @@ import type { InterviewReportData } from "@/lib/interview/report";
 const typeSchema = z.enum(["hr", "technical", "mixed"]);
 const difficultySchema = z.enum(["easy", "standard", "tough"]);
 const character: Record<InterviewType, string> = { hr: "Maya", technical: "Dev", mixed: "Sam" };
-
-class AuthError extends Error {}
-
-async function requireUser(request: Request): Promise<string> {
-  const header = request.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const secret = process.env.JWT_SECRET_KEY;
-  if (!token || !secret) throw new AuthError("Missing credentials");
-  try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
-      algorithms: ["HS256"],
-    });
-    if (payload.type !== "access" || typeof payload.sub !== "string") {
-      throw new AuthError("Invalid token");
-    }
-    return payload.sub;
-  } catch {
-    throw new AuthError("Invalid token");
-  }
-}
 
 async function ownedSession(sessionId: string, userId: string) {
   const session = await prisma.interviewSession.findFirst({ where: { id: sessionId, userId } });
