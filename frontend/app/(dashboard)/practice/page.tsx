@@ -55,7 +55,6 @@ function PracticeContent() {
   const [error, setError] = useState("");
   const [results, setResults] = useState<TestResult[] | null>(null);
   const [lastPassed, setLastPassed] = useState<boolean | null>(null);
-  const [milestoneMarked, setMilestoneMarked] = useState(false);
 
   const milestoneId = searchParams.get("milestoneId") || "";
   const challengeIdParam = searchParams.get("challengeId") || "";
@@ -80,7 +79,7 @@ function PracticeContent() {
   }, [skillInput, difficultyFilter, language, router]);
 
   const openChallenge = useCallback(async (id: string) => {
-    setLoading(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
+    setLoading(true); setError(""); setResults(null); setLastPassed(null);
     const token = localStorage.getItem("access_token");
     try {
       const res = await fetch(`/api/challenges/${id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -93,7 +92,7 @@ function PracticeContent() {
   }, [router]);
 
   const openRoadmapChallenge = useCallback(async (id: string) => {
-    setLoading(true); setError(""); setResults(null); setLastPassed(null); setMilestoneMarked(false);
+    setLoading(true); setError(""); setResults(null); setLastPassed(null);
     const token = localStorage.getItem("access_token");
     try {
       const res = await fetch(`/api/challenges/${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -168,9 +167,6 @@ function PracticeContent() {
       if (res.ok) {
         setResults(data.tests || []);
         setLastPassed(!!data.passed);
-        if (submit && data.milestone_marked_done) {
-          setMilestoneMarked(true);
-        }
       } else {
         // e.g. 503 sandbox unavailable — surface cleanly, never execute here.
         setError(data.detail || "Sandbox error");
@@ -268,7 +264,6 @@ function PracticeContent() {
                   {!t.passed && !t.timed_out && <div className="mt-2 space-y-1 text-xs font-mono">{t.stdout !== undefined && t.stdout !== "" && <div><div className="text-slate-500">Output</div><pre className="bg-black/20 p-2 rounded text-slate-300 overflow-auto">{t.stdout.slice(0,500)}</pre></div>}{t.expected && <div><div className="text-slate-500">Expected</div><pre className="bg-black/20 p-2 rounded text-slate-300 overflow-auto">{t.expected.slice(0,500)}</pre></div>}</div>}
                   {t.stderr && <pre className="mt-2 text-xs font-mono bg-black/20 p-2 rounded text-red-400 overflow-auto">{t.stderr.slice(0,500)}</pre>}</div>
                 ))}</div></div>}
-                {milestoneMarked && <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300"><CheckCircle2 className="inline h-4 w-4 mr-2" />Passed — roadmap milestone marked complete.</div>}
               </div>
               <div className="p-4 flex flex-col">
                 <div className="text-xs font-medium text-slate-400 mb-2">Code <span className="text-slate-500">({({python:"Python 3",javascript:"JavaScript",java:"Java",cpp:"C++"} as Record<string,string>)[challenge.language] || challenge.language})</span></div>

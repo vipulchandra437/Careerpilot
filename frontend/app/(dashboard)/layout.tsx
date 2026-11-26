@@ -4,7 +4,6 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
-  Map,
   Code2,
   MessagesSquare,
   User,
@@ -17,7 +16,6 @@ import { clearTokens } from "@/lib/auth";
 const sideItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/resume-builder", label: "Resume Builder", icon: FileText },
-  { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/practice", label: "Practice", icon: Code2 },
   { href: "/mock-interview", label: "Interviews", icon: MessagesSquare, matches: ["/mock-interview", "/interview-feedback"] },
   { href: "/mentor", label: "Mentor", icon: Bot },
