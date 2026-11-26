@@ -81,6 +81,10 @@ module.exports = {
           "0%, 100%": { opacity: "0.5" },
           "50%": { opacity: "1" },
         },
+        mouth: {
+          "0%": { transform: "scaleY(0.4)" },
+          "100%": { transform: "scaleY(1.5)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.35s ease-out both",
@@ -88,6 +92,7 @@ module.exports = {
         "scale-in": "scale-in 0.2s ease-out both",
         shimmer: "shimmer 1.6s infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        mouth: "mouth 0.28s ease-in-out infinite alternate",
       },
     },
   },
