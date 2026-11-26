@@ -2,17 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  ArrowLeft,
-  BrainCircuit,
-  Code2,
-  Users,
-  Loader2,
-  Mic,
-  Send,
-  Square,
-  Timer,
-} from "lucide-react";
+import { ArrowLeft, Loader2, Mic, Send, Square, Timer } from "lucide-react";
 import { VoiceInterview } from "@/components/interview/VoiceInterview";
 
 interface Turn {
@@ -24,24 +14,6 @@ interface Turn {
 
 const cardClass =
   "card p-5";
-
-const typeMeta: Record<string, { icon: typeof Code2; title: string; desc: string }> = {
-  technical: {
-    icon: Code2,
-    title: "Technical",
-    desc: "DSA and system-design questions. The interviewer goes deeper on whatever you name.",
-  },
-  behavioral: {
-    icon: BrainCircuit,
-    title: "Behavioral",
-    desc: "STAR-style questions about real experiences. The interviewer presses for concrete situations and outcomes.",
-  },
-  hr: {
-    icon: Users,
-    title: "HR",
-    desc: "Motivation, collaboration, conflict, ownership, and work-style questions with evidence-based feedback.",
-  },
-};
 
 function MockInterviewContent() {
   const router = useRouter();
@@ -266,32 +238,6 @@ function MockInterviewContent() {
               </span>
               <span className="text-sm font-semibold text-brand-300 group-hover:text-brand-200">Start voice interview →</span>
             </button>
-            <div className="grid gap-4 md:grid-cols-3">
-            {Object.entries(typeMeta).map(([key, meta]) => {
-              const Icon = meta.icon;
-              return (
-                <button
-                  key={key}
-                  onClick={() => startInterview(key)}
-                  disabled={waiting}
-                  className="group card card-hover focus-ring animate-fade-up p-6 text-left disabled:pointer-events-none disabled:opacity-50"
-                >
-                  <Icon className="mb-4 h-8 w-8 text-brand-300 transition-colors group-hover:text-brand-200" />
-                  <h2 className="mb-1 text-lg font-semibold">{meta.title}</h2>
-                  <p className="text-sm text-slate-400">{meta.desc}</p>
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-300">
-                    {waiting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Starting...
-                      </>
-                    ) : (
-                      "Start interview"
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-            </div>
           </div>
         ) : (
           <div className="flex flex-1 flex-col">
