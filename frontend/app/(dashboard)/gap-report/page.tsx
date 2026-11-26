@@ -347,6 +347,18 @@ function GapReportContent() {
               </div>
             )}
 
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => router.push(`/roadmap?role=${selectedRoleId}`)}
+                className={primaryBtn}
+              >
+                <Target className="h-4 w-4" />
+                Generate Roadmap
+              </button>
+              <p className={mutedText + " mt-2"}>
+                Get a personalized learning plan with milestones and resources
+              </p>
+            </div>
           </>
         ) : (
           <div className={`${cardClass} text-center py-12`}>

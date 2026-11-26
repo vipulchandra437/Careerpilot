@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ChevronDown,
   Loader2,
+  Route,
   Sparkles,
   Quote,
 } from "lucide-react";
@@ -69,9 +70,6 @@ function InterviewFeedbackContent() {
   const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
   const turnRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const milestoneMarkedRef = useRef(false);
-  const practiceActions = feedback?.remedial_actions.filter(
-    (item) => !!item.challenge_id && !!(item.skill || item.topic) && !!targetRoleId
-  ) ?? [];
 
   const ensureFeedback = useCallback(async () => {
     // Feedback is generated lazily: try GET, and if not generated yet, create it.
@@ -295,26 +293,37 @@ function InterviewFeedbackContent() {
               {feedback.question_scores.map((item) => <button key={item.turn_id} onClick={() => jumpToTurn(item.turn_id)} className="w-full rounded-lg border border-white/10 bg-white/[0.02] p-3 text-left text-sm text-slate-300 hover:border-brand-500/40"><span className="font-semibold text-white">{item.score}/5</span><span className="ml-3">{item.justification}</span></button>)}
             </div>
 
-            {practiceActions.length > 0 && (
+            {feedback.remedial_actions.length > 0 && (
               <div className="mb-6 rounded-xl border border-brand-500/20 bg-brand-500/[0.04] p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">
-                  Keep practicing these gaps
+                <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-300">
+                  <Route className="h-4 w-4" /> Keep practicing these gaps
                 </p>
                 <ul className="space-y-2">
-                  {practiceActions.map((item) => {
+                  {feedback.remedial_actions.map((item) => {
                     const skill = item.skill || item.topic;
+                    const canPractice = !!item.challenge_id && !!skill && !!targetRoleId;
                     return (
                       <li key={item.topic} className="flex flex-wrap items-center gap-3 text-sm">
                         <span className="font-medium text-white">{item.topic}</span>
+                        {item.created ? (
+                          <span className="text-xs text-emerald-400">added to roadmap</span>
+                        ) : (
+                          <span className="text-xs text-slate-500">not on roadmap</span>
+                        )}
                         <button
                           onClick={() => {
-                            const params = new URLSearchParams({ skill, targetRoleId });
-                            params.set("challengeId", item.challenge_id!);
-                            router.push(`/practice?${params.toString()}`);
+                            if (canPractice) {
+                              const params = new URLSearchParams({ skill, targetRoleId });
+                              if (item.challenge_id) params.set("challengeId", item.challenge_id);
+                              if (item.milestone_id) params.set("milestoneId", item.milestone_id);
+                              router.push(`/practice?${params.toString()}`);
+                            } else {
+                              router.push(`/roadmap${targetRoleId ? `?role=${encodeURIComponent(targetRoleId)}` : ""}`);
+                            }
                           }}
                           className="btn-primary focus-ring ml-auto !h-auto !px-3 !py-1.5 text-xs"
                         >
-                          Practice this
+                          {canPractice ? "Practice this" : "See roadmap"}
                         </button>
                       </li>
                     );
@@ -347,6 +356,21 @@ function InterviewFeedbackContent() {
               ))}
             </ul>
 
+            {/* CTA — roadmap hook (DESIGN §2.7) */}
+            <div className="mt-8 flex flex-col items-center gap-2 rounded-xl border border-dashed border-white/15 p-5 text-center">
+              <Route className="h-6 w-6 text-brand-400" />
+              <p className="text-sm text-slate-300">
+                {feedback.remedial_actions.length > 0
+                  ? "Your weak topics are on the roadmap as practice challenges — see them any time."
+                  : "Want to close this gap? Add related items to your roadmap."}
+              </p>
+              <button
+                onClick={() => router.push("/roadmap")}
+                className="btn-primary focus-ring mt-1 !px-5 !py-2 h-auto"
+              >
+                See my roadmap
+              </button>
+            </div>
           </section>
         )}
       </div>

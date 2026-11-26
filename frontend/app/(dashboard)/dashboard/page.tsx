@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   MessageSquareText,
   ArrowRight,
+  Map,
   Code2,
   User,
   Sparkles,
@@ -65,6 +66,12 @@ export default function DashboardPage() {
       icon: Sparkles,
     },
     {
+      title: "Roadmap",
+      desc: "Your personalized, AI-built path to close the gaps.",
+      href: "/roadmap",
+      icon: Map,
+    },
+    {
       title: "Practice Coding",
       desc: "Solve challenges with an AI judge giving live feedback.",
       href: "/practice",
@@ -113,7 +120,7 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-400">
                 Upload your resume and connect your sources so we can analyze your
-                skill gaps.
+                skill gaps and generate your personalized roadmap.
               </p>
             </div>
             <button
