@@ -41,3 +41,13 @@ model InterviewReport {
   json      String
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
+
+// Career target choices. userId is the FastAPI user id from the verified JWT.
+model TargetPreference {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  roleId       String
+  companyTypes String
+  companyIds   String
+  updatedAt    DateTime @updatedAt
+}

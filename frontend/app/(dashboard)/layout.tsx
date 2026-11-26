@@ -12,11 +12,13 @@ import {
   FileText,
   FileSearch,
   Bot,
+  Target,
 } from "lucide-react";
 import { clearTokens } from "@/lib/auth";
 
 const sideItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/career-target", label: "Career target", icon: Target },
   { href: "/resume-builder", label: "Resume Builder", icon: FileText },
   { href: "/resume-analyzer", label: "Resume Analyzer", icon: FileSearch },
   { href: "/roadmap", label: "Roadmap", icon: Map },
