@@ -10,7 +10,7 @@ import {
   type Difficulty,
   type InterviewType,
 } from "@/lib/interview/questions";
-import { applyLlmReport, buildRuleReport, savedAnswerSchema } from "@/lib/interview/report";
+import { applyLlmReport, buildRuleReport, finishAnswerSchema, scoreAnswers } from "@/lib/interview/report";
 import type { InterviewReportData } from "@/lib/interview/report";
 
 const typeSchema = z.enum(["hr", "technical", "mixed"]);
@@ -140,17 +140,21 @@ export async function POST(request: Request) {
   }
 
   const body = z
-    .object({ action: z.literal("finish"), sessionId: z.string().uuid(), answers: z.array(savedAnswerSchema).min(1).max(20) })
+    .object({ action: z.literal("finish"), sessionId: z.string().uuid(), answers: z.array(finishAnswerSchema).min(1).max(20) })
     .safeParse(raw);
   if (!body.success) return NextResponse.json({ error: "Invalid answers" }, { status: 400 });
   const { sessionId } = body.data;
+  let sessionType: string;
   try {
-    await ownedSession(sessionId, userId);
+    sessionType = (await ownedSession(sessionId, userId)).type;
   } catch {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const rules = buildRuleReport(body.data.answers);
+  // Client-supplied score/metrics are stripped by finishAnswerSchema; every
+  // persisted value is derived from the stored answer text on the server.
+  const answers = scoreAnswers(body.data.answers, sessionType);
+  const rules = buildRuleReport(answers);
   let report: InterviewReportData = rules;
   try {
     const result = await callInterviewLLM(
@@ -158,19 +162,19 @@ export async function POST(request: Request) {
         "Keys: verdict (short string), overall_score (0-10), per_answer_score (array of 0-10), " +
         "strengths, mistakes, better_version, top_fixes (arrays of short strings).",
       JSON.stringify({
-        answers: body.data.answers.map((a) => ({ question: a.question, answer: a.text, checks: a.metrics.checks })),
+        answers: answers.map((a) => ({ question: a.question, answer: a.text, checks: a.metrics.checks })),
         ruleScore: rules.overallScore,
       }),
       { json: true, maxTokens: 800 }
     );
-    report = applyLlmReport(JSON.parse(result.text), body.data.answers, result.provider) ?? rules;
+    report = applyLlmReport(JSON.parse(result.text), answers, result.provider) ?? rules;
   } catch {
     // Validation failure or provider failure keeps the rule-based report.
   }
 
   await prisma.$transaction([
     prisma.interviewAnswer.createMany({
-      data: body.data.answers.map((a) => ({
+      data: answers.map((a) => ({
         sessionId,
         index: a.index,
         question: a.question,

@@ -12,7 +12,12 @@ from backend.models.profile import ProfileSnapshot
 from backend.models.roadmap import Roadmap, RoadmapMilestone
 from backend.models.target_role import TargetRoleProfile
 from backend.services.profile_merge import MergedProfile, compute_merge
-from backend.services.roadmap import get_roadmap_with_milestones, get_roadmap_by_id_with_milestones, run_roadmap_generation
+from backend.services.roadmap import (
+    get_roadmap_with_milestones,
+    get_roadmap_by_id_with_milestones,
+    mark_generation_failed,
+    run_roadmap_generation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +56,8 @@ async def generate_roadmap(
         raise HTTPException(status_code=404, detail="Target role not found")
 
     # Check if roadmap already exists and is complete
-    roadmap, milestones = await get_roadmap_with_milestones(db, gap_report_id)
-    if roadmap and milestones:
+    roadmap, milestones = (await get_roadmap_with_milestones(db, gap_report_id)) or (None, [])
+    if roadmap and milestones and getattr(roadmap, "status", "ready") != "failed":
         return {
             "status": "ready",
             "roadmap_id": roadmap.id,
@@ -105,6 +110,7 @@ async def _generate_roadmap_background(
             )
             gap_report = result.scalar_one_or_none()
             if not gap_report:
+                await mark_generation_failed(db, gap_report_id, user_id, "Gap report not found")
                 return
 
             await run_roadmap_generation(
@@ -115,9 +121,13 @@ async def _generate_roadmap_background(
                 target_role_name=target_role_name,
             )
         except Exception as exc:
-            # Log error but don't crash background task; refund if this was paid.
+            # A terminal marker lets GET return 200 + error instead of polling
+            # forever and then 404. Log it; never crash the background task.
             logger.exception("Roadmap background generation failed for gap_report=%s: %s", gap_report_id, exc)
-            pass
+            try:
+                await mark_generation_failed(db, gap_report_id, user_id, str(exc))
+            except Exception:
+                logger.exception("Could not persist roadmap failure marker for %s", gap_report_id)
 
 
 @router.get("/{gap_report_id}")
@@ -148,6 +158,8 @@ async def get_roadmap(
             "user_id": roadmap.user_id,
             "gap_report_id": roadmap.gap_report_id,
             "version": roadmap.version,
+            "status": getattr(roadmap, "status", None) or "ready",
+            "error": getattr(roadmap, "error", None),
             "created_at": roadmap.created_at.isoformat() if roadmap.created_at else None,
         },
         "milestones": [

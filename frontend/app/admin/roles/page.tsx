@@ -213,7 +213,7 @@ export default function AdminRolesPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Target Roles</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted">
           Roles available in gap analysis. Add a new role and it is immediately usable — no deploy.
         </p>
       </div>
@@ -229,7 +229,7 @@ export default function AdminRolesPage() {
       <div className="card mb-6 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-slate-400">Role name</label>
+            <label className="mb-1 block text-xs font-medium text-muted">Role name</label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -238,7 +238,7 @@ export default function AdminRolesPage() {
             />
           </div>
           <div className="flex flex-col gap-2 md:w-72">
-            <label className="text-xs font-medium text-slate-400">Add required skill</label>
+            <label className="text-xs font-medium text-muted">Add required skill</label>
             <div className="flex gap-2">
               <input
                 id="new-skill"
@@ -261,12 +261,12 @@ export default function AdminRolesPage() {
                 {newSkills.map((s, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1 rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-xs text-brand-200"
+                    className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-xs text-brand-700"
                   >
                     {s.skill}
                     <button
                       onClick={() => setNewSkills((p) => p.filter((_, j) => j !== i))}
-                      className="text-brand-300 hover:text-white"
+                      className="text-brand-700 hover:text-ink"
                       aria-label={`Remove ${s.skill}`}
                     >
                       <X className="h-3 w-3" />
@@ -289,28 +289,28 @@ export default function AdminRolesPage() {
 
       {/* Roles table */}
       {loading ? (
-        <div className="flex items-center gap-3 py-16 text-slate-400">
+        <div className="flex items-center gap-3 py-16 text-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
           <p>Loading target roles…</p>
         </div>
       ) : roles.length === 0 ? (
-        <div className="card py-16 text-center text-slate-400">
+        <div className="card py-16 text-center text-muted">
           No target roles yet. Create your first role above.
         </div>
       ) : (
         <div className="card overflow-x-auto !p-0">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Required skills</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-line">
               {roles.map((role) =>
                 editingId === role.id ? (
-                  <tr key={role.id} className="bg-brand-500/10">
+                  <tr key={role.id} className="bg-brand-50">
                     <td className="px-4 py-3">
                       <input
                         value={editName}
@@ -323,7 +323,7 @@ export default function AdminRolesPage() {
                         {editSkills.map((s, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-slate-200"
+                            className="inline-flex items-center gap-1 rounded-full border border-line bg-soft px-2 py-0.5 text-xs text-muted"
                           >
                             <input
                               value={s.skill}
@@ -333,7 +333,7 @@ export default function AdminRolesPage() {
                             <select
                               value={s.min_depth}
                               onChange={(e) => updateEditSkill(i, { min_depth: e.target.value })}
-                              className="bg-transparent text-[10px] text-slate-400 outline-none"
+                              className="bg-transparent text-[10px] text-muted outline-none"
                             >
                               {depthOptions.map((d) => (
                                 <option key={d} value={d} className="text-black">
@@ -343,19 +343,19 @@ export default function AdminRolesPage() {
                             </select>
                             <button
                               onClick={() => setEditSkills((p) => p.filter((_, j) => j !== i))}
-                              className="text-slate-500 hover:text-red-300"
+                              className="text-muted hover:text-red-700"
                               aria-label={`Remove ${s.skill}`}
                             >
                               <X className="h-3 w-3" />
                             </button>
                           </span>
                         ))}
-                        <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/20 px-2 py-0.5 text-xs">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2 py-0.5 text-xs">
                           <input
                             id="edit-new-skill"
                             placeholder="+ skill"
                             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addEditSkill())}
-                            className="w-20 bg-transparent text-xs outline-none placeholder:text-slate-500"
+                            className="w-20 bg-transparent text-xs outline-none placeholder:text-muted"
                           />
                         </span>
                       </div>
@@ -365,7 +365,7 @@ export default function AdminRolesPage() {
                         <button
                           onClick={() => saveEdit(role.id)}
                           disabled={savingId === role.id}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600/20 px-2.5 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-600/30 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                         >
                           {savingId === role.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -376,7 +376,7 @@ export default function AdminRolesPage() {
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/5"
+                          className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-soft"
                         >
                           Cancel
                         </button>
@@ -384,14 +384,14 @@ export default function AdminRolesPage() {
                     </td>
                   </tr>
                 ) : (
-                  <tr key={role.id} className="hover:bg-white/[0.02]">
+                  <tr key={role.id} className="hover:bg-soft/60">
                     <td className="px-4 py-3 font-medium">{role.name}</td>
-                    <td className="px-4 py-3 text-slate-400">{skillSummary(role.required_skills)}</td>
+                    <td className="px-4 py-3 text-muted">{skillSummary(role.required_skills)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex gap-2">
                         <button
                           onClick={() => startEdit(role)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/5"
+                          className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-soft"
                           aria-label={`Edit ${role.name}`}
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -399,7 +399,7 @@ export default function AdminRolesPage() {
                         </button>
                         <button
                           onClick={() => deleteRole(role.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-500/10"
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-xs text-red-700 hover:bg-red-50"
                           aria-label={`Delete ${role.name}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" />

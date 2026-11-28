@@ -71,23 +71,23 @@ const metrics = [
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-surface text-white antialiased">
+    <main className="relative min-h-screen overflow-hidden bg-canvas text-ink antialiased">
       {/* Ambient gradient orbs */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-40 left-1/2 h-[34rem] w-[44rem] -translate-x-1/2 rounded-full bg-brand-600/25 blur-[130px]" />
-        <div className="absolute right-[-10rem] top-1/3 h-[26rem] w-[26rem] rounded-full bg-violet-600/15 blur-[110px]" />
-        <div className="absolute -left-24 bottom-0 h-[22rem] w-[22rem] rounded-full bg-cyan-500/10 blur-[110px]" />
+        <div className="absolute -top-40 left-1/2 h-[34rem] w-[44rem] -translate-x-1/2 rounded-full bg-brand-100/70 blur-[130px]" />
+        <div className="absolute right-[-10rem] top-1/3 h-[26rem] w-[26rem] rounded-full bg-violet-100/60 blur-[110px]" />
+        <div className="absolute -left-24 bottom-0 h-[22rem] w-[22rem] rounded-full bg-cyan-100/60 blur-[110px]" />
         <div className="absolute inset-0 bg-hero-grid bg-[length:56px_56px] [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_75%)]" />
       </div>
 
       {/* Sticky glass nav */}
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-surface/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-line bg-canvas/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="focus-ring flex items-center gap-2.5 rounded-lg">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-sm font-black text-white shadow-glow-indigo">
               CP
             </span>
-            <span className="text-base font-semibold tracking-tight text-white">
+            <span className="text-base font-semibold tracking-tight text-ink">
               Career Platform
             </span>
           </Link>
@@ -97,7 +97,7 @@ export default function Home() {
               <a
                 key={l.href}
                 href={l.href}
-                className="focus-ring rounded-lg px-3.5 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+                className="focus-ring rounded-lg px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-soft hover:text-ink"
               >
                 {l.label}
               </a>
@@ -107,7 +107,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="focus-ring hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white sm:block"
+              className="focus-ring hidden rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-ink sm:block"
             >
               Log in
             </Link>
@@ -124,7 +124,7 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-5 pb-20 pt-20 text-center sm:pt-28">
-        <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-4 py-1.5 text-xs font-medium text-brand-200">
+        <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-medium text-brand-700">
           <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />
           AI-assisted career development for CS students
         </div>
@@ -134,7 +134,7 @@ export default function Home() {
           career path.
         </h1>
 
-        <p className="animate-fade-up mt-6 max-w-2xl text-pretty text-base leading-relaxed text-slate-400 [animation-delay:80ms] sm:text-lg">
+        <p className="animate-fade-up mt-6 max-w-2xl text-pretty text-base leading-relaxed text-muted [animation-delay:80ms] sm:text-lg">
           Analyze your resume and GitHub profile, map skill gaps against real job
           requirements, and follow a personalized AI roadmap to hire — from practice
           to interview readiness.
@@ -157,7 +157,7 @@ export default function Home() {
         </div>
 
         {/* Logo/source badges */}
-        <div className="animate-fade-up mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs text-slate-500 [animation-delay:240ms]">
+        <div className="animate-fade-up mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs text-muted [animation-delay:240ms]">
           <span className="flex items-center gap-2">
             <Github className="h-4 w-4" /> GitHub
           </span>
@@ -174,9 +174,9 @@ export default function Home() {
 
         <div className="animate-fade-up mt-12 grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-4 [animation-delay:260ms]">
           {metrics.map((metric) => (
-            <div key={metric.label} className="card border-white/10 bg-white/[0.02] p-4 text-left shadow-[0_12px_40px_-18px_rgba(99,102,241,0.65)]">
-              <div className="text-2xl font-black tracking-tight text-white">{metric.value}</div>
-              <div className="mt-1 text-sm text-slate-400">{metric.label}</div>
+            <div key={metric.label} className="card border-line bg-panel p-4 text-left shadow-[0_12px_40px_-20px_rgba(99,102,241,0.28)]">
+              <div className="text-2xl font-black tracking-tight text-ink">{metric.value}</div>
+              <div className="mt-1 text-sm text-muted">{metric.label}</div>
             </div>
           ))}
         </div>
@@ -188,7 +188,7 @@ export default function Home() {
         className="relative mx-auto w-full max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-8"
       >
         <div className="mb-12 text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-brand-300">
+          <p className="text-sm font-semibold uppercase tracking-widest text-brand-700">
             How it works
           </p>
           <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
@@ -204,8 +204,8 @@ export default function Home() {
               style={{ animationDelay: `${Number(s.n[1]) * 70}ms` }}
             >
               <span className="text-gradient text-sm font-black tracking-widest">{s.n}</span>
-              <h3 className="mt-3 text-lg font-semibold text-white">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">{s.desc}</p>
+              <h3 className="mt-3 text-lg font-semibold text-ink">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{s.desc}</p>
             </div>
           ))}
         </div>
@@ -214,13 +214,13 @@ export default function Home() {
       {/* Features */}
       <section id="features" className="mx-auto w-full max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-8">
         <div className="mb-12 text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-brand-300">
+          <p className="text-sm font-semibold uppercase tracking-widest text-brand-700">
             Features
           </p>
           <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">
             A career OS built for CS students
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-pretty text-slate-400">
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-muted">
             Everything you need to go from coursework to confident candidate — in one place.
           </p>
         </div>
@@ -231,11 +231,11 @@ export default function Home() {
               key={f.title}
               className="card card-hover animate-fade-up flex flex-col p-6"
             >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500/10 text-brand-300">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
                 <f.icon aria-hidden="true" className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-semibold text-white">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">{f.desc}</p>
+              <h3 className="text-base font-semibold text-ink">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -259,7 +259,7 @@ export default function Home() {
             <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
               Ready to close your skill gaps?
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-pretty text-slate-400">
+            <p className="mx-auto mt-4 max-w-xl text-pretty text-muted">
               Connect your GitHub, drop in your resume, and let Career Platform build
               your personalized path to hire — starting today.
             </p>
@@ -280,8 +280,8 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-white/[0.01]">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-slate-500 sm:flex-row sm:px-8">
+      <footer className="border-t border-line bg-soft/60">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-muted sm:flex-row sm:px-8">
           <p className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-brand text-[10px] font-black text-white">
               CP
@@ -291,13 +291,13 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <Link
               href="/terms"
-              className="focus-ring rounded text-xs transition-colors hover:text-slate-300"
+              className="focus-ring rounded text-xs transition-colors hover:text-muted"
             >
               Terms
             </Link>
             <Link
               href="/privacy"
-              className="focus-ring rounded text-xs transition-colors hover:text-slate-300"
+              className="focus-ring rounded text-xs transition-colors hover:text-muted"
             >
               Privacy
             </Link>

@@ -14,25 +14,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!code) {
+  if (!code || !state) {
     return NextResponse.redirect(
-      new URL("/profile?github_error=no_code_from_github", request.url)
+      new URL("/profile?github_error=no_code_or_state_from_github", request.url)
     );
   }
 
-  const storedState = request.cookies.get("github_oauth_state")?.value;
-  if (!storedState || storedState !== state) {
-    return NextResponse.redirect(
-      new URL("/profile?github_error=invalid_state_csrf_detected", request.url)
-    );
-  }
-
+  // The state is checked against sessionStorage in /profile (a route handler
+  // cannot read it), then verified server-side by /api/profile/github/connect.
   const params = new URLSearchParams();
   params.set("github_code", code);
+  params.set("github_state", state);
 
-  const response = NextResponse.redirect(
+  return NextResponse.redirect(
     new URL(`/profile?${params.toString()}`, request.url)
   );
-  response.cookies.delete("github_oauth_state");
-  return response;
 }

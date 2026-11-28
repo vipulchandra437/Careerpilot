@@ -117,7 +117,13 @@ def check_health() -> dict:
         raise SandboxRunError(
             f"Judge0 health check failed (HTTP {resp.status_code}): {resp.text[:300]}"
         )
-    version = (resp.json() or {}).get("version", "unknown")
+    try:
+        payload = resp.json()
+    except Exception as exc:
+        raise SandboxRunError(f"Judge0 health check returned invalid JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise SandboxRunError("Judge0 health check returned a non-object JSON body")
+    version = payload.get("version", "unknown")
     return {"status": "ok", "version": version}
 
 
@@ -125,17 +131,23 @@ def _b64(s: str) -> str:
     return base64.b64encode(s.encode("utf-8")).decode("ascii")
 
 
-def _build_payload(code: str, language_id: int, tests: list[dict]) -> dict:
+def _build_payload(code: str, language_id: int, tests: list[dict], timeout_seconds: float | None = None) -> dict:
     """Each test case becomes one Judge0 submission in a single batch call.
 
     Isolation/limits applied per submission (controlling the sandbox):
       enable_network=false  -> no network access (RULES.md "no network").
-      cpu_time_limit        -> CPU-seconds cap (clamped to public-CE max 5).
+      cpu_time_limit        -> CPU-seconds cap (submission timeout, clamped to 1..config max).
       wall_time_limit       -> wall-clock cap (guards real-time hangs).
       memory_limit          -> memory cap in KB.
       max_processes_and_or_threads -> caps process count (blocks fork bombs).
     Expected output supplied so Judge0 grades it (status 3 = Accepted).
     """
+    try:
+        cpu_limit = int(float(timeout_seconds))
+    except (TypeError, ValueError, OverflowError):
+        cpu_limit = int(settings.judge0_cpu_time_limit)
+    cpu_limit = max(1, min(cpu_limit, int(settings.judge0_cpu_time_limit)))
+
     submissions = []
     for t in tests:
         submissions.append(
@@ -145,7 +157,7 @@ def _build_payload(code: str, language_id: int, tests: list[dict]) -> dict:
                 "stdin": _b64((t.get("stdin") or "")),
                 "expected_output": _b64((t.get("expected") or "")),
                 "enable_network": False,
-                "cpu_time_limit": max(1, min(5, settings.judge0_cpu_time_limit)),
+                "cpu_time_limit": cpu_limit,
                 "cpu_extra_time": settings.judge0_cpu_extra_time,
                 "wall_time_limit": settings.judge0_wall_time_limit,
                 "memory_limit": settings.judge0_memory_limit_kb,
@@ -275,7 +287,7 @@ def run_code(
     (non-passing) RunResult entries.
     """
     language_id = _language_id(language)
-    payload = _build_payload(code, language_id, tests or [])
+    payload = _build_payload(code, language_id, tests or [], timeout_seconds=timeout_seconds)
     spec = {
         "language": language,
         "code": code,

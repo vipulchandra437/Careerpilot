@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { redirectExpired } from "@/lib/auth";
 import {
   ChevronLeft,
   AlertTriangle,
@@ -44,33 +45,33 @@ interface TargetRole {
 const cardClass =
   "card p-6 transition-colors";
 
-const cardTitleClass = "text-lg font-semibold text-white mb-1 flex items-center gap-2";
+const cardTitleClass = "text-lg font-semibold text-ink mb-1 flex items-center gap-2";
 
-const mutedText = "text-sm text-slate-400";
+const mutedText = "text-sm text-muted";
 
 const pillBase = "px-2 py-1 text-xs rounded-full font-medium";
 
 const pillColors: Record<string, string> = {
-  critical: "bg-red-500/15 text-red-300 border border-red-500/20",
-  important: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
-  nice_to_have: "bg-brand-500/15 text-brand-300 border border-brand-500/25",
-  none: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
-  blue: "bg-brand-500/15 text-brand-300 border border-brand-500/25",
+  critical: "bg-red-500/15 text-red-700 border border-red-500/20",
+  important: "bg-yellow-500/15 text-yellow-800 border border-yellow-200",
+  nice_to_have: "bg-brand-50 text-brand-700 border border-brand-200",
+  none: "bg-emerald-500/15 text-emerald-700 border border-emerald-500/20",
+  blue: "bg-brand-50 text-brand-700 border border-brand-200",
 };
 
 const primaryBtn =
   "btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50";
 
 const darkBtn =
-  "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white";
+  "inline-flex items-center gap-2 rounded-xl border border-line bg-soft px-4 py-2 text-sm font-semibold text-muted transition-colors hover:bg-soft hover:text-ink";
 
-const linkClass = "text-sm text-brand-300 hover:text-brand-200 transition-colors underline-offset-2 hover:underline";
+const linkClass = "text-sm text-brand-700 hover:text-brand-700 transition-colors underline-offset-2 hover:underline";
 
 const severityIcons: Record<string, React.ReactNode> = {
-  critical: <Zap className="h-4 w-4 text-red-400" />,
-  important: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
-  nice_to_have: <Sparkles className="h-4 w-4 text-brand-400" />,
-  none: <Shield className="h-4 w-4 text-emerald-400" />,
+  critical: <Zap className="h-4 w-4 text-red-700" />,
+  important: <AlertTriangle className="h-4 w-4 text-amber-600" />,
+  nice_to_have: <Sparkles className="h-4 w-4 text-brand-600" />,
+  none: <Shield className="h-4 w-4 text-emerald-700" />,
 };
 
 const resourceIcons: Record<string, React.ReactNode> = {
@@ -87,8 +88,10 @@ function GapReportContent() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fetchedRoleRef = useRef("");
+  const requestRef = useRef(0);
 
   const fetchTargetRoles = useCallback(async () => {
     try {
@@ -97,8 +100,7 @@ function GapReportContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
       if (res.ok) {
@@ -118,6 +120,8 @@ function GapReportContent() {
   }, [router]);
 
   const fetchGapReport = useCallback(async (roleId: string) => {
+    const requestId = ++requestRef.current;
+    const isCurrent = () => requestId === requestRef.current;
     // Never show another role's gaps while this role is loading or failed.
     setSelectedRoleId(roleId);
     setGapReport(null);
@@ -130,27 +134,30 @@ function GapReportContent() {
           Authorization: `Bearer ${token}`,
         },
       });
+      if (!isCurrent()) return;
       if (res.status === 401) {
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
       if (res.ok) {
         const data = await res.json();
+        if (!isCurrent()) return;
         setGapReport(data);
         setSelectedRoleId(roleId);
       } else {
         const err = await res.json().catch(() => ({}));
-        setError(err.detail || "Failed to load gap report");
+        if (isCurrent()) setError(err.detail || "Failed to load gap report");
       }
     } catch {
-      setError("Network error");
+      if (isCurrent()) setError("Network error");
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [router]);
 
   const analyzeGap = useCallback(async (roleId: string) => {
+    const requestId = ++requestRef.current;
+    const isCurrent = () => requestId === requestRef.current;
     setSelectedRoleId(roleId);
     setAnalyzing(true);
     setError("");
@@ -164,25 +171,59 @@ function GapReportContent() {
         },
         body: JSON.stringify({ target_role_id: roleId }),
       });
+      if (!isCurrent()) return;
       if (res.status === 401) {
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
       if (res.ok) {
         const data = await res.json();
+        if (!isCurrent()) return;
         setGapReport(data);
         setSelectedRoleId(roleId);
       } else {
         const err = await res.json();
-        setError(err.detail || "Analysis failed");
+        if (isCurrent()) setError(err.detail || "Analysis failed");
       }
     } catch {
-      setError("Network error");
+      if (isCurrent()) setError("Network error");
     } finally {
-      setAnalyzing(false);
+      if (isCurrent()) setAnalyzing(false);
     }
   }, [router]);
+
+  const uploadResume = useCallback(async (file: File) => {
+    const requestId = ++requestRef.current;
+    const isCurrent = () => requestId === requestRef.current;
+    setUploading(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("access_token");
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/profile/resume", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      if (!isCurrent()) return;
+      if (res.status === 401) {
+        redirectExpired((path) => router.push(path));
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (isCurrent()) setError(err.detail || "Resume upload failed");
+        return;
+      }
+      setUploading(false);
+      await analyzeGap(selectedRoleId);
+    } catch {
+      if (isCurrent()) setError("Network error");
+    } finally {
+      if (isCurrent()) setUploading(false);
+    }
+  }, [router, selectedRoleId, analyzeGap]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -203,8 +244,8 @@ function GapReportContent() {
 
   if (loading && !gapReport) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
-        <div className="flex items-center gap-3 text-slate-400">
+      <main className="relative flex min-h-screen items-center justify-center bg-canvas p-8">
+        <div className="flex items-center gap-3 text-muted">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>
         </div>
@@ -213,10 +254,10 @@ function GapReportContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-surface text-white">
+    <main className="relative min-h-screen overflow-hidden bg-canvas text-ink">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-600/20 blur-[100px]" />
-        <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-600/15 blur-[100px]" />
+        <div className="absolute -top-24 -left-24 h-[24rem] w-[24rem] rounded-full bg-brand-100/60 blur-[100px]" />
+        <div className="absolute -bottom-24 -right-24 h-[24rem] w-[24rem] rounded-full bg-indigo-100/60 blur-[100px]" />
       </div>
 
       <div className="mx-auto w-full max-w-5xl p-6 sm:p-8">
@@ -224,7 +265,7 @@ function GapReportContent() {
           <div className="flex min-w-0 items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="rounded-lg p-2 text-muted hover:text-ink hover:bg-soft transition-colors"
               aria-label="Back"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -253,8 +294,8 @@ function GapReportContent() {
         </div>
 
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300 backdrop-blur">
-            <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 text-red-400" />
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 backdrop-blur">
+            <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 text-red-700" />
             <p>{error}</p>
           </div>
         )}
@@ -264,7 +305,7 @@ function GapReportContent() {
             <div className={`${cardClass} mb-6`}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className={cardTitleClass}>
-                  <Target aria-hidden="true" className="h-5 w-5 text-brand-400" />
+                  <Target aria-hidden="true" className="h-5 w-5 text-brand-600" />
                   Target: {gapReport.target_role_name}
                 </h2>
                 <button
@@ -298,7 +339,7 @@ function GapReportContent() {
                   key={gap.skill}
                   className={`relative ${cardClass} overflow-hidden ${
                     gap.severity === "critical"
-                      ? "border-red-500/30 shadow-lg shadow-red-500/10"
+                      ? "border-red-200 shadow-lg shadow-red-500/10"
                       : gap.severity === "important"
                       ? "border-yellow-500/30 shadow-lg shadow-yellow-500/10"
                       : ""
@@ -312,7 +353,7 @@ function GapReportContent() {
 
                   <div className="mb-3 flex items-center gap-2">
                     {severityIcons[gap.severity]}
-                    <h3 className="text-base font-semibold text-white capitalize">
+                    <h3 className="text-base font-semibold text-ink capitalize">
                       {gap.skill}
                     </h3>
                     {gap.matched && (
@@ -320,7 +361,7 @@ function GapReportContent() {
                     )}
                   </div>
 
-                  <p className="text-sm text-slate-300 mb-4">{gap.reason}</p>
+                  <p className="text-sm text-muted mb-4">{gap.reason}</p>
 
                   {gap.suggested_resource && (
                     <a
@@ -339,7 +380,7 @@ function GapReportContent() {
 
             {gapReport.gaps.length === 0 && (
               <div className={`${cardClass} text-center py-12`}>
-                <Brain className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+                <Brain className="h-12 w-12 text-emerald-700 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No gaps found!</h3>
                 <p className={mutedText}>
                   Your profile covers all required skills for this role.
@@ -362,18 +403,41 @@ function GapReportContent() {
           </>
         ) : (
           <div className={`${cardClass} text-center py-12`}>
-            <Target className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+            <Target className="h-12 w-12 text-muted mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">No gap report yet</h3>
             <p className={mutedText + " mb-4"}>
               Select a target role and run an analysis to see your skill gaps.
             </p>
-            <button
-              onClick={() => selectedRoleId && analyzeGap(selectedRoleId)}
-              className={primaryBtn}
-            >
-              <Brain className="h-4 w-4" />
-              Run Analysis
-            </button>
+            {error.toLowerCase().includes("no profile snapshot") ? (
+              <>
+                <label className={`${primaryBtn} cursor-pointer`}>
+                  {uploading ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                  {uploading ? "Uploading..." : "Upload resume"}
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.doc,.txt"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadResume(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <p className={mutedText + " mt-3"}>
+                  Or <a href="/profile" className={linkClass}>connect GitHub on your profile</a> to build a snapshot.
+                </p>
+              </>
+            ) : (
+              <button
+                onClick={() => selectedRoleId && analyzeGap(selectedRoleId)}
+                className={primaryBtn}
+              >
+                <Brain className="h-4 w-4" />
+                Run Analysis
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -384,8 +448,8 @@ function GapReportContent() {
 export default function GapReportPage() {
   return (
     <Suspense fallback={
-      <main className="relative flex min-h-screen items-center justify-center bg-surface p-8">
-        <div className="flex items-center gap-3 text-slate-400">
+      <main className="relative flex min-h-screen items-center justify-center bg-canvas p-8">
+        <div className="flex items-center gap-3 text-muted">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>
         </div>

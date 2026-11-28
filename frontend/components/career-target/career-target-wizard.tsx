@@ -80,12 +80,12 @@ export function CareerTargetWizard() {
                   ? "bg-indigo-600 text-white"
                   : index === step
                     ? "bg-indigo-100 text-indigo-700"
-                    : "bg-slate-100 text-slate-500"
+                    : "bg-slate-100 text-muted"
               }`}
             >
               {index < step ? <Check className="h-4 w-4" /> : index + 1}
             </span>
-            <span className={`hidden text-sm font-medium sm:inline ${index === step ? "text-indigo-700" : "text-slate-500"}`}>
+            <span className={`hidden text-sm font-medium sm:inline ${index === step ? "text-indigo-700" : "text-muted"}`}>
               {label}
             </span>
           </li>
@@ -131,7 +131,7 @@ export function CareerTargetWizard() {
             </button>
           ) : null}
           {!canContinue ? (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-muted">
               {step === 0 ? "Choose a role to continue." : "Choose a company type, or select all."}
             </p>
           ) : null}

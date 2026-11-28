@@ -49,42 +49,42 @@ export default function ResumeAnalyzerPage() {
     setBusy(false);
   }
 
-  const input = "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-brand-500/50 focus:outline-none";
-  const label = "mb-1 block text-xs font-medium text-slate-400";
+  const input = "w-full rounded-lg border border-line bg-soft/70 px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500/50 focus:outline-none";
+  const label = "mb-1 block text-xs font-medium text-muted";
   const card = "card p-5";
 
-  if (loading) return <main className="flex min-h-screen items-center justify-center bg-surface text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /></main>;
+  if (loading) return <main className="flex min-h-screen items-center justify-center bg-canvas text-muted"><Loader2 className="h-5 w-5 animate-spin" /></main>;
 
   return (
-    <main className="min-h-screen bg-surface p-6 sm:p-8">
+    <main className="min-h-screen bg-canvas p-6 sm:p-8">
       <div className="mx-auto max-w-4xl">
         <PageHeader title="Resume Analyzer" subtitle="Get AI scoring, ATS checks, and concrete fixes for your saved resume.">
           <button onClick={analyze} disabled={busy} className="btn-primary focus-ring !px-4 !py-2 !text-sm disabled:opacity-50">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSearch className="h-4 w-4" />} Analyze Resume
           </button>
         </PageHeader>
-        {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
+        {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
         <section className={card}>
-          <p className="mb-3 text-sm text-slate-400">Analyzes your saved/uploaded resume. Save or upload the latest resume on the Profile page before analyzing.</p>
+          <p className="mb-3 text-sm text-muted">Analyzes your saved/uploaded resume. Save or upload the latest resume on the Profile page before analyzing.</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className={label}>Target role (optional)</label><select className={input} value={targetRoleId} onChange={e => setTargetRoleId(e.target.value)}><option value="">General CS resume</option>{roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-            <div className="sm:col-span-2"><label className={label}>Job description (optional)</label><textarea className={input} rows={4} value={jobDescription} onChange={e => setJobDescription(e.target.value)} placeholder="Paste a JD for keyword/fit analysis" /></div>
+            <div><label htmlFor="analyzer-role" className={label}>Target role (optional)</label><select id="analyzer-role" className={input} value={targetRoleId} onChange={e => setTargetRoleId(e.target.value)}><option value="">General CS resume</option>{roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
+            <div className="sm:col-span-2"><label htmlFor="analyzer-jd" className={label}>Job description (optional)</label><textarea id="analyzer-jd" className={input} rows={4} value={jobDescription} onChange={e => setJobDescription(e.target.value)} placeholder="Paste a JD for keyword/fit analysis" /></div>
           </div>
 
           {analysis && (
-            <div className="mt-5 space-y-4 border-t border-white/10 pt-4">
+            <div className="mt-5 space-y-4 border-t border-line pt-4">
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg bg-white/[0.03] p-3"><div className="text-xs text-slate-400">Overall</div><div className="text-2xl font-bold text-white">{analysis.overall_score}<span className="text-sm text-slate-500">/100</span></div></div>
-                <div className="rounded-lg bg-white/[0.03] p-3"><div className="text-xs text-slate-400">ATS</div><div className="text-2xl font-bold text-white">{analysis.ats_score}<span className="text-sm text-slate-500">/100</span></div></div>
-                <div className="rounded-lg bg-white/[0.03] p-3 sm:col-span-1"><div className="text-xs text-slate-400">Summary</div><div className="text-sm text-slate-200">{analysis.summary}</div></div>
+                <div className="rounded-lg bg-soft/70 p-3"><div className="text-xs text-muted">Overall</div><div className="text-2xl font-bold text-ink">{analysis.overall_score}<span className="text-sm text-muted">/100</span></div></div>
+                <div className="rounded-lg bg-soft/70 p-3"><div className="text-xs text-muted">ATS</div><div className="text-2xl font-bold text-ink">{analysis.ats_score}<span className="text-sm text-muted">/100</span></div></div>
+                <div className="rounded-lg bg-soft/70 p-3 sm:col-span-1"><div className="text-xs text-muted">Summary</div><div className="text-sm text-muted">{analysis.summary}</div></div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div><div className="mb-1 text-xs font-medium text-emerald-300">Strengths</div><ul className="space-y-1 text-sm text-slate-300">{(analysis.strengths||[]).map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>
-                <div><div className="mb-1 text-xs font-medium text-amber-300">Needs work</div><ul className="space-y-1 text-sm text-slate-300">{(analysis.weaknesses||[]).map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>
+                <div><div className="mb-1 text-xs font-medium text-emerald-700">Strengths</div><ul className="space-y-1 text-sm text-muted">{(analysis.strengths||[]).map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>
+                <div><div className="mb-1 text-xs font-medium text-amber-700">Needs work</div><ul className="space-y-1 text-sm text-muted">{(analysis.weaknesses||[]).map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>
               </div>
-              {(analysis.action_items||[]).length > 0 && <div><div className="mb-1 text-xs font-medium text-brand-300">Action items</div><ul className="space-y-1 text-sm text-slate-300">{analysis.action_items.map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>}
-              {(analysis.bullet_improvements||[]).length > 0 && <div><div className="mb-2 text-xs font-medium text-white">Bullet improvements</div><div className="space-y-2">{analysis.bullet_improvements.map((b:any,i:number)=><div key={i} className="rounded-lg bg-white/[0.03] p-3 text-sm"><div className="text-slate-500">Before: {b.original || "—"}</div><div className="text-slate-200">After: {b.improved}</div>{b.reason && <div className="text-xs text-slate-400">{b.reason}</div>}</div>)}</div></div>}
+              {(analysis.action_items||[]).length > 0 && <div><div className="mb-1 text-xs font-medium text-brand-700">Action items</div><ul className="space-y-1 text-sm text-muted">{analysis.action_items.map((s:string,i:number)=><li key={i}>• {s}</li>)}</ul></div>}
+              {(analysis.bullet_improvements||[]).length > 0 && <div><div className="mb-2 text-xs font-medium text-ink">Bullet improvements</div><div className="space-y-2">{analysis.bullet_improvements.map((b:any,i:number)=><div key={i} className="rounded-lg bg-soft/70 p-3 text-sm"><div className="text-muted">Before: {b.original || "—"}</div><div className="text-muted">After: {b.improved}</div>{b.reason && <div className="text-xs text-muted">{b.reason}</div>}</div>)}</div></div>}
             </div>
           )}
         </section>

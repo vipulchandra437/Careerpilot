@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     judge0_poll_interval_ms: int = 500
     judge0_poll_timeout_s: int = 30
 
+    # Per-user daily cap on LLM calls; billing/credits were removed, so this is
+    # the only spend guard left (AUDIT-3).
+    llm_daily_call_limit: int = 200
+
     next_public_api_url: str = "http://localhost:3000"
 
     @model_validator(mode="after")

@@ -15,7 +15,7 @@ export function TypeStep({
   return (
     <div>
       <h2 className="text-xl font-semibold text-slate-900">What kind of company interests you?</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-muted">
         Choose as many as you like. You can also choose all if you are still exploring.
       </p>
 
@@ -36,7 +36,7 @@ export function TypeStep({
             >
               <span>
                 <span className="block text-sm font-semibold text-slate-900">{type.title}</span>
-                <span className="mt-1 block text-sm leading-relaxed text-slate-500">{type.desc}</span>
+                <span className="mt-1 block text-sm leading-relaxed text-muted">{type.desc}</span>
               </span>
               <span
                 aria-hidden="true"

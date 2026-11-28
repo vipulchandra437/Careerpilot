@@ -51,9 +51,13 @@ const mean = (values: number[]) =>
 const statusOf = (value: string): FeatureStatus =>
   value === "complete" || value === "in_progress" ? value : "planned";
 
-export async function getDashboardData(token: string, timezone: string): Promise<DashboardData | null> {
+export type DashboardResult =
+  | { ok: true; data: DashboardData }
+  | { ok: false; reason: "auth" | "data" };
+
+export async function getDashboardData(token: string, timezone: string): Promise<DashboardResult> {
   const userId = await userIdFromToken(token);
-  if (!userId) return null;
+  if (!userId) return { ok: false, reason: "auth" };
   const parsed = dashboardSchema.safeParse({ timezone });
   const timeZone = parsed.success ? parsed.data.timezone : "UTC";
 
@@ -120,14 +124,17 @@ export async function getDashboardData(token: string, timezone: string): Promise
     }));
 
     return {
-      readiness: computeDashboardReadiness({ resumeScore, interviewScore }),
-      resumeScore,
-      interviewScore,
-      features,
-      weeklyPractice,
+      ok: true,
+      data: {
+        readiness: computeDashboardReadiness({ resumeScore, interviewScore }),
+        resumeScore,
+        interviewScore,
+        features,
+        weeklyPractice,
+      },
     };
   } catch {
-    return null;
+    return { ok: false, reason: "data" };
   }
 }
 

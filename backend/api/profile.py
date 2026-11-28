@@ -1,9 +1,11 @@
 import json
 import uuid
+from collections import OrderedDict
 from datetime import datetime, timezone
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from fastapi.responses import Response
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, status
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,19 +15,23 @@ from backend.models.user import User
 from backend.models.profile import ProfileSnapshot
 from backend.models.target_role import TargetRoleProfile
 from backend.api.dependencies import get_current_user
+from backend.auth import create_github_oauth_state, decode_github_oauth_state
 from backend.services.resume_ai import parse_resume_with_ai
 from backend.services.resume_analysis import analyze_resume
 from backend.services.resume_builder import build_resume_pdf, normalize_resume, render_resume_html
 from backend.services.github import get_github_auth_url, connect_github_account, get_github_data
 from backend.services.linkedin import parse_linkedin_import, parse_linkedin_paste
 from backend.services.profile_merge import compute_merge
-from backend.services.file_storage import upload_file as upload_file_to_s3, delete_file as delete_s3_file
+from backend.services.file_storage import upload_file as upload_file_to_s3, delete_file as delete_s3_file, get_presigned_url
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_AVATAR_BYTES = 5 * 1024 * 1024
 ALLOWED_AVATAR_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+# shortcut: in-memory nonce set is per process; use a shared store for multi-instance serverless.
+_used_github_states: OrderedDict[str, None] = OrderedDict()
+MAX_USED_GITHUB_STATES = 1024
 
 
 async def _read_upload_with_limit(file: UploadFile, max_bytes: int = MAX_UPLOAD_BYTES, detail: str = "File size must be under 10MB") -> bytes:
@@ -74,6 +80,7 @@ class SnapshotResponse(BaseModel):
     id: uuid.UUID | None = None
     user: UserProfile
     personal: PersonalInfo
+    avatar_key: str | None = None
     resume_data: dict | None
     github_data: dict | None
     linkedin_data: dict | None
@@ -164,9 +171,8 @@ async def upload_resume(
 async def get_github_auth_url_endpoint(
     user: User = Depends(get_current_user),
 ):
-    """Get GitHub OAuth authorization URL."""
-    import secrets
-    state = secrets.token_urlsafe(32)
+    """Get GitHub OAuth authorization URL with a signed, user-bound state token."""
+    state = create_github_oauth_state(str(user.id))
     url = get_github_auth_url(state)
     return {"url": url, "state": state}
 
@@ -174,10 +180,33 @@ async def get_github_auth_url_endpoint(
 @router.post("/github/connect", response_model=dict)
 async def connect_github_endpoint(
     code: str,
+    request: Request,
+    state: str | None = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Connect GitHub account via OAuth code."""
+    """Connect GitHub account via OAuth code and its verified state token."""
+    if not state:
+        try:
+            body = await request.json()
+            state = body.get("state") if isinstance(body, dict) else None
+        except Exception:
+            state = None
+    nonce = decode_github_oauth_state(state, str(user.id)) if state else None
+    if not nonce:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired GitHub OAuth state",
+        )
+    if nonce in _used_github_states:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="GitHub OAuth state already used",
+        )
+    _used_github_states[nonce] = None
+    while len(_used_github_states) > MAX_USED_GITHUB_STATES:
+        _used_github_states.popitem(last=False)
+
     try:
         result = await connect_github_account(db, user.id, code)
     except ValueError as e:
@@ -293,27 +322,28 @@ async def import_linkedin_paste_endpoint(
     return {"status": "ok", "data": linkedin_data}
 
 
-def _avatar_url(snapshot: ProfileSnapshot | None, user: User) -> str | None:
-    if not snapshot or not snapshot.avatar_key:
+def _avatar_url(snapshot: ProfileSnapshot | None) -> str | None:
+    key = snapshot.avatar_key if snapshot else None
+    if not key:
         return None
-    key = snapshot.avatar_key
-    if key.startswith("data:image/"):
+    # Data URLs and old stored absolute URLs are kept as-is; new keys go via the
+    # authenticated proxy so no long-lived presigned URL reaches the browser.
+    if key.startswith(("data:image/", "http://", "https://")):
         return key
+    return f"/api/profile/avatar/file?key={quote(key, safe='')}"
+
+
+@router.get("/avatar/file")
+async def get_avatar_file(
+    key: str,
+    user: User = Depends(get_current_user),
+):
+    """Redirect to the private avatar object via a short-lived presigned URL."""
     try:
-        return get_presigned_url_sync(user.id, key)
-    except Exception:
-        return None
-
-
-def get_presigned_url_sync(user_id: str, key: str, expires_in: int = 3600) -> str:
-    import uuid as _uuid
-    from backend.services.file_storage import get_s3_client
-    from backend.config import get_settings
-    uid = _uuid.UUID(user_id)
-    if not key.startswith(f"profiles/{uid}/"):
-        raise PermissionError("Access denied")
-    client = get_s3_client()
-    return client.generate_presigned_url("get_object", Params={"Bucket": get_settings().s3_bucket, "Key": key}, ExpiresIn=expires_in)
+        url = await get_presigned_url(uuid.UUID(user.id), key, expires_in=60)
+    except (PermissionError, ValueError):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 def _personal(snapshot: ProfileSnapshot | None, user: User) -> PersonalInfo:
@@ -328,7 +358,7 @@ def _personal(snapshot: ProfileSnapshot | None, user: User) -> PersonalInfo:
         website=snapshot.website,
         linkedin_url=snapshot.linkedin_url,
         github_url=snapshot.github_url,
-        avatar_url=_avatar_url(snapshot, user),
+        avatar_url=_avatar_url(snapshot),
     )
 
 
@@ -370,6 +400,7 @@ async def get_snapshot_endpoint(
         id=snapshot.id if snapshot else None,
         user=_user_profile(user),
         personal=_personal(snapshot, user),
+        avatar_key=snapshot.avatar_key if snapshot else None,
         resume_data=snapshot.resume_data if snapshot else None,
         github_data=snapshot.github_data if snapshot else None,
         linkedin_data=snapshot.linkedin_data if snapshot else None,

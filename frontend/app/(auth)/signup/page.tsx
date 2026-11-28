@@ -98,26 +98,26 @@ export default function SignupPage() {
   }
 
   const inputClass =
-    "input focus-ring hover:border-white/20 !bg-white/5 !py-3 !pl-11 !pr-11 disabled:pointer-events-none";
+    "input focus-ring hover:border-line !bg-soft !py-3 !pl-11 !pr-11 disabled:pointer-events-none";
 
-  const labelClass = "block text-sm font-medium text-slate-300";
+  const labelClass = "block text-sm font-medium text-muted";
 
   const iconClass =
-    "pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 transition-colors group-focus-within:text-blue-400";
+    "pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted transition-colors group-focus-within:text-blue-700";
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0e17] px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas px-4 py-10">
       {/* Animated gradient mesh backdrop */}
 <div
               aria-hidden="true"
               className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-brand shadow-glow-indigo"
             >
-        <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-blue-600/30 blur-3xl animate-float-slow" />
+        <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-blue-100/60 blur-3xl animate-float-slow" />
         <div className="absolute -bottom-40 -right-24 h-[30rem] w-[30rem] rounded-full bg-indigo-600/25 blur-3xl animate-float-slower" />
-        <div className="absolute top-1/3 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl animate-float-slow" />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0e17] via-[#0d1524] to-[#0a0e17]" />
+        <div className="absolute top-1/3 left-1/2 h-[20rem] w-[20rem] -translate-x-1/2 rounded-full bg-cyan-100/60 blur-3xl animate-float-slow" />
+        <div className="absolute inset-0 bg-gradient-to-br from-canvas via-panel to-canvas" />
         {/* subtle grid for depth */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.12)_1px,transparent_0)] [background-size:32px_32px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(99,102,241,0.12)_1px,transparent_0)] [background-size:32px_32px]" />
       </div>
 
       {/* Glass card */}
@@ -125,21 +125,21 @@ export default function SignupPage() {
         {/* layered 3D elevation */}
         <div
           aria-hidden="true"
-          className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-brand-500/40 via-indigo-500/30 to-cyan-500/30 blur-2xl opacity-70"
+          className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-brand-200/70 via-indigo-200/60 to-cyan-200/60 blur-2xl opacity-70"
         />
         <form
           onSubmit={handleSubmit}
-          className="relative space-y-6 rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:p-10"
+          className="relative space-y-6 rounded-3xl border border-line bg-panel p-8 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)] backdrop-blur-xl sm:p-10"
         >
           {/* Header */}
           <div className="space-y-2 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 shadow-lg shadow-blue-600/40">
-              <UserPlus aria-hidden="true" className="h-7 w-7 text-white" />
+              <UserPlus aria-hidden="true" className="h-7 w-7 text-ink" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-3xl font-bold tracking-tight text-ink">
               Create account
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               Join Career Platform and start your journey
             </p>
           </div>
@@ -181,7 +181,7 @@ export default function SignupPage() {
               />
             </div>
             {fieldErrors.email && (
-              <p role="alert" className="text-xs text-red-400">
+              <p role="alert" className="text-xs text-red-700">
                 {fieldErrors.email}
               </p>
             )}
@@ -208,7 +208,7 @@ export default function SignupPage() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted transition-colors hover:text-muted"
               >
                 {showPassword ? (
                   <EyeOff aria-hidden="true" className="h-5 w-5" />
@@ -218,7 +218,7 @@ export default function SignupPage() {
               </button>
             </div>
             {fieldErrors.password && (
-              <p role="alert" className="text-xs text-red-400">
+              <p role="alert" className="text-xs text-red-700">
                 {fieldErrors.password}
               </p>
             )}
@@ -243,7 +243,7 @@ export default function SignupPage() {
               />
             </div>
             {fieldErrors.confirmPassword && (
-              <p role="alert" className="text-xs text-red-400">
+              <p role="alert" className="text-xs text-red-700">
                 {fieldErrors.confirmPassword}
               </p>
             )}
@@ -272,29 +272,29 @@ export default function SignupPage() {
           </button>
 
           {/* Login link */}
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm text-muted">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-semibold text-blue-400 underline-offset-2 transition-colors hover:text-blue-300 hover:underline"
+              className="font-semibold text-blue-700 underline-offset-2 transition-colors hover:text-blue-700 hover:underline"
             >
               Sign in
             </Link>
           </p>
 
           {/* Legal links */}
-          <p className="border-t border-white/10 pt-5 text-center text-xs text-slate-500">
+          <p className="border-t border-line pt-5 text-center text-xs text-muted">
             By creating an account you agree to our{" "}
             <Link
               href="/terms"
-              className="font-semibold text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="font-semibold text-muted underline-offset-2 transition-colors hover:text-ink hover:underline"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
               href="/privacy"
-              className="font-semibold text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="font-semibold text-muted underline-offset-2 transition-colors hover:text-ink hover:underline"
             >
               Privacy Policy
             </Link>

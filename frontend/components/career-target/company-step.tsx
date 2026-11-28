@@ -22,15 +22,15 @@ export function CompanyStep({
   return (
     <div>
       <h2 className="text-xl font-semibold text-slate-900">Which companies interest you?</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-muted">
         Pick a few names to keep in mind. You can choose more than one.
       </p>
-      <p aria-live="polite" className="mt-4 text-xs text-slate-500">
+      <p aria-live="polite" className="mt-4 text-xs text-muted">
         {companies.length} companies to choose from
       </p>
 
       {companies.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
+        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm text-muted">
           No companies match those types yet. Go back and choose another type.
         </div>
       ) : (
@@ -62,10 +62,10 @@ export function CompanyStep({
                       {typeTitle(company.type)}
                     </span>
                   </span>
-                  <span className="mt-0.5 block text-xs text-slate-500">
+                  <span className="mt-0.5 block text-xs text-muted">
                     {company.sector} · {company.location}
                   </span>
-                  <span className="mt-1 block text-sm leading-relaxed text-slate-500">{company.note}</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-muted">{company.note}</span>
                 </span>
                 <span
                   aria-hidden="true"

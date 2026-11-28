@@ -19,6 +19,12 @@ graphify-out/cache/
 # dated backup dirs graphify writes (internal artifact, not deliverables)
 graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 reticle/
+.reticle/episodes/
+.reticle/intent/
+.reticle/impact.json
+.reticle/platform-moments.json
+frontend/.reticle/
+frontend/.cursor/
 
 # local runtime/scratch artifacts
 server.err

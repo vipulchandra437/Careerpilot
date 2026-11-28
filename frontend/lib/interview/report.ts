@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { summarizeMetrics, type AnswerMetrics, type ReportMetrics } from "./analyze";
+import { analyzeAnswer, summarizeMetrics, type AnswerKind, type AnswerMetrics, type ReportMetrics } from "./analyze";
 
 export const answerMetricsSchema = z.object({
   wordCount: z.number().min(0),
@@ -29,6 +29,28 @@ export const savedAnswerSchema = z.object({
 });
 
 export type SavedAnswer = z.infer<typeof savedAnswerSchema>;
+
+// The client may send scores/cues for its own display; the server only accepts
+// the answer text and recomputes every persisted metric itself.
+export const finishAnswerSchema = z.object({
+  index: z.number().int().min(0),
+  question: z.string().min(1).max(500),
+  text: z.string().min(1).max(10000),
+});
+export type FinishAnswer = z.infer<typeof finishAnswerSchema>;
+
+export const answerKindFor = (type: string, index: number): AnswerKind => {
+  if (type === "hr") return "hr";
+  if (type === "technical") return "technical";
+  return index % 2 === 0 ? "hr" : "technical";
+};
+
+export function scoreAnswers(answers: FinishAnswer[], type: string): SavedAnswer[] {
+  return answers.map((answer) => {
+    const metrics = analyzeAnswer({ text: answer.text, kind: answerKindFor(type, answer.index) });
+    return { ...answer, metrics, score: metrics.score };
+  });
+}
 
 export const llmReportSchema = z.object({
   verdict: z.string().min(1).max(120),

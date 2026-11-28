@@ -12,8 +12,10 @@ class Roadmap(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), nullable=False, index=True)
-    gap_report_id = Column(String(36), nullable=False, index=True)
+    gap_report_id = Column(String(36), nullable=False, index=True, unique=True)
     version = Column(String(36), nullable=False, default="v1.0")
+    status = Column(String(20), nullable=False, default="ready", server_default="ready")
+    error = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

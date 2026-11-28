@@ -23,7 +23,7 @@
 - Feature grid: one card per feature with its name, one-line description, 0–100 score, progress bar, status text and a link.
 - Bottom: one "Suggested next step" panel with a single CTA. With no data it tells the student what to do first (for example, "Upload your resume to get your first score.").
 - Charts use inline SVG/CSS (no chart library); each chart has an `aria-label` containing the numbers. Status is always text plus colour, never colour alone.
-- Dark tokens used here come from `app/globals.css` and `tailwind.config.js` (the approved artifact required sign-in, so these are the app's existing tokens): canvas `#0b0f1a`, surface `#111726`, raised surface `#181f33`, border `rgb(148 163 184 / 0.12)`, primary text `#e2e8f0`, secondary `#94a3b8`, muted `#64748b`, indigo accent `#6366f1`, status colours emerald `#34d399` / amber `#fbbf24` / slate `#475569`, card radius `0.875rem`.
+- Light tokens come from `app/globals.css` and `tailwind.config.js`: canvas `#f8fafc`, panel `#ffffff`, soft `#f1f5f9`, border `#e2e8f0`, primary text `#0f172a`, muted text `#64748b`, indigo accent `#6366f1`, card radius `0.875rem`. The fixed student/admin sidebars deliberately keep the separate dark `surface` ramp (`#0b0f1a`–`#212a44`) unchanged.
 
 ### 2.3 Skill Gap Report
 
@@ -34,13 +34,13 @@
 ### 2.4 Roadmap View
 
 - Domain chooser is a sticky white header with a gradient logo and an autocomplete search box (matching the standalone `/learning-roadmap.html` look). Focus shows all admin-managed roles, typing shows only matches, and a no-match message says domains are admin-managed. Autofill completes a role name; Tab or → accepts, Backspace deletes, arrows move, Enter selects, Escape closes. Selecting one loads that domain's roadmap and keeps `?role=` in the URL.
-- Milestones are numbered circles on a vertical connector, with a checkmark for done stages and a blue ring on the first unfinished stage. Status is also shown as text and colour (done / in progress / not started). An overview card shows the progress ring, role name, hours, stage/topic/completed counts, and Regenerate; a dark "Goal reached" card ends the trail.
+- Milestones are numbered circles on a vertical connector, with a checkmark for done stages and a blue ring on the first unfinished stage. Status is also shown as text and colour (done / in progress / not started). An overview card shows the progress ring, role name, hours, stage/topic/completed counts, and Regenerate; a brand-coloured "Goal reached" card ends the trail.
 - Clicking a stage opens the sticky detail panel: stage number, hours, title, gap skill addressed, gap severity, status, action type, and the matching CTA ("Start Challenge" / "Practice Interview" / "Open resource"). Completed stages stay on the road with a checkmark (don't hide progress — it's motivating to see what's done). Below 900px the detail panel stacks above the trail; below 560px the search bar takes its own row.
 
 ### 2.5 Coding Practice
 
 - Split view: problem prompt (left/top on mobile) + code editor (right/bottom).
-- Editor: monospace font, syntax highlighting, dark-mode friendly by default (developer audience expectation).
+- Editor: monospace font on a light panel with dark green text, matching the surrounding white UI.
 - Run button separate from Submit — running shows test results without consuming a "submission" (matters once credits/limits exist, PROMPT.md).
 - Feedback panel appears after submit: pass/fail per test case, then a collapsible "code quality notes" section (don't front-load style nitpicks over correctness).
 
@@ -76,7 +76,7 @@
 
 - Tailwind CSS + shadcn/ui — lightweight, avoids the overhead of a full custom design system for a v1 that needs to ship.
 - One consistent status-indicator component reused across Roadmap, Coding Practice, and Admin views — don't reinvent status UI per screen.
-- Code editor: Monaco or CodeMirror, dark-mode default with a light-mode toggle.
+- Code editor: lightweight monospace textarea styled as a light panel; no separate theme toggle.
 
 ## 5. Responsive Behavior
 
@@ -88,4 +88,4 @@
 
 - Status/severity indicators always paired with text or icon, never color alone.
 - All interactive elements (including the interview chat) keyboard-navigable.
-- Sufficient contrast on dark-mode code editor and light-mode UI both — check against WCAG AA at minimum.
+- Sufficient contrast on the light UI and its code editor — check against WCAG AA at minimum.

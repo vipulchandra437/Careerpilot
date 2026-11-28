@@ -214,14 +214,14 @@ export default function AdminTopicsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Challenge Bank</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted">
           Curated practice topic bank. Disabled topics are not offered for practice.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 text-red-400" />
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 text-red-700" />
           <p>{error}</p>
         </div>
       )}
@@ -230,7 +230,7 @@ export default function AdminTopicsPage() {
       <div className="card mb-6 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-slate-400">Topic name</label>
+            <label className="mb-1 block text-xs font-medium text-muted">Topic name</label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -239,7 +239,7 @@ export default function AdminTopicsPage() {
             />
           </div>
           <div className="flex-[2]">
-            <label className="mb-1 block text-xs font-medium text-slate-400">Description</label>
+            <label className="mb-1 block text-xs font-medium text-muted">Description</label>
             <input
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
@@ -259,29 +259,29 @@ export default function AdminTopicsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-3 py-16 text-slate-400">
+        <div className="flex items-center gap-3 py-16 text-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
           <p>Loading topics…</p>
         </div>
       ) : topics.length === 0 ? (
-        <div className="card py-16 text-center text-slate-400">
+        <div className="card py-16 text-center text-muted">
           No topics yet. Add your first topic above.
         </div>
       ) : (
         <div className="card overflow-x-auto !p-0">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Description</th>
                 <th className="px-4 py-3">Enabled</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-line">
               {topics.map((topic) =>
                 editingId === topic.id ? (
-                  <tr key={topic.id} className="bg-brand-500/10">
+                  <tr key={topic.id} className="bg-brand-50">
                     <td className="px-4 py-3">
                       <input
                         value={editName}
@@ -304,7 +304,7 @@ export default function AdminTopicsPage() {
                           onChange={(e) => setEditEnabled(e.target.checked)}
                           className="h-4 w-4 accent-brand-400"
                         />
-                        <span className="text-xs text-slate-400">{editEnabled ? "On" : "Off"}</span>
+                        <span className="text-xs text-muted">{editEnabled ? "On" : "Off"}</span>
                       </label>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -312,7 +312,7 @@ export default function AdminTopicsPage() {
                         <button
                           onClick={() => saveEdit(topic.id)}
                           disabled={savingId === topic.id}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600/20 px-2.5 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-600/30 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                         >
                           {savingId === topic.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -323,7 +323,7 @@ export default function AdminTopicsPage() {
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/5"
+                          className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-soft"
                         >
                           Cancel
                         </button>
@@ -331,16 +331,16 @@ export default function AdminTopicsPage() {
                     </td>
                   </tr>
                 ) : (
-                  <tr key={topic.id} className="hover:bg-white/[0.02]">
+                  <tr key={topic.id} className="hover:bg-soft/60">
                     <td className="px-4 py-3 font-medium">{topic.name}</td>
-                    <td className="px-4 py-3 text-slate-400">{topic.description || "—"}</td>
+                    <td className="px-4 py-3 text-muted">{topic.description || "—"}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleEnabled(topic, !topic.enabled)}
                         className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                           topic.enabled
-                            ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
-                            : "bg-slate-500/15 text-slate-400 border border-slate-500/20"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-muted border border-slate-200"
                         }`}
                         aria-pressed={topic.enabled}
                       >
@@ -354,7 +354,7 @@ export default function AdminTopicsPage() {
                       <div className="inline-flex gap-2">
                         <button
                           onClick={() => startEdit(topic)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/5"
+                          className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-soft"
                           aria-label={`Edit ${topic.name}`}
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -362,7 +362,7 @@ export default function AdminTopicsPage() {
                         </button>
                         <button
                           onClick={() => deleteTopic(topic.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-500/10"
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-xs text-red-700 hover:bg-red-50"
                           aria-label={`Delete ${topic.name}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" />

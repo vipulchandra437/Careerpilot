@@ -109,3 +109,16 @@ def test_health_transport_error_raises_sandbox_error(monkeypatch):
     _patch_client(monkeypatch, fake_get)
     with pytest.raises(SandboxRunError):
         check_health()
+
+
+def test_health_malformed_json_raises_sandbox_error(monkeypatch):
+    class _BadJsonResp:
+        status_code = 200
+        text = "not json"
+
+        def json(self):
+            raise ValueError("Expecting value")
+
+    _patch_client(monkeypatch, lambda url, headers=None: _BadJsonResp())
+    with pytest.raises(SandboxRunError):
+        check_health()

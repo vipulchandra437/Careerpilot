@@ -26,6 +26,8 @@ jobs:
         run: ruff check backend/
 
       - name: Test
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./career_platform_test.db
         run: pytest backend/tests/ -v
 
   frontend:
@@ -49,3 +51,21 @@ jobs:
       - name: Type check
         working-directory: frontend
         run: npm run typecheck
+
+      - name: Generate Prisma client
+        working-directory: frontend
+        env:
+          INTERVIEW_DATABASE_URL: file:./build.db
+        run: npx prisma generate --schema prisma/schema.prisma
+
+      - name: Test
+        working-directory: frontend
+        env:
+          INTERVIEW_DATABASE_URL: file:./build.db
+        run: npm test
+
+      - name: Build
+        working-directory: frontend
+        env:
+          INTERVIEW_DATABASE_URL: file:./build.db
+        run: npm run build

@@ -52,7 +52,7 @@ export function Lobby({ onStart, starting = false }: Props) {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-5">
       <div className="card p-5">
-        <h2 className="text-lg font-semibold text-white">Choose your round</h2>
+        <h2 className="text-lg font-semibold text-ink">Choose your round</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {types.map((item) => (
             <button
@@ -62,20 +62,20 @@ export function Lobby({ onStart, starting = false }: Props) {
               onClick={() => setType(item.id)}
               className={`focus-ring rounded-xl border p-4 text-left transition-colors ${
                 type === item.id
-                  ? "border-brand-400/60 bg-brand-500/15"
-                  : "border-white/10 bg-white/[0.02] hover:bg-white/5"
+                  ? "border-brand-300 bg-brand-50"
+                  : "border-line bg-soft/60 hover:bg-soft"
               }`}
             >
               <Interviewer type={item.id} state="idle" className="mb-2 h-14 w-14" />
-              <span className="block font-semibold text-white">{item.title}</span>
-              <span className="mt-1 block text-xs leading-relaxed text-slate-400">{item.desc}</span>
+              <span className="block font-semibold text-ink">{item.title}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted">{item.desc}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="card p-5">
-        <h2 className="text-lg font-semibold text-white">Difficulty</h2>
+        <h2 className="text-lg font-semibold text-ink">Difficulty</h2>
         <div className="mt-4 flex flex-wrap gap-2">
           {difficulties.map((level) => (
             <button
@@ -85,21 +85,21 @@ export function Lobby({ onStart, starting = false }: Props) {
               onClick={() => setDifficulty(level)}
               className={`focus-ring rounded-xl border px-4 py-2 text-sm font-medium capitalize transition-colors ${
                 difficulty === level
-                  ? "border-brand-400/60 bg-brand-500/15 text-brand-100"
-                  : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                  ? "border-brand-300 bg-brand-50 text-brand-100"
+                  : "border-line bg-soft text-muted hover:bg-soft"
               }`}
             >
               {level}
             </button>
           ))}
         </div>
-        <p className="mt-3 text-sm text-slate-400">{difficultyInstruction[difficulty]}</p>
+        <p className="mt-3 text-sm text-muted">{difficultyInstruction[difficulty]}</p>
       </div>
 
       <div className="card grid gap-5 p-5 sm:grid-cols-2">
         <div>
-          <h2 className="text-lg font-semibold text-white">Camera &amp; microphone</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <h2 className="text-lg font-semibold text-ink">Camera &amp; microphone</h2>
+          <p className="mt-1 text-sm text-muted">
             Live preview only. Nothing is recorded or uploaded.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -115,28 +115,28 @@ export function Lobby({ onStart, starting = false }: Props) {
               <button
                 type="button"
                 onClick={stopMedia}
-                className="focus-ring inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300"
+                className="focus-ring inline-flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm text-muted"
               >
                 <VideoOff className="h-4 w-4" /> Turn off
               </button>
             ) : null}
           </div>
           {!consent ? (
-            <p className="mt-2 text-xs text-amber-300">Accept the notice first.</p>
+            <p className="mt-2 text-xs text-amber-700">Accept the notice first.</p>
           ) : null}
-          {mediaError ? <p className="mt-2 text-sm text-amber-300">{mediaError}</p> : null}
+          {mediaError ? <p className="mt-2 text-sm text-amber-700">{mediaError}</p> : null}
         </div>
-        <div className="aspect-video overflow-hidden rounded-xl border border-white/10 bg-black/40">
+        <div className="aspect-video overflow-hidden rounded-xl border border-line bg-black/40">
           <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
           {!stream ? (
-            <p className="-translate-y-1/2 text-center text-sm text-slate-500">
+            <p className="-translate-y-1/2 text-center text-sm text-muted">
               <Mic className="mx-auto mb-2 h-6 w-6" /> Preview appears here
             </p>
           ) : null}
         </div>
       </div>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-300">
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-soft/60 p-4 text-sm text-muted">
         <input
           type="checkbox"
           checked={consent}

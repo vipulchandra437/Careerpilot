@@ -7,7 +7,7 @@ Create Date: 2026-11-23
 
 from typing import Sequence, Union
 
-from alembic import op
+from alembic import context, op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 from sqlalchemy.exc import NoInspectionAvailable
@@ -27,6 +27,8 @@ def _has_table(table: str) -> bool:
 
 
 def upgrade() -> None:
+    if context.is_offline_mode():
+        return  # 001 baseline already emits the current schema in offline SQL.
     if _has_table("mentor_messages"):
         return
     op.create_table(
@@ -42,6 +44,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    if context.is_offline_mode():
+        return
     if not _has_table("mentor_messages"):
         return
     op.drop_index("ix_mentor_messages_created_at", table_name="mentor_messages")

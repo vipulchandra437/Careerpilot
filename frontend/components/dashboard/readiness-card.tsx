@@ -15,17 +15,17 @@ export function ReadinessCard({
   return (
     <section className="card motion-reduce:animate-none p-5" aria-labelledby="readiness-heading">
       <div className="flex items-start justify-between gap-3">
-        <h2 id="readiness-heading" className="text-sm font-semibold text-slate-300">
+        <h2 id="readiness-heading" className="text-sm font-semibold text-muted">
           Job readiness
         </h2>
         <Pill tone={tone}>{status}</Pill>
       </div>
-      <p className="mt-4 text-4xl font-bold tracking-tight text-white">
+      <p className="mt-4 text-4xl font-bold tracking-tight text-ink">
         {score}
-        <span className="ml-1 text-base font-medium text-slate-500">/100</span>
+        <span className="ml-1 text-base font-medium text-muted">/100</span>
       </p>
-      <p className="mt-3 text-xs text-slate-400">Resume is 40% and mock interview is 60%.</p>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-muted">Resume is 40% and mock interview is 60%.</p>
+      <p className="mt-1 text-xs text-muted">
         Resume {resumeScore}/100 · Interview {interviewScore}/100
       </p>
     </section>

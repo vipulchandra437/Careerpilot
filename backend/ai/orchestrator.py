@@ -1,6 +1,10 @@
 import asyncio
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+
+from fastapi import HTTPException
+from sqlalchemy import func, select
 
 from backend.config import get_settings
 
@@ -45,6 +49,28 @@ class Orchestrator:
         max_tokens: int | None = None,
     ) -> LLMResponse:
         """Call LLM through OpenRouter. Logs to llm_usage_log via the caller."""
+        # Imports live here to avoid a cycle: database -> config -> orchestrator users.
+        from backend.database import async_session
+        from backend.models.llm_usage import LLMUsageLog
+
+        today = datetime.now(timezone.utc).date()
+        start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+        end = datetime.combine(today + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
+        async with async_session() as db:
+            calls_today = await db.scalar(
+                select(func.count())
+                .select_from(LLMUsageLog)
+                .where(
+                    LLMUsageLog.user_id == str(user_id),
+                    LLMUsageLog.created_at >= start,
+                    LLMUsageLog.created_at < end,
+                )
+            )
+        if (calls_today or 0) >= settings.llm_daily_call_limit:
+            # shortcut: check-then-call is not atomic; concurrent calls can slip
+            # through under heavy load. Upgrade to a reserved-row ledger then.
+            raise HTTPException(429, "Daily LLM limit reached. Please try again tomorrow.")
+
         model = model_override or self._default_model(feature)
         client = self._get_client()
         temp = self._default_temperature(feature) if temperature is None else temperature

@@ -77,7 +77,7 @@ export default function AdminUsagePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-16 text-slate-400">
+      <div className="flex items-center gap-3 py-16 text-muted">
         <Loader2 className="h-5 w-5 animate-spin" />
         <p>Loading usage…</p>
       </div>
@@ -88,14 +88,14 @@ export default function AdminUsagePage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Usage Dashboard</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted">
           Platform activity and LLM usage across all features.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 text-red-400" />
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 text-red-700" />
           <p>{error}</p>
         </div>
       )}
@@ -105,23 +105,23 @@ export default function AdminUsagePage() {
           {/* KPI cards */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className={cardClass}>
-              <Users className="mb-2 h-5 w-5 text-blue-400" />
-              <p className="text-xs text-slate-400">Total users</p>
+              <Users className="mb-2 h-5 w-5 text-blue-700" />
+              <p className="text-xs text-muted">Total users</p>
               <p className="text-2xl font-bold">{data.total_users}</p>
             </div>
             <div className={cardClass}>
-              <FileText className="mb-2 h-5 w-5 text-emerald-400" />
-              <p className="text-xs text-slate-400">Signups (30d)</p>
+              <FileText className="mb-2 h-5 w-5 text-emerald-700" />
+              <p className="text-xs text-muted">Signups (30d)</p>
               <p className="text-2xl font-bold">{data.total_signups_30d}</p>
             </div>
             <div className={cardClass}>
-              <Activity className="mb-2 h-5 w-5 text-indigo-400" />
-              <p className="text-xs text-slate-400">LLM calls</p>
+              <Activity className="mb-2 h-5 w-5 text-indigo-700" />
+              <p className="text-xs text-muted">LLM calls</p>
               <p className="text-2xl font-bold">{data.total_feature_calls.toLocaleString()}</p>
             </div>
             <div className={cardClass}>
-              <DollarSign className="mb-2 h-5 w-5 text-yellow-400" />
-              <p className="text-xs text-slate-400">LLM cost</p>
+              <DollarSign className="mb-2 h-5 w-5 text-amber-600" />
+              <p className="text-xs text-muted">LLM cost</p>
               <p className="text-2xl font-bold">${data.total_cost_usd.toFixed(4)}</p>
             </div>
           </div>
@@ -130,17 +130,17 @@ export default function AdminUsagePage() {
           <div className={`${cardClass} mb-6`}>
             <h2 className="mb-4 text-base font-semibold">Signups over time</h2>
             {data.signups_over_time.length === 0 ? (
-              <p className="text-sm text-slate-500">No signups recorded yet.</p>
+              <p className="text-sm text-muted">No signups recorded yet.</p>
             ) : (
               <div className="flex items-end gap-2" style={{ height: 160 }} role="img" aria-label="Bar chart of signups by month">
                 {data.signups_over_time.map((p) => (
                   <div key={p.period} className="flex flex-1 flex-col items-center gap-1">
-                    <span className="text-[10px] text-slate-400">{p.count}</span>
+                    <span className="text-[10px] text-muted">{p.count}</span>
                     <div
                       className="w-full rounded-t-md bg-gradient-brand"
                       style={{ height: `${Math.max(4, (p.count / maxSignups) * 110)}px` }}
                     />
-                    <span className="text-[10px] text-slate-500">{p.period}</span>
+                    <span className="text-[10px] text-muted">{p.period}</span>
                   </div>
                 ))}
               </div>
@@ -152,18 +152,18 @@ export default function AdminUsagePage() {
             <div className={cardClass}>
               <h2 className="mb-4 text-base font-semibold">Feature usage</h2>
               {data.feature_usage.length === 0 ? (
-                <p className="text-sm text-slate-500">No LLM usage recorded yet.</p>
+                <p className="text-sm text-muted">No LLM usage recorded yet.</p>
               ) : (
                 <div className="space-y-3" role="img" aria-label="Bar chart of LLM calls per feature">
                   {data.feature_usage.map((f) => (
                     <div key={f.feature}>
                       <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="capitalize text-slate-200">{f.feature}</span>
-                        <span className="text-slate-500">
+                        <span className="capitalize text-muted">{f.feature}</span>
+                        <span className="text-muted">
                           {f.calls} calls · {f.tokens_in.toLocaleString()} in / {f.tokens_out.toLocaleString()} out
                         </span>
                       </div>
-                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/5">
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-soft">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-blue-400"
                           style={{ width: `${(f.calls / maxFeatureCalls) * 100}%` }}
@@ -177,17 +177,17 @@ export default function AdminUsagePage() {
 
             <div className={cardClass}>
               <h2 className="mb-1 text-base font-semibold">LLM cost per feature</h2>
-              <p className="mb-4 text-xs text-slate-500">
+              <p className="mb-4 text-xs text-muted">
                 Cost metering is not wired yet (orchestrator records $0 cost — Phase 6); showing live
                 call/token counts instead of fabricated dollars.
               </p>
               {data.feature_usage.length === 0 ? (
-                <p className="text-sm text-slate-500">No usage recorded yet.</p>
+                <p className="text-sm text-muted">No usage recorded yet.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
                       <th className="py-2">Feature</th>
                       <th className="py-2 text-right">Calls</th>
                       <th className="py-2 text-right">Tokens in</th>
@@ -195,28 +195,28 @@ export default function AdminUsagePage() {
                       <th className="py-2 text-right">Cost</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-line">
                     {data.feature_usage.map((f) => (
                       <tr key={f.feature}>
-                        <td className="py-2 capitalize text-slate-200">{f.feature}</td>
-                        <td className="py-2 text-right text-slate-400">{f.calls}</td>
-                        <td className="py-2 text-right text-slate-400">{f.tokens_in.toLocaleString()}</td>
-                        <td className="py-2 text-right text-slate-400">{f.tokens_out.toLocaleString()}</td>
-                        <td className="py-2 text-right text-slate-400">${f.cost_usd.toFixed(4)}</td>
+                        <td className="py-2 capitalize text-muted">{f.feature}</td>
+                        <td className="py-2 text-right text-muted">{f.calls}</td>
+                        <td className="py-2 text-right text-muted">{f.tokens_in.toLocaleString()}</td>
+                        <td className="py-2 text-right text-muted">{f.tokens_out.toLocaleString()}</td>
+                        <td className="py-2 text-right text-muted">${f.cost_usd.toFixed(4)}</td>
                       </tr>
                     ))}
-                    <tr className="border-t border-white/10 font-medium">
-                      <td className="py-2 text-slate-200">Total</td>
-                      <td className="py-2 text-right text-slate-200">
+                    <tr className="border-t border-line font-medium">
+                      <td className="py-2 text-muted">Total</td>
+                      <td className="py-2 text-right text-muted">
                         {data.feature_usage.reduce((s, f) => s + f.calls, 0)}
                       </td>
-                      <td className="py-2 text-right text-slate-200">
+                      <td className="py-2 text-right text-muted">
                         {data.feature_usage.reduce((s, f) => s + f.tokens_in, 0).toLocaleString()}
                       </td>
-                      <td className="py-2 text-right text-slate-200">
+                      <td className="py-2 text-right text-muted">
                         {data.feature_usage.reduce((s, f) => s + f.tokens_out, 0).toLocaleString()}
                       </td>
-                      <td className="py-2 text-right text-slate-200">
+                      <td className="py-2 text-right text-muted">
                         ${data.feature_usage.reduce((s, f) => s + f.cost_usd, 0).toFixed(4)}
                       </td>
                     </tr>

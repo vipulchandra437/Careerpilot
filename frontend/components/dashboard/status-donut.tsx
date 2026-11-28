@@ -3,7 +3,7 @@ import type { FeatureView } from "@/lib/dashboard";
 const toneColor = {
   complete: "#34d399",
   in_progress: "#fbbf24",
-  planned: "#475569",
+  planned: "#94a3b8",
 } as const;
 
 export function StatusDonut({ features }: { features: readonly FeatureView[] }) {
@@ -23,7 +23,7 @@ export function StatusDonut({ features }: { features: readonly FeatureView[] }) 
 
   return (
     <section className="card motion-reduce:animate-none p-5" aria-labelledby="status-heading">
-      <h2 id="status-heading" className="text-sm font-semibold text-slate-300">
+      <h2 id="status-heading" className="text-sm font-semibold text-muted">
         Feature status
       </h2>
       <div className="mt-3 flex items-center gap-5">
@@ -33,7 +33,7 @@ export function StatusDonut({ features }: { features: readonly FeatureView[] }) 
           role="img"
           aria-label={`Feature status: ${counts.complete} complete, ${counts.in_progress} in progress, ${counts.planned} planned`}
         >
-          <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#1e293b" strokeWidth="5" />
+          <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#e2e8f0" strokeWidth="5" />
           {segments.map((segment) =>
             segment.length > 0 ? (
               <circle
@@ -52,17 +52,17 @@ export function StatusDonut({ features }: { features: readonly FeatureView[] }) 
           )}
         </svg>
         <ul className="space-y-2 text-sm">
-          <li className="flex items-center gap-2 text-slate-300">
+          <li className="flex items-center gap-2 text-muted">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-hidden="true" />
-            Complete <span className="font-semibold text-white">{counts.complete}</span>
+            Complete <span className="font-semibold text-ink">{counts.complete}</span>
           </li>
-          <li className="flex items-center gap-2 text-slate-300">
+          <li className="flex items-center gap-2 text-muted">
             <span className="h-2.5 w-2.5 rounded-full bg-amber-400" aria-hidden="true" />
-            In progress <span className="font-semibold text-white">{counts.in_progress}</span>
+            In progress <span className="font-semibold text-ink">{counts.in_progress}</span>
           </li>
-          <li className="flex items-center gap-2 text-slate-300">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-600" aria-hidden="true" />
-            Planned <span className="font-semibold text-white">{counts.planned}</span>
+          <li className="flex items-center gap-2 text-muted">
+            <span className="h-2.5 w-2.5 rounded-full bg-slate-400" aria-hidden="true" />
+            Planned <span className="font-semibold text-ink">{counts.planned}</span>
           </li>
         </ul>
       </div>

@@ -23,7 +23,7 @@ export function RoleStep({
   return (
     <div>
       <h2 className="text-xl font-semibold text-slate-900">What role are you aiming for?</h2>
-      <p className="mt-1 text-sm text-slate-500">Pick one. It is fine to change your mind later.</p>
+      <p className="mt-1 text-sm text-muted">Pick one. It is fine to change your mind later.</p>
 
       <label htmlFor="role-search" className="mt-6 block text-sm font-medium text-slate-700">
         Search roles
@@ -34,16 +34,16 @@ export function RoleStep({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Try a word like data or design"
-        className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+        className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-muted focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
       />
-      <p aria-live="polite" className="mt-3 text-xs text-slate-500">
+      <p aria-live="polite" className="mt-3 text-xs text-muted">
         {roles.length === ROLES.length ? `${ROLES.length} roles available` : `${roles.length} roles found`}
       </p>
 
       {roles.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
           <p className="text-sm font-medium text-slate-700">No roles matched that word.</p>
-          <p className="mt-1 text-sm text-slate-500">Try a shorter word, like web or data.</p>
+          <p className="mt-1 text-sm text-muted">Try a shorter word, like web or data.</p>
         </div>
       ) : (
         <div className="mt-4 max-h-[22rem] space-y-2 overflow-y-auto pr-1">
@@ -71,7 +71,7 @@ export function RoleStep({
                 </span>
                 <span>
                   <span className="block text-sm font-semibold text-slate-900">{role.title}</span>
-                  <span className="mt-0.5 block text-sm leading-relaxed text-slate-500">{role.desc}</span>
+                  <span className="mt-0.5 block text-sm leading-relaxed text-muted">{role.desc}</span>
                 </span>
               </button>
             );

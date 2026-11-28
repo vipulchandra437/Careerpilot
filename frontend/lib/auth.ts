@@ -18,6 +18,12 @@ export function clearTokens(): void {
   localStorage.removeItem("refresh_token");
 }
 
+/** Drop stale tokens before the expired-session refresh path on /login. */
+export function redirectExpired(redirect: (path: string) => void): void {
+  clearTokens();
+  redirect("/login?reason=expired");
+}
+
 /** Exchange the stored refresh token for a fresh token pair. */
 export async function refreshTokens(): Promise<boolean> {
   const refreshToken = getRefreshToken();

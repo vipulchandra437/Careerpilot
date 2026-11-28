@@ -1,0 +1,81 @@
+{
+  "version": 2,
+  "name": "drive-signing-in-with-a-fresh-account-reaches-the-dash",
+  "createdAt": 1795784516874,
+  "steps": [
+    {
+      "tool": "reticle_act_sequence",
+      "anchor": {
+        "kind": "role",
+        "role": "textbox",
+        "name": "Email"
+      },
+      "steps": [
+        {
+          "tool": "reticle_act",
+          "anchor": {
+            "kind": "role",
+            "role": "textbox",
+            "name": "Email"
+          },
+          "args": {
+            "value": "roadmap-diag-20261127182948@example.com"
+          },
+          "action": "fill"
+        },
+        {
+          "tool": "reticle_act",
+          "anchor": {
+            "kind": "role",
+            "role": "textbox",
+            "name": "Password"
+          },
+          "args": {
+            "value": "<redacted: supply at replay>",
+            "secret": "RETICLE_SECRET_PASSWORD"
+          },
+          "action": "fill"
+        }
+      ],
+      "timeoutMs": 12000,
+      "page": "/login"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Sign In"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "route",
+        "pathname": "/dashboard"
+      },
+      "timeoutMs": 20000,
+      "page": "/login",
+      "endPage": "/dashboard",
+      "writes": true
+    }
+  ],
+  "startPath": "/login",
+  "intent": "Signing in with a fresh account reaches the dashboard so the live roadmap can be opened",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/login"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/dashboard"
+    }
+  ],
+  "author": {
+    "agent": "opencode",
+    "person": "haisenberg751@gmail.com"
+  },
+  "intentId": "flow:drive-signing-in-with-a-fresh-account-reaches-the-dash"
+}

@@ -6,9 +6,10 @@ import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Send, Volume2 } from "lucide
 import { Lobby } from "./Lobby";
 import { Interviewer, type InterviewerState } from "./Interviewer";
 import { useLiveMonitoring } from "./useLiveMonitoring";
-import { analyzeAnswer, type AnswerKind } from "@/lib/interview/analyze";
+import { redirectExpired } from "@/lib/auth";
+import { analyzeAnswer } from "@/lib/interview/analyze";
 import type { Difficulty, InterviewType } from "@/lib/interview/questions";
-import type { SavedAnswer } from "@/lib/interview/report";
+import { answerKindFor, type SavedAnswer } from "@/lib/interview/report";
 
 interface Props {
   onExit: () => void;
@@ -39,12 +40,6 @@ type RecognitionConstructor = new () => BrowserRecognition;
 
 const characterName: Record<InterviewType, string> = { hr: "Maya", technical: "Dev", mixed: "Sam" };
 
-const answerKind = (type: InterviewType, index: number): AnswerKind => {
-  if (type === "hr") return "hr";
-  if (type === "technical") return "technical";
-  return index % 2 === 0 ? "hr" : "technical";
-};
-
 export function VoiceInterview({ onExit }: Props) {
   const router = useRouter();
   const [stage, setStage] = useState<"lobby" | "call">("lobby");
@@ -61,6 +56,7 @@ export function VoiceInterview({ onExit }: Props) {
   const [listening, setListening] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -68,6 +64,7 @@ export function VoiceInterview({ onExit }: Props) {
   const submitRef = useRef<(text: string) => Promise<void>>(async () => undefined);
   const questionStartRef = useRef(Date.now());
   const answersRef = useRef<SavedAnswer[]>([]);
+  const startingRef = useRef(false);
   const cues = useLiveMonitoring(stream, videoRef, stage === "call");
 
   useEffect(() => {
@@ -105,7 +102,7 @@ export function VoiceInterview({ onExit }: Props) {
           body: JSON.stringify({ action: "finish", sessionId, answers: finalAnswers }),
         });
         if (res.status === 401) {
-          router.push("/login?reason=expired");
+          redirectExpired((path) => router.push(path));
           return;
         }
         if (!res.ok) throw new Error("Could not end the call");
@@ -134,10 +131,10 @@ export function VoiceInterview({ onExit }: Props) {
       const durationSeconds = Math.max(1, (Date.now() - questionStartRef.current) / 1000);
       const metrics = analyzeAnswer({
         text: answer,
-        kind: answerKind(type, answersRef.current.length),
+        kind: answerKindFor(type, answersRef.current.length),
         durationSeconds,
-        eyeContactPercent: cues.eyeContactPercent,
-        longPauses: cues.longPauses,
+        eyeContactPercent: cues.available ? cues.eyeContactPercent : undefined,
+        longPauses: cues.available ? cues.longPauses : undefined,
       });
       const saved: SavedAnswer = {
         index: answersRef.current.length,
@@ -146,9 +143,8 @@ export function VoiceInterview({ onExit }: Props) {
         metrics,
         score: metrics.score,
       };
+      // Pending answer stays local until the turn succeeds.
       const nextAnswers = [...answersRef.current, saved];
-      answersRef.current = nextAnswers;
-      setAnswers(nextAnswers);
 
       try {
         const token = localStorage.getItem("access_token");
@@ -166,11 +162,13 @@ export function VoiceInterview({ onExit }: Props) {
           }),
         });
         if (res.status === 401) {
-          router.push("/login?reason=expired");
+          redirectExpired((path) => router.push(path));
           return;
         }
         if (!res.ok) throw new Error("Could not continue the interview");
         const data = (await res.json()) as { question?: string; text?: string; done?: boolean };
+        answersRef.current = nextAnswers;
+        setAnswers(nextAnswers);
         if (data.done || !data.question && !data.text) {
           await finish(nextAnswers);
           return;
@@ -183,7 +181,7 @@ export function VoiceInterview({ onExit }: Props) {
         setInterviewerState("listening");
       }
     },
-    [cues.eyeContactPercent, cues.longPauses, difficulty, ending, finish, question, router, sessionId, type]
+    [cues.available, cues.eyeContactPercent, cues.longPauses, difficulty, ending, finish, question, router, sessionId, type]
   );
 
   useEffect(() => {
@@ -191,12 +189,15 @@ export function VoiceInterview({ onExit }: Props) {
   }, [submitAnswer]);
 
   const startSession = async (selectedType: InterviewType, selectedDifficulty: Difficulty, media: MediaStream | null) => {
+    if (startingRef.current) return;
     const token = localStorage.getItem("access_token");
     if (!token) {
       router.push("/login");
       return;
     }
     setError("");
+    startingRef.current = true;
+    setStarting(true);
     try {
       const res = await fetch("/api/interview/turn", {
         method: "POST",
@@ -204,8 +205,7 @@ export function VoiceInterview({ onExit }: Props) {
         body: JSON.stringify({ action: "start", type: selectedType, difficulty: selectedDifficulty }),
       });
       if (res.status === 401) {
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
       if (!res.ok) throw new Error("Could not start the interview");
@@ -218,6 +218,9 @@ export function VoiceInterview({ onExit }: Props) {
       setStage("call");
     } catch {
       setError("Could not start the interview. Check your connection and try again.");
+    } finally {
+      startingRef.current = false;
+      setStarting(false);
     }
   };
 
@@ -288,23 +291,26 @@ export function VoiceInterview({ onExit }: Props) {
   };
 
   const chips: string[] = [];
-  if (!cues.faceVisible) chips.push("Look at the camera");
-  if (cues.eyeContactPercent < 50) chips.push("More eye contact");
-  if (cues.longPauses > 2) chips.push("Try shorter pauses");
-  if (!chips.length) chips.push("Good presence — keep going");
+  // No landmarker means no presence evidence; never claim perfect eye contact.
+  if (cues.available) {
+    if (!cues.faceVisible) chips.push("Look at the camera");
+    if (cues.eyeContactPercent < 50) chips.push("More eye contact");
+    if (cues.longPauses > 2) chips.push("Try shorter pauses");
+    if (!chips.length) chips.push("Good presence — keep going");
+  }
 
   if (stage === "lobby") {
     return (
-      <main className="relative flex min-h-screen flex-col bg-surface text-white">
+      <main className="relative flex min-h-screen flex-col bg-canvas text-ink">
         <div className="mx-auto w-full max-w-4xl flex-1 p-4 sm:p-8">
-          <button type="button" onClick={onExit} className="focus-ring mb-5 flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+          <button type="button" onClick={onExit} className="focus-ring mb-5 flex items-center gap-2 text-sm text-muted hover:text-ink">
             <ArrowLeft className="h-4 w-4" /> Back to interview options
           </button>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Voice interview</h1>
-          <p className="mt-1 text-sm text-slate-400">A live, call-style round with spoken questions and browser-only coaching.</p>
-          {error ? <p className="mt-4 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+          <p className="mt-1 text-sm text-muted">A live, call-style round with spoken questions and browser-only coaching.</p>
+          {error ? <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
           <div className="mt-6">
-            <Lobby onStart={(t, d, media) => void startSession(t, d, media)} starting={false} />
+            <Lobby onStart={(t, d, media) => void startSession(t, d, media)} starting={starting} />
           </div>
         </div>
       </main>
@@ -312,42 +318,42 @@ export function VoiceInterview({ onExit }: Props) {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-surface text-white">
+    <main className="relative flex min-h-screen flex-col bg-canvas text-ink">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col p-4 sm:p-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Interviewer type={type} state={interviewerState} className="h-16 w-16" />
             <div>
               <h1 className="text-xl font-bold tracking-tight">{characterName[type]}</h1>
-              <p className="text-sm capitalize text-slate-400">{type} · {difficulty} · live call</p>
+              <p className="text-sm capitalize text-muted">{type} · {difficulty} · live call</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => void finish(answersRef.current)}
             disabled={ending}
-            className="focus-ring inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-950/70 disabled:opacity-50"
+            className="focus-ring inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
           >
             <PhoneOff className="h-4 w-4" /> {ending ? "Ending..." : "End call"}
           </button>
         </div>
 
-        {error ? <p className="mb-4 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+        {error ? <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
 
         <div className="grid flex-1 gap-5 lg:grid-cols-[1fr_18rem]">
           <div className="card flex flex-col p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-300">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
               <Volume2 className="h-4 w-4" /> Question {answers.length + 1}
             </div>
-            <p className="mt-3 text-lg leading-relaxed text-slate-100" aria-live="polite">{question}</p>
+            <p className="mt-3 text-lg leading-relaxed text-muted" aria-live="polite">{question}</p>
 
             <div className="mt-5 flex flex-wrap gap-2" aria-label="Live coaching cues">
               {chips.map((chip) => (
-                <span key={chip} className="rounded-full border border-brand-500/25 bg-brand-500/10 px-3 py-1 text-xs text-brand-200">{chip}</span>
+                <span key={chip} className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs text-brand-700">{chip}</span>
               ))}
             </div>
 
-            <div className="relative mt-5 aspect-video overflow-hidden rounded-xl border border-white/10 bg-black/40">
+            <div className="relative mt-5 aspect-video overflow-hidden rounded-xl border border-line bg-black/40">
               <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
               <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-xs text-slate-200">
                 {interviewerState === "listening" ? "Listening" : interviewerState === "talking" ? "Interviewer speaking" : "Thinking…"}
@@ -355,7 +361,7 @@ export function VoiceInterview({ onExit }: Props) {
             </div>
 
             <div className="mt-5" aria-live="polite">
-              <label htmlFor="voice-answer" className="text-xs font-semibold uppercase tracking-wide text-slate-400">Your answer (voice or type)</label>
+              <label htmlFor="voice-answer" className="text-xs font-semibold uppercase tracking-wide text-muted">Your answer (voice or type)</label>
               <div className="mt-2 flex items-end gap-2">
                 <button
                   type="button"
@@ -363,7 +369,7 @@ export function VoiceInterview({ onExit }: Props) {
                   disabled={ending}
                   aria-pressed={listening}
                   className={`focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors ${
-                    listening ? "border-red-500/40 bg-red-500/20 text-red-200" : "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+                    listening ? "border-red-200 bg-red-50 text-red-700" : "border-line bg-soft text-ink hover:bg-soft"
                   }`}
                   aria-label={listening ? "Stop listening" : "Speak answer"}
                 >
@@ -378,7 +384,7 @@ export function VoiceInterview({ onExit }: Props) {
                   }}
                   disabled={ending}
                   rows={2}
-                  className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-line bg-soft/70 px-4 py-2.5 text-sm text-muted focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                   placeholder="Speak, or type your answer here…"
                 />
                 <button
@@ -397,19 +403,19 @@ export function VoiceInterview({ onExit }: Props) {
             <button
               type="button"
               onClick={() => setShowTranscript((v) => !v)}
-              className="focus-ring flex w-full items-center justify-between text-sm font-semibold text-white"
+              className="focus-ring flex w-full items-center justify-between text-sm font-semibold text-ink"
               aria-expanded={showTranscript}
             >
-              Transcript ({answers.length}) <span className="text-slate-400">{showTranscript ? "Hide" : "Show"}</span>
+              Transcript ({answers.length}) <span className="text-muted">{showTranscript ? "Hide" : "Show"}</span>
             </button>
             {showTranscript ? (
               <div className="mt-3 flex flex-1 flex-col gap-3 overflow-y-auto" role="log" aria-label="Interview transcript">
-                {answers.length === 0 ? <p className="text-sm text-slate-500">No answers yet.</p> : null}
+                {answers.length === 0 ? <p className="text-sm text-muted">No answers yet.</p> : null}
                 {answers.map((a) => (
-                  <div key={a.index} className="border-b border-white/5 pb-3 last:border-0">
-                    <p className="text-xs font-semibold text-brand-300">Question {a.index + 1}</p>
-                    <p className="mt-1 text-xs text-slate-500">{a.question}</p>
-                    <p className="mt-2 text-sm text-slate-200">{a.text}</p>
+                  <div key={a.index} className="border-b border-line pb-3 last:border-0">
+                    <p className="text-xs font-semibold text-brand-700">Question {a.index + 1}</p>
+                    <p className="mt-1 text-xs text-muted">{a.question}</p>
+                    <p className="mt-2 text-sm text-muted">{a.text}</p>
                   </div>
                 ))}
               </div>

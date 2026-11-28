@@ -28,4 +28,6 @@ class User(Base):
     # get_current_user both reject inactive accounts) — enforced in api/auth.py
     # and api/dependencies.py.
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Revocation counter: tokens carrying a different `ver` are rejected on refresh.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

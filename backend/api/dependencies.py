@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.models.user import User, UserRole
-from backend.auth import decode_token
+from backend.auth import decode_token, token_version_matches
 
 security = HTTPBearer()
 
@@ -29,6 +29,11 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
+        )
+    if not token_version_matches(payload, user.token_version):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
         )
     if not user.is_active:
         raise HTTPException(

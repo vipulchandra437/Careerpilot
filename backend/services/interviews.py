@@ -90,7 +90,7 @@ async def _next_question(
         .replace("{type}", session.type)
         .replace("{target_role}", target_role_name)
         .replace("{domain}", session.domain or "the selected CS domain")
-        .replace("{weak_topics}", ", ".join(weak_topics or []) or "none recorded")
+        .replace("{weak_topics}", ", ".join(prompt_topic(t) for t in (weak_topics or [])) or "none recorded")
         .replace("{transcript}", build_transcript(turns) or "(empty transcript)")
     )
     resp = await orchestrator.call_llm(
@@ -470,6 +470,16 @@ def _deterministic_feedback(
     }
 
 
+def safe_topic_text(topic) -> str:
+    """Keep a stored weak topic readable but strip control/prompt-breaking text."""
+    return " ".join(str(topic or "").split())[:120]
+
+
+def prompt_topic(topic) -> str:
+    """Quote a weak topic as JSON data before it enters an LLM prompt."""
+    return json.dumps(safe_topic_text(topic))
+
+
 def _skill_from_topic(topic: str) -> str:
     """Make an LLM weak topic safe to use as a challenge skill (API contract)."""
     cleaned = re.sub(r"[^A-Za-z0-9 .+#_/-]+", " ", topic).strip()
@@ -503,7 +513,7 @@ async def _link_weak_topics_to_roadmap(
     for item in weak_topics:
         if not isinstance(item, dict):
             continue
-        topic = str(item.get("topic") or "").strip()[:120]
+        topic = safe_topic_text(item.get("topic"))
         if not topic or topic in seen:
             continue
         seen.add(topic)
@@ -718,13 +728,14 @@ async def generate_feedback(
         delete(InterviewWeakTopic).where(InterviewWeakTopic.session_id == session.id)
     )
     for item in weak_topics:
-        if not isinstance(item, dict) or not str(item.get("topic", "")).strip():
+        topic = safe_topic_text(item.get("topic")) if isinstance(item, dict) else ""
+        if not topic:
             continue
         db.add(
             InterviewWeakTopic(
                 user_id=user_id,
                 session_id=session.id,
-                topic=str(item["topic"])[:120],
+                topic=topic,
                 confidence=max(1, min(5, _safe_score(item.get("confidence"), 3))),
                 evidence=str(item.get("evidence", "No specific evidence provided."))[:1000],
             )

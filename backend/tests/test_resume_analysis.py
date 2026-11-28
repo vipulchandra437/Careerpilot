@@ -1,5 +1,3 @@
-import pytest
-
 from backend.services.resume_analysis import _normalize_analysis, _fallback_analysis
 
 

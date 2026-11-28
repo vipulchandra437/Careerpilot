@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.ai.orchestrator import orchestrator, LLMResponse
@@ -85,6 +86,15 @@ def _is_saved_id(value) -> bool:
         return False
 
 
+def _bounded_int(value, default: int, low: int, high: int) -> int:
+    """Coerce an untrusted LLM number to a bounded int (model columns are Integer)."""
+    try:
+        result = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return max(low, min(result, high))
+
+
 def _validate_milestones(milestones: list[dict], gaps: list[dict]) -> list[dict]:
     """Validate milestones against gap skills, discard invalid ones."""
     gap_skills = {g.get("skill", "") for g in gaps}
@@ -127,8 +137,8 @@ def _validate_milestones(milestones: list[dict], gaps: list[dict]) -> list[dict]
             "status": status,
             "linked_action_type": action_type,
             "linked_action_id": action_id,
-            "order_index": m.get("order_index", i),
-            "estimated_hours": estimated_hours,
+            "order_index": _bounded_int(m.get("order_index", i), i, 0, 1000),
+            "estimated_hours": _bounded_int(estimated_hours, 3, 1, 200),
         })
     return valid
 
@@ -141,43 +151,47 @@ async def _upsert_roadmap(
     version: str = "v1.0",
 ) -> Roadmap:
     """Create a new Roadmap version with milestones."""
-    # Check if a roadmap already exists for this gap_report
-    result = await db.execute(
-        select(Roadmap).where(Roadmap.gap_report_id == gap_report_id)
-    )
-    roadmap = result.scalar_one_or_none()
-
     previous: dict[tuple, dict] = {}
     previous_challenges: dict[tuple, dict] = {}
-    if roadmap:
-        # Carry progress only when the action is unchanged. A completed SQL
-        # challenge must not mark an unrelated SQL resource as done.
-        old_milestones = (
+    for attempt in range(2):
+        roadmap = (
+            await db.execute(select(Roadmap).where(Roadmap.gap_report_id == gap_report_id))
+        ).scalar_one_or_none()
+        if roadmap:
+            # Carry progress only when the action is unchanged. A completed SQL
+            # challenge must not mark an unrelated SQL resource as done.
+            old_milestones = (
+                await db.execute(
+                    select(RoadmapMilestone).where(RoadmapMilestone.roadmap_id == roadmap.id)
+                )
+            ).scalars().all()
+            for m in old_milestones:
+                carried = {"status": m.status, "action_id": m.linked_action_id}
+                previous[(m.linked_gap_skill, m.linked_action_type, m.linked_action_id)] = carried
+                if m.linked_action_type == "challenge" and _is_saved_id(m.linked_action_id):
+                    previous_challenges[(m.linked_gap_skill, m.linked_action_type)] = carried
+            major = roadmap.version.lstrip("v").split(".")[0]
+            roadmap.version = f"v{int(major) + 1 if major.isdigit() else 2}.0"
+            # Delete old milestones
             await db.execute(
-                select(RoadmapMilestone).where(RoadmapMilestone.roadmap_id == roadmap.id)
+                RoadmapMilestone.__table__.delete().where(
+                    RoadmapMilestone.roadmap_id == roadmap.id
+                )
             )
-        ).scalars().all()
-        for m in old_milestones:
-            carried = {"status": m.status, "action_id": m.linked_action_id}
-            previous[(m.linked_gap_skill, m.linked_action_type, m.linked_action_id)] = carried
-            if m.linked_action_type == "challenge" and _is_saved_id(m.linked_action_id):
-                previous_challenges[(m.linked_gap_skill, m.linked_action_type)] = carried
-        major = roadmap.version.lstrip("v").split(".")[0]
-        roadmap.version = f"v{int(major) + 1 if major.isdigit() else 2}.0"
-        # Delete old milestones
-        await db.execute(
-            RoadmapMilestone.__table__.delete().where(
-                RoadmapMilestone.roadmap_id == roadmap.id
-            )
-        )
-    else:
-        roadmap = Roadmap(
-            user_id=user_id,
-            gap_report_id=gap_report_id,
-            version=version,
-        )
+            break
+        roadmap = Roadmap(user_id=user_id, gap_report_id=gap_report_id, version=version)
         db.add(roadmap)
-        await db.flush()
+        try:
+            await db.flush()
+        except IntegrityError:
+            # Another job inserted the roadmap first; re-read it as the upsert target.
+            await db.rollback()
+            if attempt == 0:
+                continue
+            raise
+        break
+    roadmap.status = "ready"
+    roadmap.error = None
 
     # Add milestones
     for i, m in enumerate(milestones_data):
@@ -205,6 +219,32 @@ async def _upsert_roadmap(
 
     await db.commit()
     await db.refresh(roadmap)
+    return roadmap
+
+
+async def mark_generation_failed(
+    db: AsyncSession,
+    gap_report_id: str,
+    user_id: str,
+    error: str,
+) -> Roadmap:
+    """Persist a terminal failure marker so polling GET gets 200 + error."""
+    roadmap = (
+        await db.execute(select(Roadmap).where(Roadmap.gap_report_id == gap_report_id))
+    ).scalar_one_or_none()
+    if roadmap is None:
+        roadmap = Roadmap(user_id=user_id, gap_report_id=gap_report_id, version="v1.0")
+        db.add(roadmap)
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            roadmap = (
+                await db.execute(select(Roadmap).where(Roadmap.gap_report_id == gap_report_id))
+            ).scalar_one()
+    roadmap.status = "failed"
+    roadmap.error = str(error)[:500]
+    await db.commit()
     return roadmap
 
 

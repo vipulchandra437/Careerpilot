@@ -7,9 +7,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import SQLAlchemyError, ProgrammingError, OperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.ai.orchestrator import orchestrator
 from backend.models.gap import GapReport
@@ -24,7 +24,6 @@ _PROMPT_PATH = Path(__file__).resolve().parent.parent / "ai" / "prompts" / "ment
 _FEATURE = "mentor_chat"
 _MAX_HISTORY = 10
 _MAX_CONTEXT_CHARS = 1600
-_schema_ready = False
 
 
 def _clip(text: str, limit: int = 220) -> str:
@@ -101,20 +100,6 @@ async def _get_conversation(db: AsyncSession, user_id: str, conversation_id: str
     )).scalar_one_or_none()
 
 
-async def _ensure_tables(db: AsyncSession) -> None:
-    global _schema_ready
-    if _schema_ready:
-        return
-    async with db.bind.begin() as conn:
-        await conn.run_sync(lambda sync: MentorConversation.__table__.create(sync, checkfirst=True))
-        await conn.run_sync(lambda sync: MentorMessage.__table__.create(sync, checkfirst=True))
-        try:
-            await conn.execute(text("ALTER TABLE mentor_messages ADD COLUMN conversation_id VARCHAR(36)"))
-        except Exception:
-            pass
-    _schema_ready = True
-
-
 async def _legacy_messages(db: AsyncSession, user_id: str) -> list[MentorMessage]:
     try:
         return list((await db.execute(
@@ -122,7 +107,6 @@ async def _legacy_messages(db: AsyncSession, user_id: str) -> list[MentorMessage
             .order_by(MentorMessage.created_at.asc())
         )).scalars().all())
     except SQLAlchemyError:
-        await _ensure_tables(db)
         return []
 
 
@@ -143,7 +127,6 @@ async def ensure_legacy_conversation(db: AsyncSession, user_id: str) -> MentorCo
 
 async def list_conversations(db: AsyncSession, user_id: str) -> list[dict]:
     try:
-        await _ensure_tables(db)
         rows = (await db.execute(
             select(MentorConversation).where(MentorConversation.user_id == user_id).order_by(MentorConversation.updated_at.desc())
         )).scalars().all()
@@ -154,7 +137,6 @@ async def list_conversations(db: AsyncSession, user_id: str) -> list[dict]:
 
 
 async def create_conversation(db: AsyncSession, user_id: str) -> MentorConversation:
-    await _ensure_tables(db)
     conv = MentorConversation(user_id=user_id, title="New chat")
     db.add(conv)
     await db.commit()
@@ -168,9 +150,10 @@ async def get_messages(db: AsyncSession, user_id: str, conversation_id: str, lim
         raise KeyError("Conversation not found")
     result = await db.execute(
         select(MentorMessage).where(MentorMessage.user_id == user_id, MentorMessage.conversation_id == conversation_id)
-        .order_by(MentorMessage.created_at.asc()).limit(limit)
+        .order_by(MentorMessage.created_at.desc(), MentorMessage.id.desc()).limit(limit)
     )
-    return list(result.scalars().all())
+    # Return the newest page in chronological order for the chat transcript.
+    return list(reversed(result.scalars().all()))
 
 
 async def delete_conversation(db: AsyncSession, user_id: str, conversation_id: str) -> None:
@@ -191,13 +174,7 @@ async def send_message(db: AsyncSession, user_id: str, content: str, conversatio
     if len(content) > 4000:
         raise ValueError("Message is too long")
 
-    try:
-        await _ensure_tables(db)
-        conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
-    except (ProgrammingError, OperationalError, SQLAlchemyError):
-        await db.rollback()
-        await _ensure_tables(db)
-        conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
+    conv = await _get_conversation(db, user_id, conversation_id) if conversation_id else None
 
     if conversation_id and not conv:
         raise KeyError("Conversation not found")
@@ -206,15 +183,10 @@ async def send_message(db: AsyncSession, user_id: str, content: str, conversatio
         db.add(conv)
         await db.flush()
 
-    try:
-        history = (await db.execute(
-            select(MentorMessage).where(MentorMessage.conversation_id == conv.id, MentorMessage.user_id == user_id)
-            .order_by(MentorMessage.created_at.desc()).limit(_MAX_HISTORY)
-        )).scalars().all()
-    except (ProgrammingError, OperationalError):
-        await db.rollback()
-        await _ensure_tables(db)
-        history = []
+    history = list((await db.execute(
+        select(MentorMessage).where(MentorMessage.conversation_id == conv.id, MentorMessage.user_id == user_id)
+        .order_by(MentorMessage.created_at.desc(), MentorMessage.id.desc()).limit(_MAX_HISTORY)
+    )).scalars().all())
     history = list(reversed(history))
 
     user_msg = MentorMessage(user_id=user_id, conversation_id=conv.id, role="user", content=content)

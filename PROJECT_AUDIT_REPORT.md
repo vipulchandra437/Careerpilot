@@ -3,11 +3,11 @@
 **Audit date:** 2026-09-04  
 **Scope:** Backend, frontend, migrations, tests, configuration, repository hygiene, and Graphify-preserved artifacts.
 
-> **Current status (2026-11-22):** This is a historical audit snapshot. The credit/Stripe/payments subsystem described below was removed on 2026-09-05; those findings are retained for history only. The Alembic chain was rebuilt in the 2026-11-22 bug-fix pass, and access-token refresh is now wired. Numbers in the "Verification performed" table were refreshed to that pass. Live PostgreSQL, self-hosted Judge0 and browser-driven verification remain outstanding.
+> **Current status (2026-11-27):** This is a historical audit snapshot. The credit/Stripe/payments subsystem described below was removed on 2026-09-05; those findings are retained for history only. The Alembic chain was rebuilt in the 2026-11-22 bug-fix pass and access-token refresh is now wired. A later 2026-11-27 fix pass addressed CI, schema races, auth hardening and frontend state bugs (see MEMORY.md AUDIT-1…AUDIT-6); its measured results are in the tables below. Production deployment, the Alembic `014` migration and live PostgreSQL/self-hosted Judge0 verification remain outstanding.
 
 ## Executive summary
 
-The project is healthy for local development and the current automated test/build checks are passing. The backend suite has **173 passing tests**, all backend Python modules compile, and the Next.js frontend typechecks and produces a successful production build for all **22 routes**.
+The project is healthy for local development and the current automated test/build checks are passing. The backend suite has **217 passing tests**, all backend Python modules compile, and the Next.js frontend typechecks and produces a successful production build for all **28 routes**.
 
 The main remaining risks are production-hardening items that require infrastructure or a larger authentication workflow. The local SQLite/mock suite is green; PostgreSQL concurrency behavior and self-hosted Judge0 still need deployment-level verification.
 
@@ -15,10 +15,13 @@ The main remaining risks are production-hardening items that require infrastruct
 
 | Check | Result |
 |---|---|
-| Backend test suite | **173 passed, 0 warnings** |
-| Backend + Alembic Python compilation | **Passed** (`PYTHON_COMPILE_OK`) |
+| Backend test suite | **217 passed, 1 deprecation warning** (`HTTP_422_UNPROCESSABLE_ENTITY` from Starlette) |
+| Backend lint | `ruff check backend/` — clean |
+| Backend + Alembic Python compilation | **Passed** (`compileall`) |
 | Frontend TypeScript validation | **Passed** |
-| Next.js production build | **Passed**; 22/22 routes generated |
+| Frontend unit tests | **27 passed** (Vitest) |
+| Next.js production build | **Passed**; 28/28 routes generated |
+| Browser-driven checks (2026-11-27) | Reticle `verified: yes` for login navigation, `/practice?language=javascript` deep-link filtering, and throttled-login error text |
 | Editor diagnostics | **No errors reported** |
 | Patch integrity | No diff-check errors; only normal CRLF conversion warnings |
 | Tracked secret/runtime artifact scan | `.env`, database, dependencies, and `.next` ignored |
@@ -140,7 +143,7 @@ already-declared `pypdf` dependency.
 ## Repository cleanup status
 
 - `.claude/` was deleted as requested.
-- `.reticle/` deletion is present in the worktree and was not changed by the audit.
+- `.reticle/` runtime journals are now ignored (`.gitignore`, 2026-11-27); they are not deliverables.
 - Disposable runtime logs and pytest cache were removed.
 - `graphify-out/` was intentionally preserved.
 - No tracked `.env`, database, `node_modules`, `.next`, Python bytecode, or log files were found.

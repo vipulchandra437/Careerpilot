@@ -5,12 +5,13 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 type Landmarker = import("@mediapipe/tasks-vision").FaceLandmarker;
 
 export interface MonitoringCues {
+  available: boolean;
   faceVisible: boolean;
   eyeContactPercent: number;
   longPauses: number;
 }
 
-const initial: MonitoringCues = { faceVisible: true, eyeContactPercent: 100, longPauses: 0 };
+const initial: MonitoringCues = { available: false, faceVisible: false, eyeContactPercent: 0, longPauses: 0 };
 
 /**
  * Camera and microphone stay in the browser: face landmarks and audio levels
@@ -70,15 +71,16 @@ export function useLiveMonitoring(
         if (cancelled) landmarker.close();
         else landmarkerRef.current = landmarker;
       })
-      .catch(() => undefined); // No model => coaching chips simply stay quiet.
+      .catch(() => undefined); // No model => coaching chips stay quiet and no score is inferred.
 
     const loop = () => {
       const now = performance.now();
-      let faceVisible = true;
+      let faceVisible = false;
       if (landmarkerRef.current && video && video.readyState >= 2) {
         try {
           const landmarks = landmarkerRef.current.detectForVideo(video, now).faceLandmarks[0];
           if (landmarks) {
+            faceVisible = true;
             const leftIris = landmarks[468];
             const rightIris = landmarks[473];
             const leftMid = (landmarks[33].x + landmarks[133].x) / 2;
@@ -112,9 +114,11 @@ export function useLiveMonitoring(
       }
 
       if (now - lastPublish > 500) {
+        const modelReady = !!landmarkerRef.current;
         setCues({
-          faceVisible,
-          eyeContactPercent: frames ? Math.round((centeredFrames / frames) * 100) : 100,
+          available: modelReady,
+          faceVisible: modelReady && faceVisible,
+          eyeContactPercent: modelReady && frames ? Math.round((centeredFrames / frames) * 100) : 0,
           longPauses,
         });
         frames = 0;
@@ -130,6 +134,7 @@ export function useLiveMonitoring(
       cancelAnimationFrame(frame);
       landmarkerRef.current?.close();
       landmarkerRef.current = null;
+      setCues(initial);
       void audio?.close().catch(() => undefined);
     };
   }, [stream, videoRef, enabled]);

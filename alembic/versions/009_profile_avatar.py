@@ -7,7 +7,7 @@ Create Date: 2026-11-23
 
 from typing import Sequence, Union
 
-from alembic import op
+from alembic import context, op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 from sqlalchemy.exc import NoInspectionAvailable
@@ -27,12 +27,16 @@ def _existing_columns(table: str) -> set[str] | None:
 
 
 def upgrade() -> None:
+    if context.is_offline_mode():
+        return  # 001 baseline already emits the current schema in offline SQL.
     existing = _existing_columns("profile_snapshots")
     if existing is None or "avatar_key" not in existing:
         op.add_column("profile_snapshots", sa.Column("avatar_key", sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
+    if context.is_offline_mode():
+        return
     existing = _existing_columns("profile_snapshots")
     if existing is None or "avatar_key" in existing:
         op.drop_column("profile_snapshots", "avatar_key")

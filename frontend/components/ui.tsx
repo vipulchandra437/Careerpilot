@@ -24,9 +24,9 @@ export function PageHeader({
   return (
     <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="animate-fade-up">
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
         {subtitle ? (
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-400">{subtitle}</p>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">{subtitle}</p>
         ) : null}
       </div>
       {children ? <div className="flex shrink-0 items-center gap-3">{children}</div> : null}
@@ -53,10 +53,10 @@ export function Card({
   return (
     <section className={clsx("card animate-fade-up", className)}>
       {title ? (
-        <header className="flex items-start justify-between gap-4 border-b border-white/5 px-6 py-4">
+        <header className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-white">{title}</h2>
-            {subtitle ? <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p> : null}
+            <h2 className="text-base font-semibold text-ink">{title}</h2>
+            {subtitle ? <p className="mt-0.5 text-xs text-muted">{subtitle}</p> : null}
           </div>
           {actions}
         </header>
@@ -70,13 +70,13 @@ export function Card({
 /* StatusBadge / Pill                                                  */
 /* ------------------------------------------------------------------ */
 const badgeTones: Record<string, string> = {
-  blue: "bg-blue-500/15 text-blue-300 border-blue-500/25",
-  green: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
-  amber: "bg-amber-500/15 text-amber-300 border-amber-500/25",
-  red: "bg-red-500/15 text-red-300 border-red-500/25",
-  violet: "bg-violet-500/15 text-violet-300 border-violet-500/25",
-  slate: "bg-slate-500/15 text-slate-300 border-slate-600/30",
-  cyan: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
+  blue: "bg-blue-50 text-blue-700 border-blue-200",
+  green: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  amber: "bg-amber-50 text-amber-700 border-amber-200",
+  red: "bg-red-50 text-red-700 border-red-200",
+  violet: "bg-violet-50 text-violet-700 border-violet-200",
+  slate: "bg-slate-100 text-muted border-slate-200",
+  cyan: "bg-cyan-50 text-cyan-700 border-cyan-200",
 };
 
 export function Pill({
@@ -116,14 +116,14 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.015] px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-line bg-soft px-6 py-14 text-center">
       {icon ? (
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 text-brand-300">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
           {icon}
         </div>
       ) : null}
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
-      {message ? <p className="mt-1.5 max-w-sm text-sm text-slate-400">{message}</p> : null}
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      {message ? <p className="mt-1.5 max-w-sm text-sm text-muted">{message}</p> : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
@@ -146,12 +146,12 @@ export function StatCard({
   return (
     <div className="card card-hover flex items-start justify-between p-5">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
-        <p className="mt-2 text-2xl font-bold tracking-tight text-white">{value}</p>
-        {hint ? <p className="mt-1 text-xs text-slate-400">{hint}</p> : null}
+        <p className="text-xs font-medium uppercase tracking-wider text-muted">{label}</p>
+        <p className="mt-2 text-2xl font-bold tracking-tight text-ink">{value}</p>
+        {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
       </div>
       {icon ? (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-300">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
           {icon}
         </div>
       ) : null}

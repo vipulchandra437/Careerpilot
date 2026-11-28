@@ -129,8 +129,10 @@ pip install -r backend/requirements.txt
 Copy the example env file and update the keys as needed:
 
 ```bash
-copy .env.example .env
+cp .env.example .env   # Windows: copy .env.example .env
 ```
+
+The example uses SQLite for local development; switch `DATABASE_URL` to Postgres only for a deployed environment.
 
 Important environment values include:
 
@@ -173,18 +175,23 @@ Then open:
 
 The project includes backend tests and frontend type validation.
 
-### Backend
+### Backend (from the repository root)
 
 ```bash
-cd backend
+ruff check backend/
 pytest
 ```
+
+`pytest` uses a temporary SQLite database from `backend/tests/conftest.py`, so no local service is needed.
 
 ### Frontend
 
 ```bash
 cd frontend
+npm run lint
 npm run typecheck
+npm test
+npm run build
 ```
 
 ## Notes on the current implementation
@@ -193,12 +200,14 @@ This repository is a production-style MVP architecture with working backend patt
 
 ## Project status
 
-The project is in a healthy state from the current validation pass:
+The project is in a healthy state from the 2026-11-27 validation pass:
 
-- Backend tests pass in the configured environment
-- Frontend TypeScript validation passes
+- Backend: 217 tests pass and `ruff check backend/` is clean
+- Frontend: lint and TypeScript validation pass, 27 tests pass, production build succeeds on 28 routes
 - Graph knowledge artifacts are refreshed in the project output folder
 - The landing page and app shell are styled in a professional SaaS aesthetic
+
+Before deploying an existing installation, apply Alembic migration `014_unique_aggregate_rows` (it adds `users.token_version` and unique constraints after deduplicating old rows). Set `LLM_DAILY_CALL_LIMIT` to tune the per-user daily LLM cap.
 
 ## License
 

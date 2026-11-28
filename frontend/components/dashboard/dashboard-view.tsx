@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDashboardData } from "@/app/actions/dashboard";
+import { redirectExpired } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import type { DashboardData } from "@/lib/dashboard";
 import { ReadinessCard } from "./readiness-card";
@@ -28,11 +29,12 @@ export function DashboardView() {
         const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
         const result = await getDashboardData(token, zone);
         if (!active) return;
-        if (!result) {
-          router.replace("/login");
+        if (!result.ok) {
+          if (result.reason === "auth") redirectExpired((path) => router.replace(path));
+          else setError(true);
           return;
         }
-        setData(result);
+        setData(result.data);
       } catch {
         if (active) setError(true);
       }
@@ -44,7 +46,7 @@ export function DashboardView() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-surface p-6 text-center text-slate-300">
+      <main className="flex min-h-screen items-center justify-center bg-canvas p-6 text-center text-muted">
         <div>
           <p>We couldn&apos;t load your dashboard just now.</p>
           <button onClick={() => window.location.reload()} className="btn-primary focus-ring mt-4">
@@ -57,9 +59,9 @@ export function DashboardView() {
 
   if (!data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-surface text-slate-400">
+      <main className="flex min-h-screen items-center justify-center bg-canvas text-muted">
         <div className="flex items-center gap-3">
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-brand-400 motion-reduce:animate-none" />
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-brand-500 motion-reduce:animate-none" />
           <p>Getting your dashboard ready…</p>
         </div>
       </main>
@@ -67,9 +69,9 @@ export function DashboardView() {
   }
 
   return (
-    <main className="min-h-screen bg-surface p-4 sm:p-8">
+    <main className="min-h-screen bg-canvas p-4 sm:p-8">
       <div className="mx-auto max-w-7xl">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">CareerPilot</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">CareerPilot</p>
         <PageHeader
           title="Welcome back 👋"
           subtitle="Here is where you stand and the one thing to do next."
@@ -85,7 +87,7 @@ export function DashboardView() {
           <WeeklyPractice days={data.weeklyPractice} />
         </div>
 
-        <h2 className="mb-4 mt-8 text-lg font-semibold text-white">Your features</h2>
+        <h2 className="mb-4 mt-8 text-lg font-semibold text-ink">Your features</h2>
         <FeatureGrid features={data.features} />
 
         <div className="mt-8">

@@ -9,13 +9,13 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0e17] px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas px-4 py-10">
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 -z-10"
       >
-        <div className="absolute -top-1/2 -left-1/2 h-[150%] w-[150%] animate-float-slow rounded-full bg-gradient-to-tr from-blue-600/15 via-transparent to-indigo-600/15 blur-[200px]" />
-        <div className="absolute -bottom-1/2 -right-1/2 h-[150%] w-[150%] animate-float-slower rounded-full bg-gradient-to-bl from-indigo-600/15 via-transparent to-purple-600/15 blur-[200px]" />
+        <div className="absolute -top-1/2 -left-1/2 h-[150%] w-[150%] animate-float-slow rounded-full bg-gradient-to-tr from-blue-100/60 via-transparent to-indigo-600/15 blur-[200px]" />
+        <div className="absolute -bottom-1/2 -right-1/2 h-[150%] w-[150%] animate-float-slower rounded-full bg-gradient-to-bl from-indigo-100/60 via-transparent to-purple-100/60 blur-[200px]" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -37,32 +37,32 @@ export default function ForgotPasswordPage() {
             .animate-float-slow, .animate-float-slower { animation: none; }
           }
         `}</style>
-        <div className="glass relative animate-scale-in rounded-2xl p-8 shadow-2xl shadow-black/50">
+        <div className="glass relative animate-scale-in rounded-2xl p-8 shadow-2xl shadow-slate-900/10">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-ink">
               Reset Password
             </h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-2 text-sm text-muted">
               Enter your email to receive a reset link
             </p>
           </div>
 
           {submitted ? (
             <>
-              <p className="text-sm text-slate-300 text-center">
+              <p className="text-sm text-muted text-center">
                 If an account exists for <span className="font-medium">{email}</span>, a password
                 reset link will be sent there.
               </p>
               <Link
                 href="/login"
-                className="mt-6 block rounded-xl text-center text-sm font-medium text-blue-300 hover:text-blue-200 hover:underline"
+                className="mt-6 block rounded-xl text-center text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline"
               >
                 Back to sign in
               </Link>
             </>
           ) : (
             <>
-              <p className="mb-6 text-sm text-slate-400 text-center">
+              <p className="mb-6 text-sm text-muted text-center">
                 Password reset emails are coming in a later phase.
               </p>
               <form
@@ -73,11 +73,11 @@ export default function ForgotPasswordPage() {
                 }}
               >
                 <div>
-                  <label htmlFor="email" className="block mb-1.5 text-sm font-medium text-slate-200">
+                  <label htmlFor="email" className="block mb-1.5 text-sm font-medium text-muted">
                     Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                     <input
                       id="email"
                       type="email"
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
               </form>
               <Link
                 href="/login"
-                className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+                className="mt-6 flex items-center justify-center gap-2 text-sm text-muted hover:text-ink transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to sign in

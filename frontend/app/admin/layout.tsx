@@ -56,8 +56,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!ready) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-surface">
-        <p className="text-slate-400">Loading console…</p>
+      <main className="flex min-h-screen items-center justify-center bg-canvas">
+        <p className="text-muted">Loading console…</p>
       </main>
     );
   }
@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="min-h-screen bg-surface text-white">
+    <div className="min-h-screen bg-canvas text-ink">
       {/* Left sidebar nav (DESIGN §2.9 — separate layout from student app) */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/10 bg-surface-800/60 backdrop-blur-xl md:flex">
         <div className="flex items-center gap-2.5 px-5 py-5">

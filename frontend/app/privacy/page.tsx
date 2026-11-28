@@ -100,7 +100,7 @@ export default function PrivacyPolicy() {
 
       <p>
         By creating an account you also agree to our{" "}
-        <Link href="/terms" className="font-semibold text-blue-400 underline-offset-2 hover:underline">
+        <Link href="/terms" className="font-semibold text-blue-700 underline-offset-2 hover:underline">
           Terms of Service
         </Link>
         .
@@ -111,7 +111,7 @@ export default function PrivacyPolicy() {
 
 function H2({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-8 border-b border-white/10 pb-2 text-xl font-semibold text-white first:mt-0">
+    <h2 className="mt-8 border-b border-line pb-2 text-xl font-semibold text-ink first:mt-0">
       {children}
     </h2>
   );

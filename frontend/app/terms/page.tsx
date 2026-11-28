@@ -111,7 +111,7 @@ export default function TermsOfService() {
 
       <p>
         Your use of the platform is also governed by our{" "}
-        <Link href="/privacy" className="font-semibold text-blue-400 underline-offset-2 hover:underline">
+        <Link href="/privacy" className="font-semibold text-blue-700 underline-offset-2 hover:underline">
           Privacy Policy
         </Link>
         .
@@ -122,7 +122,7 @@ export default function TermsOfService() {
 
 function H2({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-8 border-b border-white/10 pb-2 text-xl font-semibold text-white first:mt-0">
+    <h2 className="mt-8 border-b border-line pb-2 text-xl font-semibold text-ink first:mt-0">
       {children}
     </h2>
   );

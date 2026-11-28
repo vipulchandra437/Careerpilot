@@ -171,7 +171,6 @@ async def generate_challenge(
     language = language if language in LANGUAGES else "python"
 
     challenge = None
-    usage_row = None
 
     if use_llm and settings.openrouter_api_key:
         # One primary attempt + ONE corrective retry. LLM output is intermittent
@@ -192,6 +191,15 @@ async def generate_challenge(
                 resp: LLMResponse = await orchestrator.call_llm(
                     feature="challenge_generation", prompt=prompt, user_id=user_id
                 )
+                # Meter the call before parsing: invalid JSON still cost tokens.
+                db.add(LLMUsageLog(
+                    user_id=user_id,
+                    feature="challenge_generation",
+                    model=resp.model,
+                    tokens_in=resp.tokens_in,
+                    tokens_out=resp.tokens_out,
+                    cost_usd=resp.cost_usd,
+                ))
                 parsed = _parse_challenge_json(resp.content)
                 if parsed:
                     normalized = _validate_challenge(parsed, skill, language)
@@ -209,29 +217,20 @@ async def generate_challenge(
                             expected_time_complexity=normalized["expected_time_complexity"],
                         )
                         db.add(challenge)
-                        usage_row = LLMUsageLog(
-                            user_id=user_id,
-                            feature="challenge_generation",
-                            model=resp.model,
-                            tokens_in=resp.tokens_in,
-                            tokens_out=resp.tokens_out,
-                            cost_usd=resp.cost_usd,
-                        )
                         break
             except Exception:
                 challenge = None
-                usage_row = None
 
     if challenge is None:
         # Never roll back the caller's session: the closed-loop caller may have
-        # pending roadmap milestones. Drop only this call's partial Challenge.
+        # pending roadmap milestones. Drop only this call's partial Challenge,
+        # but keep every usage row from the calls that actually ran.
         for pending in list(db.new):
             if isinstance(pending, Challenge):
                 db.expunge(pending)
+        await db.commit()
         return None
 
-    if usage_row is not None:
-        db.add(usage_row)
     await db.commit()
     await db.refresh(challenge)
     return challenge

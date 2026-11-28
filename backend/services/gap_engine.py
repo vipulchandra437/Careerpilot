@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.ai.orchestrator import orchestrator, LLMResponse
@@ -392,17 +393,18 @@ async def run_gap_analysis(
                 prompt=prompt,
                 user_id=user_id,
             )
+            # Meter the call before parsing: a malformed reply still cost tokens.
+            usage_row = LLMUsageLog(
+                user_id=user_id,
+                feature="gap_analysis",
+                model=resp.model,
+                tokens_in=resp.tokens_in,
+                tokens_out=resp.tokens_out,
+                cost_usd=resp.cost_usd,
+            )
             parsed = _parse_llm_json(resp.content)
             if parsed:
                 llm_gaps = parsed
-                usage_row = LLMUsageLog(
-                    user_id=user_id,
-                    feature="gap_analysis",
-                    model=resp.model,
-                    tokens_in=resp.tokens_in,
-                    tokens_out=resp.tokens_out,
-                    cost_usd=resp.cost_usd,
-                )
         except Exception:
             # LLM transport/failure or unparseable output -> deterministic-only (never 500).
             llm_gaps = None
@@ -436,6 +438,21 @@ async def _upsert_report(
     else:
         report = GapReport(snapshot_id=snapshot_id, target_role_id=target_role_id, gaps=gaps)
         db.add(report)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # A concurrent analyzer inserted the same (snapshot, role) first: update
+        # that row instead of leaving every later read with MultipleResultsFound.
+        await db.rollback()
+        report = (
+            await db.execute(
+                select(GapReport).where(
+                    GapReport.snapshot_id == snapshot_id,
+                    GapReport.target_role_id == target_role_id,
+                )
+            )
+        ).scalar_one()
+        report.gaps = gaps
+        await db.commit()
     await db.refresh(report)
     return report

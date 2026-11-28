@@ -9,7 +9,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, ListFlowable, ListItem
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 def _esc(value: object) -> str:
@@ -157,7 +157,7 @@ def build_resume_pdf(data: dict | None) -> bytes:
             if head:
                 story.append(Paragraph(f"<b>{_esc(head)}</b>" + (f"  <font color='#444444'>({_esc(i.get('duration',''))})</font>" if i.get("duration") else ""), styles["RBody"]))
             if i.get("description"):
-                for line in [l.strip(" -•\t") for l in i["description"].splitlines() if l.strip()]:
+                for line in [line.strip(" -•\t") for line in i["description"].splitlines() if line.strip()]:
                     story.append(Paragraph(f"• {_esc(line)}", styles["RSmall"]))
             story.append(Spacer(1, 2))
     if r["projects"]:

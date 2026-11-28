@@ -26,7 +26,15 @@ module.exports = {
           900: "#312e81",
           950: "#1e1b4b",
         },
-        // App surfaces (dark "midnight" canvas)
+        // Light app theme (main content). Tailwind alpha modifiers work on these.
+        canvas: "rgb(var(--canvas-rgb) / <alpha-value>)",
+        panel: "rgb(var(--panel-rgb) / <alpha-value>)",
+        soft: "rgb(var(--soft-rgb) / <alpha-value>)",
+        line: "rgb(var(--line-rgb) / <alpha-value>)",
+        ink: "rgb(var(--ink-rgb) / <alpha-value>)",
+        muted: "rgb(var(--muted-rgb) / <alpha-value>)",
+        accent: "rgb(var(--accent-rgb) / <alpha-value>)",
+        // Dark "midnight" ramp retained for the fixed sidebar.
         surface: {
           DEFAULT: "#0b0f1a",
           900: "#0b0f1a",

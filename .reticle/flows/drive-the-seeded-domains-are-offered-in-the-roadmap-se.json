@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "name": "drive-the-seeded-domains-are-offered-in-the-roadmap-se",
+  "createdAt": 1795785653522,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "combobox",
+        "name": "Search domains"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "text",
+        "contains": "Backend Engineer"
+      },
+      "timeoutMs": 15000,
+      "page": "/roadmap"
+    }
+  ],
+  "startPath": "/roadmap",
+  "intent": "The seeded domains are offered in the roadmap search list after the live roles load",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/roadmap"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/roadmap"
+    }
+  ],
+  "author": {
+    "agent": "opencode",
+    "person": "haisenberg751@gmail.com"
+  },
+  "intentId": "flow:drive-the-seeded-domains-are-offered-in-the-roadmap-se"
+}

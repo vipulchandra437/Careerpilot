@@ -19,6 +19,7 @@ import {
   Target,
   Zap,
 } from "lucide-react";
+import { redirectExpired } from "@/lib/auth";
 
 interface Milestone {
   id: string;
@@ -51,13 +52,13 @@ interface GapReport {
   }>;
 }
 
-const brand = "#3b6cf6";
+const brand = "#6366f1";
 const green = "#12a36b";
 
 const statusPills: Record<string, string> = {
   done: "border-emerald-200 bg-emerald-50 text-emerald-700",
   in_progress: "border-blue-200 bg-blue-50 text-blue-700",
-  not_started: "border-slate-200 bg-slate-100 text-slate-600",
+  not_started: "border-slate-200 bg-slate-100 text-muted",
 };
 
 const severityText: Record<string, string> = {
@@ -74,12 +75,12 @@ const actionIcons: Record<string, React.ReactNode> = {
 };
 
 const lightBtn =
-  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl border border-[#e3e8f2] bg-white px-4 py-2 text-sm font-medium text-[#141b2d] transition-colors hover:border-[#b9c9f5] disabled:opacity-50";
+  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl border border-[#e2e8f0] bg-white px-4 py-2 text-sm font-medium text-[#0f172a] transition-colors hover:border-[#c7d2fe] disabled:opacity-50";
 
 const primaryBtn =
-  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50";
+  "focus-ring inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50";
 
-const linkClass = "text-sm font-medium text-[#3b6cf6] hover:underline";
+const linkClass = "text-sm font-medium text-[#6366f1] hover:underline";
 
 // Roles stay admin-managed; these aliases only make natural queries findable.
 const roleAliases: Record<string, string[]> = {
@@ -137,8 +138,7 @@ function RoadmapContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
       if (res.ok) {
@@ -184,8 +184,7 @@ function RoadmapContent() {
       if (!isCurrent()) return;
       if (gapRes.status === 401) {
         clearRetryGuard();
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
       if (gapRes.status === 404) {
@@ -247,8 +246,7 @@ function RoadmapContent() {
       });
       if (!isCurrent()) return;
       if (res.status === 401) {
-        localStorage.removeItem("access_token");
-        router.push("/login?reason=expired");
+        redirectExpired((path) => router.push(path));
         return;
       }
 
@@ -263,6 +261,10 @@ function RoadmapContent() {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!isCurrent()) return;
+          if (roadmapRes.status === 401) {
+            redirectExpired((path) => router.push(path));
+            return;
+          }
           if (roadmapRes.ok) {
             const next = normalizeRoadmap(await roadmapRes.json());
             if (!isCurrent()) return;
@@ -421,7 +423,7 @@ function RoadmapContent() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-8 text-[#5c6784]">
+      <main className="flex min-h-screen items-center justify-center bg-canvas p-8 text-[#64748b]">
         <div className="flex items-center gap-3">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading roadmap...</p>
@@ -431,15 +433,15 @@ function RoadmapContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] text-[#141b2d]">
-      <header className="sticky top-0 z-20 border-b border-[#e3e8f2] bg-white">
+    <main className="min-h-screen bg-canvas text-[#0f172a]">
+      <header className="sticky top-0 z-20 border-b border-[#e2e8f0] bg-white">
         <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-3 px-5 py-3 max-[560px]:flex-col max-[560px]:items-stretch">
           <div className="flex items-center gap-2.5">
-            <span aria-hidden="true" className="h-[30px] w-[30px] rounded-[9px] bg-gradient-to-br from-[#3b6cf6] to-[#7c4dff] shadow-[0_4px_12px_rgba(59,108,246,.28)]" />
+            <span aria-hidden="true" className="h-[30px] w-[30px] rounded-[9px] bg-gradient-to-br from-[#6366f1] to-[#7c4dff] shadow-[0_4px_12px_rgba(99,102,241,.28)]" />
             <span className="text-[18px] font-bold tracking-tight">Roadmap</span>
           </div>
           <div className="relative w-full max-w-[440px] max-[560px]:max-w-none">
-            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5c6784]" />
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748b]" />
             <input
               value={domainQuery}
               onChange={onSearchChange}
@@ -454,7 +456,7 @@ function RoadmapContent() {
               aria-label="Search domains"
               aria-activedescendant={searchOpen && searchIndex >= 0 ? `domain-option-${options[searchIndex]?.id}` : undefined}
               placeholder="Search a domain, e.g. machine learning"
-              className="focus-ring w-full rounded-xl border border-[#e3e8f2] bg-[#f5f7fb] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#3b6cf6] focus:bg-white focus:ring-4 focus:ring-[#3b6cf6]/15"
+              className="focus-ring w-full rounded-xl border border-[#e2e8f0] bg-canvas py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#6366f1] focus:bg-white focus:ring-4 focus:ring-[#6366f1]/15"
             />
             {searchOpen && (
               <div
@@ -462,9 +464,9 @@ function RoadmapContent() {
                 role="listbox"
                 aria-label="Domains"
                 onMouseDown={(e) => e.preventDefault()}
-                className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-[430px] overflow-y-auto rounded-xl border border-[#e3e8f2] bg-white p-1 shadow-[0_18px_46px_rgba(20,27,45,.14)]"
+                className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-[430px] overflow-y-auto rounded-xl border border-[#e2e8f0] bg-white p-1 shadow-[0_18px_46px_rgba(15,23,42,.12)]"
               >
-                <p className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-[.13em] text-[#5c6784]">
+                <p className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-[.13em] text-[#64748b]">
                   {query ? "Matching domains" : "All domains"}
                 </p>
                 {options.map((role, index) => (
@@ -475,14 +477,14 @@ function RoadmapContent() {
                     role="option"
                     aria-selected={searchIndex === index}
                     onClick={() => acceptDomain(role)}
-                    className={`block w-full rounded-lg px-3 py-2 text-left transition-colors ${searchIndex === index ? "bg-[#eef3ff]" : "hover:bg-[#eef3ff]"}`}
+                    className={`block w-full rounded-lg px-3 py-2 text-left transition-colors ${searchIndex === index ? "bg-[#eef2ff]" : "hover:bg-[#eef2ff]"}`}
                   >
                     <span className="block text-sm font-semibold">{role.name}</span>
-                    <span className="block text-xs text-[#5c6784]">Personalized milestone roadmap</span>
+                    <span className="block text-xs text-[#64748b]">Personalized milestone roadmap</span>
                   </button>
                 ))}
-                {!options.length && <p className="px-3 py-2 text-sm text-[#5c6784]">No domain matches. Domains are managed by your admin.</p>}
-                <p className="mt-1 border-t border-[#e3e8f2] px-3 py-2 text-[11px] text-[#5c6784]">↑↓ move · Enter select · Tab / → accept · Esc close</p>
+                {!options.length && <p className="px-3 py-2 text-sm text-[#64748b]">No domain matches. Domains are managed by your admin.</p>}
+                <p className="mt-1 border-t border-[#e2e8f0] px-3 py-2 text-[11px] text-[#64748b]">↑↓ move · Enter select · Tab / → accept · Esc close</p>
               </div>
             )}
           </div>
@@ -491,7 +493,7 @@ function RoadmapContent() {
 
       <div className="mx-auto grid max-w-[1240px] gap-6 px-5 py-6 min-[900px]:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0">
-          <button onClick={() => router.back()} className="focus-ring mb-4 inline-flex items-center gap-1 text-sm text-[#5c6784] hover:text-[#3b6cf6]">
+          <button onClick={() => router.back()} className="focus-ring mb-4 inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#6366f1]">
             <ChevronLeft className="h-4 w-4" /> Back
           </button>
 
@@ -503,10 +505,10 @@ function RoadmapContent() {
           )}
 
           {roadmap && milestones.length === 0 ? (
-            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
-              <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+            <section className="rounded-2xl border border-[#e2e8f0] bg-white px-6 py-12 text-center">
+              <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#94a3b8]" />
               <h2 className="mb-2 text-xl font-semibold">No gaps to build a roadmap from</h2>
-              <p className="mb-6 text-sm text-[#5c6784]">Your profile currently matches this role. Update your profile or re-run gap analysis, then regenerate.</p>
+              <p className="mb-6 text-sm text-[#64748b]">Your profile currently matches this role. Update your profile or re-run gap analysis, then regenerate.</p>
               <div className="flex flex-wrap justify-center gap-3">
                 <button onClick={() => generateRoadmap(roadmap.gap_report_id)} disabled={generating} style={{ background: brand }} className={primaryBtn}>
                   {generating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}
@@ -517,10 +519,10 @@ function RoadmapContent() {
             </section>
           ) : roadmap ? (
             <>
-              <section className="mb-6 flex items-center gap-5 rounded-2xl border border-[#e3e8f2] bg-white p-6 max-[560px]:gap-3.5">
+              <section className="mb-6 flex items-center gap-5 rounded-2xl border border-[#e2e8f0] bg-white p-6 max-[560px]:gap-3.5">
                 <div
                   className="relative grid h-[94px] w-[94px] shrink-0 place-items-center rounded-full"
-                  style={{ background: `conic-gradient(${brand} ${progress}%, #e8edf7 0)` }}
+                  style={{ background: `conic-gradient(${brand} ${progress}%, #e2e8f0 0)` }}
                   role="img"
                   aria-label={`${progress}% complete`}
                 >
@@ -529,11 +531,11 @@ function RoadmapContent() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-[23px] font-bold tracking-tight max-[560px]:text-[19px]">{gapReport?.target_role_name || "Target Role"}</h1>
-                  <p className="text-sm text-[#5c6784]">Version {roadmap.version} · {hours}h estimated</p>
-                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[#5c6784]">
-                    <span><b className="block text-base text-[#141b2d]">{milestones.length}</b>stages</span>
-                    <span><b className="block text-base text-[#141b2d]">{milestones.length}</b>topics</span>
-                    <span><b className="block text-base text-[#141b2d]">{doneCount}</b>completed topics</span>
+                  <p className="text-sm text-[#64748b]">Version {roadmap.version} · {hours}h estimated</p>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[#64748b]">
+                    <span><b className="block text-base text-[#0f172a]">{milestones.length}</b>stages</span>
+                    <span><b className="block text-base text-[#0f172a]">{milestones.length}</b>topics</span>
+                    <span><b className="block text-base text-[#0f172a]">{doneCount}</b>completed topics</span>
                   </div>
                 </div>
                 <button
@@ -552,14 +554,14 @@ function RoadmapContent() {
                 return (
                   <section key={milestone.id} className="relative pb-6 pl-[58px] max-[560px]:pl-12">
                     {index < milestones.length - 1 && (
-                      <span aria-hidden="true" className="absolute bottom-0 left-[21px] top-[46px] w-[2px] bg-[#e3e8f2] max-[560px]:left-[18px]" />
+                      <span aria-hidden="true" className="absolute bottom-0 left-[21px] top-[46px] w-[2px] bg-[#e2e8f0] max-[560px]:left-[18px]" />
                     )}
                     <span
                       aria-hidden="true"
                       className="absolute left-0 top-0 grid h-11 w-11 place-items-center rounded-full border-2 bg-white text-sm font-extrabold max-[560px]:h-[38px] max-[560px]:w-[38px]"
                       style={{
-                        borderColor: done ? green : milestone.status === "in_progress" ? brand : "#e3e8f2",
-                        color: done ? "#fff" : milestone.status === "in_progress" ? brand : "#5c6784",
+                        borderColor: done ? green : milestone.status === "in_progress" ? brand : "#e2e8f0",
+                        color: done ? "#fff" : milestone.status === "in_progress" ? brand : "#64748b",
                         background: done ? green : "#fff",
                         boxShadow: firstUnfinished ? `0 0 0 5px ${brand}24` : undefined,
                       }}
@@ -570,12 +572,12 @@ function RoadmapContent() {
                       type="button"
                       onClick={() => selectLevel(index)}
                       aria-pressed={selectedLevel === index}
-                      className={`focus-ring block w-full rounded-xl p-1 text-left transition-colors hover:bg-[#f8faff] ${selectedLevel === index ? "bg-[#f8faff]" : ""}`}
+                      className={`focus-ring block w-full rounded-xl p-1 text-left transition-colors hover:bg-[#f8fafc] ${selectedLevel === index ? "bg-[#f8fafc]" : ""}`}
                     >
                       <span className="flex min-h-11 flex-wrap items-center gap-2.5">
                         <span role="heading" aria-level={2} className="text-base font-semibold">{milestone.title}</span>
                         {milestone.estimated_hours != null && (
-                          <span className="text-xs text-[#5c6784]"><Clock aria-hidden="true" className="mr-1 inline h-3 w-3" />{milestone.estimated_hours}h</span>
+                          <span className="text-xs text-[#64748b]"><Clock aria-hidden="true" className="mr-1 inline h-3 w-3" />{milestone.estimated_hours}h</span>
                         )}
                         <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${statusPills[milestone.status]}`}>
                           {milestone.status.replace("_", " ")}
@@ -583,18 +585,18 @@ function RoadmapContent() {
                       </span>
                       <span className="mt-3 flex flex-wrap gap-2.5">
                         <span
-                          className={`flex min-w-[190px] max-w-[340px] flex-1 items-start gap-3 rounded-xl border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#b9c9f5] hover:shadow-md max-[560px]:min-w-full ${selectedLevel === index ? "border-[#3b6cf6] ring-4 ring-[#3b6cf6]/15" : "border-[#e3e8f2]"}`}
+                          className={`flex min-w-[190px] max-w-[340px] flex-1 items-start gap-3 rounded-xl border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#c7d2fe] hover:shadow-md max-[560px]:min-w-full ${selectedLevel === index ? "border-[#6366f1] ring-4 ring-[#6366f1]/15" : "border-[#e2e8f0]"}`}
                         >
                           <span
                             aria-hidden="true"
-                            className="mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] border-2 text-xs text-white"
+                            className="mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] border-2 text-xs text-ink"
                             style={done ? { background: green, borderColor: green } : { background: "#fff", borderColor: "#c9d2e3" }}
                           >
                             {done ? "✓" : ""}
                           </span>
                           <span className="min-w-0">
                             <strong className="block text-sm">{milestone.linked_gap_skill || "Skill"}</strong>
-                            <small className="mt-0.5 block text-xs text-[#5c6784]">{milestone.linked_action_type} · Level {index + 1}</small>
+                            <small className="mt-0.5 block text-xs text-[#64748b]">{milestone.linked_action_type} · Level {index + 1}</small>
                           </span>
                         </span>
                       </span>
@@ -604,7 +606,7 @@ function RoadmapContent() {
               })}
 
               {doneCount === milestones.length && (
-                <p className="ml-[58px] flex items-center gap-2 rounded-2xl bg-[#141b2d] px-5 py-4 text-center text-sm font-semibold text-white max-[560px]:ml-12">
+                <p className="ml-[58px] flex items-center gap-2 rounded-2xl bg-brand-600 px-5 py-4 text-center text-sm font-semibold text-white max-[560px]:ml-12">
                   <Flag aria-hidden="true" className="h-4 w-4" /> Goal reached: {gapReport?.target_role_name || "your target role"}
                 </p>
               )}
@@ -616,43 +618,43 @@ function RoadmapContent() {
               </div>
             </>
           ) : needsAnalysis ? (
-            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
-              <Target aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+            <section className="rounded-2xl border border-[#e2e8f0] bg-white px-6 py-12 text-center">
+              <Target aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#94a3b8]" />
               <h2 className="mb-2 text-xl font-semibold">Run gap analysis first</h2>
-              <p className="mb-6 text-sm text-[#5c6784]">This role has no gap report yet, so there is nothing to build a roadmap from.</p>
+              <p className="mb-6 text-sm text-[#64748b]">This role has no gap report yet, so there is nothing to build a roadmap from.</p>
               <button onClick={() => router.push(`/gap-report?role=${selectedRoleId}`)} style={{ background: brand }} className={primaryBtn}>
                 <Zap aria-hidden="true" className="mr-2 inline h-4 w-4" /> Run gap analysis
               </button>
             </section>
           ) : gapReport ? (
-            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
-              <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+            <section className="rounded-2xl border border-[#e2e8f0] bg-white px-6 py-12 text-center">
+              <Flag aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#94a3b8]" />
               <h2 className="mb-2 text-xl font-semibold">No roadmap generated yet</h2>
-              <p className="mb-6 text-sm text-[#5c6784]">Generate a personalized learning roadmap based on your skill gaps.</p>
+              <p className="mb-6 text-sm text-[#64748b]">Generate a personalized learning roadmap based on your skill gaps.</p>
               <button onClick={() => generateRoadmap(gapReport.id)} disabled={generating} style={{ background: brand }} className={primaryBtn}>
                 {generating ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Layers aria-hidden="true" className="h-4 w-4" />}
                 {generating ? "Generating..." : "Generate Roadmap"}
               </button>
             </section>
           ) : (
-            <section className="rounded-2xl border border-[#e3e8f2] bg-white px-6 py-12 text-center">
-              <Target aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#9aa5bd]" />
+            <section className="rounded-2xl border border-[#e2e8f0] bg-white px-6 py-12 text-center">
+              <Target aria-hidden="true" className="mx-auto mb-4 h-12 w-12 text-[#94a3b8]" />
               <h2 className="mb-2 text-xl font-semibold">Select a target role</h2>
-              <p className="text-sm text-[#5c6784]">Choose a role to view or generate your learning roadmap.</p>
+              <p className="text-sm text-[#64748b]">Choose a role to view or generate your learning roadmap.</p>
             </section>
           )}
         </div>
 
-        <aside ref={detailRef} aria-live="polite" className="order-first rounded-2xl border border-[#e3e8f2] bg-white p-6 min-[900px]:sticky min-[900px]:top-[84px] min-[900px]:order-none">
+        <aside ref={detailRef} aria-live="polite" className="order-first rounded-2xl border border-[#e2e8f0] bg-white p-6 min-[900px]:sticky min-[900px]:top-[84px] min-[900px]:order-none">
           {activeMilestone ? (
             <>
               <p className="text-xs font-extrabold uppercase tracking-[.1em]" style={{ color: brand }}>
                 Stage {selectedLevel! + 1} · {activeMilestone.estimated_hours ?? 0}h
               </p>
               <h2 className="mt-3 text-[21px] font-bold tracking-tight">{activeMilestone.title}</h2>
-              <p className="text-sm text-[#5c6784]">Addresses: {activeMilestone.linked_gap_skill}</p>
+              <p className="text-sm text-[#64748b]">Addresses: {activeMilestone.linked_gap_skill}</p>
               <div className="mt-5">
-                <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-[#5c6784]">What you&apos;ll cover</p>
+                <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[.1em] text-[#64748b]">What you&apos;ll cover</p>
                 <ul className="list-disc space-y-1 pl-5 text-sm">
                   <li className={`font-medium capitalize ${severityText[getSeverityForSkill(activeMilestone.linked_gap_skill)]}`}>
                     Gap severity: {getSeverityForSkill(activeMilestone.linked_gap_skill).replace("_", " ")}
@@ -661,7 +663,7 @@ function RoadmapContent() {
                   <li>{actionIcons[activeMilestone.linked_action_type]} <span className="capitalize">{activeMilestone.linked_action_type}</span> action</li>
                 </ul>
               </div>
-              <div className="mt-5 border-t border-[#e3e8f2] pt-4">
+              <div className="mt-5 border-t border-[#e2e8f0] pt-4">
                 {activeMilestone.linked_action_type === "resource" && (
                   <a href={activeMilestone.linked_action_id} target="_blank" rel="noopener noreferrer" className={linkClass}>
                     <ExternalLink aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" /> Open resource
@@ -708,7 +710,7 @@ function RoadmapContent() {
           ) : (
             <>
               <h2 className="text-xs font-extrabold uppercase tracking-[.1em]" style={{ color: brand }}>Topic details</h2>
-              <p className="py-7 text-center text-sm text-[#5c6784]">Select a topic on the roadmap to see what you will cover.</p>
+              <p className="py-7 text-center text-sm text-[#64748b]">Select a topic on the roadmap to see what you will cover.</p>
             </>
           )}
         </aside>
@@ -720,7 +722,7 @@ function RoadmapContent() {
 export default function RoadmapPage() {
   return (
     <Suspense fallback={
-      <main className="flex min-h-screen items-center justify-center bg-[#f5f7fb] p-8 text-[#5c6784]">
+      <main className="flex min-h-screen items-center justify-center bg-canvas p-8 text-[#64748b]">
         <div className="flex items-center gap-3">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>

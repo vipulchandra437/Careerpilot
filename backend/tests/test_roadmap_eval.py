@@ -142,6 +142,19 @@ def test_validate_defaults_estimated_hours_by_severity():
     assert by_skill["git"]["estimated_hours"] == 3      # provided value kept
 
 
+def test_validate_coerces_nonnumeric_llm_numbers():
+    # A model that writes "first"/"many" must not break the Integer columns.
+    milestones = [{
+        "title": "SQL", "linked_gap_skill": "sql", "status": "not_started",
+        "linked_action_type": "resource", "linked_action_id": "https://example.com/sql",
+        "order_index": "first", "estimated_hours": "many",
+    }]
+    valid = _validate_milestones(milestones, GAPS)
+    assert len(valid) == 1
+    assert isinstance(valid[0]["order_index"], int)
+    assert isinstance(valid[0]["estimated_hours"], int)
+
+
 def test_fallback_orders_critical_first():
     # Fallback roadmap (no LLM) must not emit milestones for severity "none" and
     # must preserve gap order with critical gaps first.

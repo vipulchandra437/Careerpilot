@@ -44,7 +44,14 @@ function LoginContent() {
       });
 
       if (!res.ok) {
-        setError("Invalid email or password");
+        const data = await res.json().catch(() => ({}));
+        setError(
+          res.status === 401
+            ? "Invalid email or password"
+            : typeof data.detail === "string" && data.detail
+              ? data.detail
+              : "Could not sign in. Please try again."
+        );
         return;
       }
 
@@ -62,25 +69,25 @@ function LoginContent() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0e17] px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas px-4 py-10">
       {/* Animated gradient mesh backdrop */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 -z-10"
       >
-        <div className="absolute -top-1/2 -left-1/2 h-[150%] w-[150%] animate-float-slow rounded-full bg-gradient-to-tr from-brand-600/20 via-transparent to-indigo-600/20 blur-[200px]" />
-        <div className="absolute -bottom-1/2 -right-1/2 h-[150%] w-[150%] animate-float-slower rounded-full bg-gradient-to-bl from-indigo-600/20 via-transparent to-violet-600/20 blur-[200px]" />
+        <div className="absolute -top-1/2 -left-1/2 h-[150%] w-[150%] animate-float-slow rounded-full bg-gradient-to-tr from-brand-100/60 via-transparent to-indigo-100/60 blur-[200px]" />
+        <div className="absolute -bottom-1/2 -right-1/2 h-[150%] w-[150%] animate-float-slower rounded-full bg-gradient-to-bl from-indigo-100/60 via-transparent to-violet-100/60 blur-[200px]" />
         <div className="absolute inset-0 bg-hero-grid bg-[length:52px_52px] [mask-image:radial-gradient(ellipse_at_center,black_10%,transparent_70%)]" />
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Glassmorphism card */}
-        <div className="glass relative animate-scale-in p-8 shadow-2xl shadow-black/50">
+        <div className="glass relative animate-scale-in p-8 shadow-2xl shadow-slate-900/10">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-ink">
               Welcome Back
             </h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-2 text-sm text-muted">
               Sign in to continue to Career Platform
             </p>
           </div>
@@ -95,11 +102,11 @@ function LoginContent() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email field */}
             <div>
-              <label htmlFor="email" className="block mb-1.5 text-sm font-medium text-slate-200">
+              <label htmlFor="email" className="block mb-1.5 text-sm font-medium text-muted">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="email"
                   type="email"
@@ -116,11 +123,11 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
 
             {/* Password field */}
             <div>
-              <label htmlFor="password" className="block mb-1.5 text-sm font-medium text-slate-200">
+              <label htmlFor="password" className="block mb-1.5 text-sm font-medium text-muted">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -135,7 +142,7 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -147,7 +154,7 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
             <div className="text-right">
               <Link
                 href="/forgot-password"
-                className="text-sm text-blue-400 underline-offset-2 transition-colors hover:text-blue-300 hover:underline"
+                className="text-sm text-blue-700 underline-offset-2 transition-colors hover:text-blue-700 hover:underline"
               >
                 Forgot password?
               </Link>
@@ -176,11 +183,11 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
             </button>
 
             {/* Register link */}
-            <p className="text-center text-sm text-slate-400">
+            <p className="text-center text-sm text-muted">
               Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
-                className="font-semibold text-blue-400 underline-offset-2 transition-colors hover:text-blue-300 hover:underline"
+                className="font-semibold text-blue-700 underline-offset-2 transition-colors hover:text-blue-700 hover:underline"
               >
                 Register
               </Link>
@@ -211,8 +218,8 @@ className="input !px-10 focus-ring disabled:pointer-events-none"
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <main className="relative flex min-h-screen items-center justify-center bg-[#0a0e17] px-4 py-10">
-        <div className="flex items-center gap-3 text-slate-400">
+      <main className="relative flex min-h-screen items-center justify-center bg-canvas px-4 py-10">
+        <div className="flex items-center gap-3 text-muted">
           <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           <p>Loading...</p>
         </div>

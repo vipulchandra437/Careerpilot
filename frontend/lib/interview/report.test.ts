@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyzeAnswer } from "./analyze";
-import { applyLlmReport, buildRuleReport, type SavedAnswer } from "./report";
+import { applyLlmReport, buildRuleReport, finishAnswerSchema, scoreAnswers, type SavedAnswer } from "./report";
 
 const answers: SavedAnswer[] = [
   {
@@ -29,6 +29,22 @@ describe("buildRuleReport", () => {
 
   it("uses a low verdict for weak answers", () => {
     expect(buildRuleReport([{ ...answers[0], score: 2 }]).verdict).toBe("Needs practice");
+  });
+});
+
+describe("scoreAnswers", () => {
+  it("recomputes persisted scores from answer text and strips client scores", () => {
+    const parsed = finishAnswerSchema.parse({
+      index: 0,
+      question: "Explain a cache.",
+      text: "um basically we did stuff",
+      score: 10,
+      metrics: { score: 10 },
+    });
+    expect(parsed).not.toHaveProperty("score");
+    const scored = scoreAnswers([parsed], "technical");
+    expect(scored[0].score).toBeLessThan(10);
+    expect(scored[0].metrics.score).toBe(scored[0].score);
   });
 });
 

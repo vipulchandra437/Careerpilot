@@ -24,6 +24,7 @@ from backend.services.interviews import (
     generate_feedback,
     get_feedback,
     feedback_out,
+    safe_topic_text,
 )
 
 router = APIRouter(prefix="/interviews", tags=["mock-interviews"])
@@ -80,12 +81,15 @@ async def create_session(
         if not role:
             raise HTTPException(status_code=404, detail="Target role not found")
         role_name = role.name
-    history = (await db.execute(
-        select(InterviewWeakTopic.topic)
-        .where(InterviewWeakTopic.user_id == user.id)
-        .order_by(InterviewWeakTopic.created_at.desc())
-        .limit(8)
-    )).scalars().all()
+    history = [
+        safe_topic_text(t)
+        for t in (await db.execute(
+            select(InterviewWeakTopic.topic)
+            .where(InterviewWeakTopic.user_id == user.id)
+            .order_by(InterviewWeakTopic.created_at.desc())
+            .limit(8)
+        )).scalars().all()
+    ]
     try:
         session = await start_session(db, user.id, req.type, req.target_role_id, req.domain, role_name, list(dict.fromkeys(history)))
     except Exception:

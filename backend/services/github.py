@@ -158,6 +158,14 @@ async def connect_github_account(db: AsyncSession, user_id: uuid.UUID, code: str
         )
         db.add(github_token)
 
+    # A reconnect must not serve the old 24h cache under the new account.
+    from backend.models.profile import ProfileSnapshot
+    snapshot = (
+        await db.execute(select(ProfileSnapshot).where(ProfileSnapshot.user_id == user_id))
+    ).scalar_one_or_none()
+    if snapshot is not None:
+        snapshot.github_data = None
+
     # Admin users list derives "github_connected" from User.github_id.
     github_id = user_info.get("id")
     if github_id is not None:
